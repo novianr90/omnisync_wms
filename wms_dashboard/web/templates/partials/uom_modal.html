@@ -169,9 +169,9 @@
             </div>
 
             <!-- Conversion Coordinates -->
-            <div class="grid grid-cols-3 gap-4 items-end">
+            <div class="grid grid-cols-7 gap-4 items-end">
                 <!-- From UoM -->
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1.5 col-span-3">
                     <label for="conv-from" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Source Packaging Unit</label>
                     <select id="conv-from" name="from_uom_id" required onchange="updateFormulaPreview()"
                             class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
@@ -183,12 +183,12 @@
                 </div>
 
                 <!-- Equals Sign indicator -->
-                <div class="h-8 flex items-center justify-center text-slate-500 text-sm font-bold pb-1.5">
-                    equals
+                <div class="col-span-1 h-[36px] flex items-center justify-center text-slate-500 text-xs font-bold uppercase tracking-wider">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </div>
 
                 <!-- To UoM -->
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1.5 col-span-3">
                     <label for="conv-to" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Base Storage Unit</label>
                     <select id="conv-to" name="to_uom_id" required onchange="updateFormulaPreview()"
                             class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
@@ -205,10 +205,7 @@
                 <label for="conv-factor" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Multiply Factor (Base multiplier)</label>
                 <div class="relative">
                     <input type="number" id="conv-factor" name="multiply_factor" step="0.000001" min="0.000001" value="1.000000" required oninput="updateFormulaPreview()"
-                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition pr-12">
-                    <span class="absolute inset-y-0 right-3 flex items-center text-[10px] text-slate-500 font-bold select-none uppercase tracking-wider pointer-events-none">
-                        Factor
-                    </span>
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
                 </div>
             </div>
 
@@ -251,7 +248,7 @@
         const factor = parseFloat(factorInput.value) || 1.0;
 
         if (fromSelect.value && toSelect.value) {
-            previewEl.innerHTML = `<span class="flex items-center gap-1.5 text-slate-400">Formula Rule: <span class="text-white font-bold">1 ${fromText}</span> = <span class="text-emerald-400 font-bold font-mono">${factor.toFixed(5)}</span> <span class="text-white font-bold">${toText}</span></span>`;
+            previewEl.innerHTML = `<span class="flex items-center gap-1.5 text-slate-400">Formula Rule: <span class="text-white font-bold">1 ${fromText}</span> = <span class="text-emerald-400 font-bold font-mono">${Number(factor.toFixed(5)).toString()}</span> <span class="text-white font-bold">${toText}</span></span>`;
         } else {
             previewEl.innerHTML = `Formula Preview: <span class="text-slate-600 font-bold uppercase">Define unit selections to preview dynamic equation</span>`;
         }

@@ -109,6 +109,9 @@ type UoM struct {
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+// TableName overrides GORM's default naming (which would produce "uo_ms").
+func (UoM) TableName() string { return "uoms" }
+
 // UoMConversion represents a Dynamic Unit of Measure Conversion Formula
 type UoMConversion struct {
 	ID             string         `gorm:"type:varchar(36);primaryKey" json:"id"`
@@ -124,3 +127,6 @@ type UoMConversion struct {
 	FromUo  UoM      `gorm:"foreignKey:FromUoMID" json:"from_uom,omitempty"`
 	ToUo    UoM      `gorm:"foreignKey:ToUoMID" json:"to_uom,omitempty"`
 }
+
+// TableName overrides GORM's default naming (which would produce "uo_m_conversions").
+func (UoMConversion) TableName() string { return "uom_conversions" }
