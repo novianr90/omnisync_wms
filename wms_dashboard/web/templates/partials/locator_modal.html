@@ -1,0 +1,192 @@
+{{define "locator_modal_new"}}
+<div id="new-locator-modal" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <!-- Modal panel -->
+    <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-slate-800 shadow-2xl relative flex flex-col gap-4">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2 uppercase tracking-wider font-outfit">
+                <i data-lucide="map-pin" class="w-4 h-4 text-amber-400"></i>
+                <span>Create Shelf Locator Address</span>
+            </h4>
+            <button onclick="closeLocatorModal()" class="p-1 rounded-lg text-slate-500 hover:bg-slate-900 hover:text-slate-300 transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form hx-post="/wms/masters/locators" class="flex flex-col gap-4">
+            
+            <!-- Warehouse Assignment -->
+            <div class="flex flex-col gap-1.5">
+                <label for="loc-wh" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facility Node</label>
+                <select id="loc-wh" name="warehouse_id" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                    <option value="" disabled selected>-- Select Warehouse Facility --</option>
+                    {{range .Warehouses}}
+                    <option value="{{.ID}}">{{.Code}} - {{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+
+            <!-- Coordinates Grid -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Zone -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="loc-zone" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Zone Code</label>
+                    <input type="text" id="loc-zone" name="zone" required placeholder="Zone-A"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                </div>
+
+                <!-- Aisle -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="loc-aisle" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aisle Code</label>
+                    <input type="text" id="loc-aisle" name="aisle" required placeholder="Aisle-1"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Shelf -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="loc-shelf" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shelf Code</label>
+                    <input type="text" id="loc-shelf" name="shelf" required placeholder="Shelf-2"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                </div>
+
+                <!-- Level -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="loc-level" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Level Code</label>
+                    <input type="text" id="loc-level" name="level" required placeholder="Level-1"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                </div>
+            </div>
+
+            <p class="text-[10px] text-slate-500 bg-slate-950/40 p-2.5 rounded border border-slate-900 leading-normal">
+                <span class="font-bold text-amber-500/80">Naming Convention Hint:</span> The system automatically compiles these coordinates into a structured location barcode code string (e.g. <code class="text-amber-400 font-mono text-[9px]">WH-Zone-Aisle-Shelf-Level</code>).
+            </p>
+
+            <!-- Action buttons -->
+            <div class="flex items-center justify-end gap-3 mt-2 pt-3 border-t border-slate-800/60">
+                <button type="button" onclick="closeLocatorModal()"
+                        class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-xs transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs tracking-wider shadow-lg shadow-amber-500/10 cursor-pointer transition">
+                    Save Locator Code
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    
+    function closeLocatorModal() {
+        document.getElementById('modal-container').innerHTML = '';
+    }
+
+    // Auto close on success trigger
+    document.body.addEventListener('refreshLocatorsList', closeLocatorModal, { once: true });
+</script>
+{{end}}
+
+
+{{define "locator_modal_edit"}}
+<div id="edit-locator-modal" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <!-- Modal panel -->
+    <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-slate-800 shadow-2xl relative flex flex-col gap-4">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2 uppercase tracking-wider font-outfit">
+                <i data-lucide="edit-3" class="w-4 h-4 text-amber-400"></i>
+                <span>Edit Shelf Locator Coordinates</span>
+            </h4>
+            <button onclick="closeLocatorModal()" class="p-1 rounded-lg text-slate-500 hover:bg-slate-900 hover:text-slate-300 transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form hx-put="/wms/masters/locators/{{.Locator.ID}}" class="flex flex-col gap-4">
+            
+            <!-- Warehouse Assignment -->
+            <div class="flex flex-col gap-1.5">
+                <label for="loc-wh" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facility Node</label>
+                <select id="loc-wh" name="warehouse_id" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                    {{range .Warehouses}}
+                    <option value="{{.ID}}" {{if eq .ID $.Locator.WarehouseID}}selected{{end}}>{{.Code}} - {{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+
+            <!-- Coordinates Grid -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Zone -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="loc-zone" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Zone Code</label>
+                    <input type="text" id="loc-zone" name="zone" required value="{{.Locator.Zone}}"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                </div>
+
+                <!-- Aisle -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="loc-aisle" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aisle Code</label>
+                    <input type="text" id="loc-aisle" name="aisle" required value="{{.Locator.Aisle}}"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Shelf -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="loc-shelf" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shelf Code</label>
+                    <input type="text" id="loc-shelf" name="shelf" required value="{{.Locator.Shelf}}"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                </div>
+
+                <!-- Level -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="loc-level" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Level Code</label>
+                    <input type="text" id="loc-level" name="level" required value="{{.Locator.Level}}"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                </div>
+            </div>
+
+            <!-- Operational Status Toggle -->
+            <div class="flex flex-col gap-1.5">
+                <label for="loc-active" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operational Status</label>
+                <select id="loc-active" name="is_active" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-amber-500 transition">
+                    <option value="true" {{if .Locator.IsActive}}selected{{end}}>Active Shelf (Permits storage slotting)</option>
+                    <option value="false" {{if not .Locator.IsActive}}selected{{end}}>Inactive Shelf (Locks storage slotting)</option>
+                </select>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center justify-end gap-3 mt-2 pt-3 border-t border-slate-800/60">
+                <button type="button" onclick="closeLocatorModal()"
+                        class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-xs transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs tracking-wider shadow-lg shadow-amber-500/10 cursor-pointer transition">
+                    Update Coordinates
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    
+    function closeLocatorModal() {
+        document.getElementById('modal-container').innerHTML = '';
+    }
+
+    // Auto close on success trigger
+    document.body.addEventListener('refreshLocatorsList', closeLocatorModal, { once: true });
+</script>
+{{end}}

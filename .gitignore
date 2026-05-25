@@ -1,0 +1,27 @@
+# Go build & module cache (local dev override)
+go_cache/
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Compiled binaries
+*.exe
+*.exe~
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user

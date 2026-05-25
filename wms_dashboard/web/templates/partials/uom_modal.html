@@ -1,0 +1,263 @@
+{{define "uom_modal_new"}}
+<div id="new-uom-modal" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <!-- Modal panel -->
+    <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-slate-800 shadow-2xl relative flex flex-col gap-4">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2 uppercase tracking-wider font-outfit">
+                <i data-lucide="scale" class="w-4 h-4 text-blue-400"></i>
+                <span>Register Unit of Measure</span>
+            </h4>
+            <button onclick="closeUoMModal()" class="p-1 rounded-lg text-slate-500 hover:bg-slate-900 hover:text-slate-300 transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form hx-post="/wms/masters/uoms" class="flex flex-col gap-4">
+            
+            <div class="grid grid-cols-3 gap-4">
+                <!-- Code -->
+                <div class="flex flex-col gap-1.5 col-span-1">
+                    <label for="uom-code" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Unit Code</label>
+                    <input type="text" id="uom-code" name="code" required placeholder="kg"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-blue-500 transition">
+                </div>
+
+                <!-- Name -->
+                <div class="flex flex-col gap-1.5 col-span-2">
+                    <label for="uom-name" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Full Unit Name</label>
+                    <input type="text" id="uom-name" name="name" required placeholder="Kilogram"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-blue-500 transition">
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="flex flex-col gap-1.5">
+                <label for="uom-desc" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Description</label>
+                <textarea id="uom-desc" name="description" rows="3" placeholder="Define weight metrics, packaging units, or generic product counts..."
+                          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs placeholder:text-slate-700 focus:outline-none focus:border-blue-500 transition"></textarea>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center justify-end gap-3 mt-2 pt-3 border-t border-slate-800/60">
+                <button type="button" onclick="closeUoMModal()"
+                        class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-xs transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs tracking-wider shadow-lg shadow-blue-500/10 cursor-pointer transition">
+                    Save Unit Code
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    
+    function closeUoMModal() {
+        document.getElementById('modal-container').innerHTML = '';
+    }
+
+    // Auto close on success trigger
+    document.body.addEventListener('refreshUoMsList', closeUoMModal, { once: true });
+</script>
+{{end}}
+
+
+{{define "uom_modal_edit"}}
+<div id="edit-uom-modal" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <!-- Modal panel -->
+    <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-slate-800 shadow-2xl relative flex flex-col gap-4">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2 uppercase tracking-wider font-outfit">
+                <i data-lucide="edit-3" class="w-4 h-4 text-blue-400"></i>
+                <span>Edit Unit of Measure</span>
+            </h4>
+            <button onclick="closeUoMModal()" class="p-1 rounded-lg text-slate-500 hover:bg-slate-900 hover:text-slate-300 transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form hx-put="/wms/masters/uoms/{{.UoM.ID}}" class="flex flex-col gap-4">
+            
+            <div class="grid grid-cols-3 gap-4">
+                <!-- Code -->
+                <div class="flex flex-col gap-1.5 col-span-1">
+                    <label for="uom-code" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Unit Code</label>
+                    <input type="text" id="uom-code" name="code" required value="{{.UoM.Code}}"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-blue-500 transition">
+                </div>
+
+                <!-- Name -->
+                <div class="flex flex-col gap-1.5 col-span-2">
+                    <label for="uom-name" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Full Unit Name</label>
+                    <input type="text" id="uom-name" name="name" required value="{{.UoM.Name}}"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-blue-500 transition">
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="flex flex-col gap-1.5">
+                <label for="uom-desc" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Description</label>
+                <textarea id="uom-desc" name="description" rows="3"
+                          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs placeholder:text-slate-700 focus:outline-none focus:border-blue-500 transition">{{.UoM.Description}}</textarea>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center justify-end gap-3 mt-2 pt-3 border-t border-slate-800/60">
+                <button type="button" onclick="closeUoMModal()"
+                        class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-xs transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs tracking-wider shadow-lg shadow-blue-500/10 cursor-pointer transition">
+                    Update Unit Code
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    
+    function closeUoMModal() {
+        document.getElementById('modal-container').innerHTML = '';
+    }
+
+    // Auto close on success trigger
+    document.body.addEventListener('refreshUoMsList', closeUoMModal, { once: true });
+</script>
+{{end}}
+
+
+{{define "conversion_modal_new"}}
+<div id="new-conversion-modal" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <!-- Modal panel -->
+    <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-slate-800 shadow-2xl relative flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2 uppercase tracking-wider font-outfit">
+                <i data-lucide="calculator" class="w-4 h-4 text-indigo-400"></i>
+                <span>Map UoM Packaging Conversion</span>
+            </h4>
+            <button onclick="closeUoMModal()" class="p-1 rounded-lg text-slate-500 hover:bg-slate-900 hover:text-slate-300 transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form hx-post="/wms/masters/conversions" class="flex flex-col gap-4">
+            
+            <!-- Item Scope / Product -->
+            <div class="flex flex-col gap-1.5">
+                <label for="conv-product" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Product Scope Mapping</label>
+                <select id="conv-product" name="product_id" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                    <option value="" selected>Global - Applies to all products in catalog</option>
+                    {{range .Products}}
+                    <option value="{{.ID}}">{{.SKU}} - {{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+
+            <!-- Conversion Coordinates -->
+            <div class="grid grid-cols-3 gap-4 items-end">
+                <!-- From UoM -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="conv-from" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Source Packaging Unit</label>
+                    <select id="conv-from" name="from_uom_id" required onchange="updateFormulaPreview()"
+                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                        <option value="" disabled selected>-- Select --</option>
+                        {{range .UoMs}}
+                        <option value="{{.ID}}">{{.Code}} - {{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+
+                <!-- Equals Sign indicator -->
+                <div class="h-8 flex items-center justify-center text-slate-500 text-sm font-bold pb-1.5">
+                    equals
+                </div>
+
+                <!-- To UoM -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="conv-to" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Base Storage Unit</label>
+                    <select id="conv-to" name="to_uom_id" required onchange="updateFormulaPreview()"
+                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                        <option value="" disabled selected>-- Select --</option>
+                        {{range .UoMs}}
+                        <option value="{{.ID}}">{{.Code}} - {{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Factor Input -->
+            <div class="flex flex-col gap-1.5">
+                <label for="conv-factor" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Multiply Factor (Base multiplier)</label>
+                <div class="relative">
+                    <input type="number" id="conv-factor" name="multiply_factor" step="0.000001" min="0.000001" value="1.000000" required oninput="updateFormulaPreview()"
+                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition pr-12">
+                    <span class="absolute inset-y-0 right-3 flex items-center text-[10px] text-slate-500 font-bold select-none uppercase tracking-wider pointer-events-none">
+                        Factor
+                    </span>
+                </div>
+            </div>
+
+            <!-- Live Responsive Mathematical Preview -->
+            <div id="conv-preview" class="p-3 rounded-lg border border-indigo-950 bg-indigo-950/20 text-[10px] font-mono text-slate-400 select-none flex items-center gap-1.5 leading-normal">
+                Formula Preview: <span class="text-slate-600 font-bold uppercase">Define unit selections to preview dynamic equation</span>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center justify-end gap-3 mt-2 pt-3 border-t border-slate-800/60">
+                <button type="button" onclick="closeUoMModal()"
+                        class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-xs transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs tracking-wider shadow-lg shadow-indigo-500/10 cursor-pointer transition">
+                    Register Formula
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    
+    function closeUoMModal() {
+        document.getElementById('modal-container').innerHTML = '';
+    }
+
+    // Dynamic equation preview builder
+    function updateFormulaPreview() {
+        const fromSelect = document.getElementById('conv-from');
+        const toSelect = document.getElementById('conv-to');
+        const factorInput = document.getElementById('conv-factor');
+        const previewEl = document.getElementById('conv-preview');
+
+        const fromText = fromSelect.options[fromSelect.selectedIndex]?.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0] : '[Packaging Unit]';
+        const toText = toSelect.options[toSelect.selectedIndex]?.value ? toSelect.options[toSelect.selectedIndex].text.split(' - ')[0] : '[Base Storage Unit]';
+        const factor = parseFloat(factorInput.value) || 1.0;
+
+        if (fromSelect.value && toSelect.value) {
+            previewEl.innerHTML = `<span class="flex items-center gap-1.5 text-slate-400">Formula Rule: <span class="text-white font-bold">1 ${fromText}</span> = <span class="text-emerald-400 font-bold font-mono">${factor.toFixed(5)}</span> <span class="text-white font-bold">${toText}</span></span>`;
+        } else {
+            previewEl.innerHTML = `Formula Preview: <span class="text-slate-600 font-bold uppercase">Define unit selections to preview dynamic equation</span>`;
+        }
+    }
+
+    // Auto close on success trigger
+    document.body.addEventListener('refreshUoMsList', closeUoMModal, { once: true });
+</script>
+{{end}}

@@ -1,0 +1,19 @@
+# Local SQLite databases
+wms.db
+wms.db-journal
+wms.db-shm
+wms.db-wal
+
+# Dependency directories
+node_modules/
+
+# Compiled Go binaries
+*.exe
+*.exe~
+wms_dashboard
+wms_dashboard.exe
+
+# Local environment configuration
+.env
+.env.local
+.env.*.local

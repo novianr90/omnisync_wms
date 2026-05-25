@@ -1,0 +1,57 @@
+{{define "locator_rows"}}
+{{range .Locators}}
+<tr class="border-b border-slate-800/60 hover:bg-slate-900/20 text-slate-300 transition duration-150">
+    <td class="px-6 py-4 font-semibold text-slate-200">
+        <span class="flex items-center gap-1.5">
+            <i data-lucide="building" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span>{{.Warehouse.Name}}</span>
+        </span>
+    </td>
+    <td class="px-6 py-4 font-mono text-[11px] font-bold text-amber-400 select-all">{{.Code}}</td>
+    <td class="px-6 py-4 font-semibold text-slate-300">{{.Zone}}</td>
+    <td class="px-6 py-4 text-slate-400">{{.Aisle}}</td>
+    <td class="px-6 py-4 text-slate-400">{{.Shelf}}</td>
+    <td class="px-6 py-4 text-slate-400">{{.Level}}</td>
+    <td class="px-6 py-4 text-center">
+        {{if .IsActive}}
+        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-950/40 text-amber-400 border border-amber-900/40 uppercase tracking-widest">
+            Active
+        </span>
+        {{else}}
+        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-rose-950/40 text-rose-400 border border-rose-900/40 uppercase tracking-widest">
+            Inactive
+        </span>
+        {{end}}
+    </td>
+    {{if eq $.UserRole "admin"}}
+    <td class="px-6 py-4">
+        <div class="flex items-center justify-center gap-2">
+            <button hx-get="/wms/masters/locators/{{.ID}}/edit" hx-target="#modal-container"
+                    class="p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 hover:text-amber-300 transition cursor-pointer" 
+                    title="Edit Shelf Coordinates">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+            <button hx-delete="/wms/masters/locators/{{.ID}}" 
+                    hx-confirm="Caution: Are you sure you want to delete shelf locator {{.Code}}? Relational integrity blocks deletion if stock currently resides here."
+                    class="p-1.5 rounded bg-slate-900 hover:bg-rose-950/40 border border-slate-800 text-rose-500 hover:text-rose-400 transition cursor-pointer" 
+                    title="Delete Shelf Locator">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+    </td>
+    {{end}}
+</tr>
+{{else}}
+<tr>
+    <td colspan="{{if eq .UserRole "admin"}}8{{else}}7{{end}}" class="px-6 py-12 text-center text-slate-500">
+        <div class="flex flex-col items-center justify-center gap-2">
+            <i data-lucide="inbox" class="w-8 h-8 opacity-40"></i>
+            <span class="text-xs">No shelf locators registered.</span>
+        </div>
+    </td>
+</tr>
+{{end}}
+<script>
+    lucide.createIcons();
+</script>
+{{end}}

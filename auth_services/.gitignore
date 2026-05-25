@@ -1,0 +1,16 @@
+# Local SQLite databases
+auth.db
+auth.db-journal
+auth.db-shm
+auth.db-wal
+
+# Compiled Go binaries
+*.exe
+*.exe~
+auth_services
+auth_services.exe
+
+# Local environment configuration
+.env
+.env.local
+.env.*.local

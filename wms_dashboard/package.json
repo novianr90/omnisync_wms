@@ -1,0 +1,12 @@
+{
+  "name": "wms_dashboard_fe",
+  "version": "1.0.0",
+  "description": "Tailwind CSS v4 compilation configurations for WMS Dashboard",
+  "scripts": {
+    "css:build": "npx -y @tailwindcss/cli@latest -i ./web/static/css/input.css -o ./web/static/css/style.css --minify",
+    "css:watch": "npx -y @tailwindcss/cli@latest -i ./web/static/css/input.css -o ./web/static/css/style.css --watch"
+  },
+  "dependencies": {
+    "tailwindcss": "^4.3.0"
+  }
+}
