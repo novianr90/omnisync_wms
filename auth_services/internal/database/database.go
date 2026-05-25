@@ -4,8 +4,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-
-	"auth_services/internal/models"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -32,12 +30,10 @@ func InitDB() *gorm.DB {
 
 	log.Println("Database db_auth connected successfully.")
 
-	// Run Automigrations
-	err = DB.AutoMigrate(&models.User{})
-	if err != nil {
-		log.Fatalf("Failed to run db_auth automigrations: %v", err)
-	}
-	log.Println("Database db_auth automigrations completed.")
+	// Run Custom SQL Migrations
+	RunMigrations(DB, "migrations")
 
 	return DB
 }
+
+

@@ -42,13 +42,25 @@ func seedUsers() {
 			operatorPwd = "operator123"
 		}
 
+		var adminRole models.Role
+		if err := database.DB.Where("name = ?", "System Admin").First(&adminRole).Error; err != nil {
+			log.Println("Could not find System Admin role, skipping user seed")
+			return
+		}
+
+		var posRole models.Role
+		if err := database.DB.Where("name = ?", "POS").First(&posRole).Error; err != nil {
+			log.Println("Could not find POS role, skipping user seed")
+			return
+		}
+
 		admin := models.User{
 			ID:           uuid.New().String(),
 			Email:        adminEmail,
 			PasswordHash: hashPassword(adminPwd),
 			FirstName:    "Omni",
 			LastName:     "Admin",
-			Role:         "admin",
+			RoleID:       adminRole.ID,
 			IsActive:     true,
 		}
 
@@ -58,7 +70,7 @@ func seedUsers() {
 			PasswordHash: hashPassword(operatorPwd),
 			FirstName:    "Alex",
 			LastName:     "Mercer",
-			Role:         "operator",
+			RoleID:       posRole.ID,
 			IsActive:     true,
 		}
 
@@ -102,10 +114,20 @@ func main() {
 	}))
 
 	// 5. Define Authentication Endpoints
-	app.Post("/auth/register", handlers.Register)
+	app.Post("/auth/register", handlers.AdminMiddleware, handlers.Register)
 	app.Post("/auth/login", handlers.Login)
 	app.Post("/auth/logout", handlers.Logout)
 	app.Get("/auth/verify", handlers.VerifyToken)
+
+	// User Management Endpoints
+	app.Get("/users", handlers.AdminMiddleware, handlers.GetUsers)
+	app.Put("/users/:id/status", handlers.AdminMiddleware, handlers.UpdateUserStatus)
+
+	// Role Management Endpoints
+	app.Get("/roles", handlers.AdminMiddleware, handlers.GetRoles)
+	app.Post("/roles", handlers.AdminMiddleware, handlers.CreateRole)
+	app.Put("/roles/:id", handlers.AdminMiddleware, handlers.UpdateRole)
+	app.Delete("/roles/:id", handlers.AdminMiddleware, handlers.DeleteRole)
 
 	// 6. Start the Server
 	port := os.Getenv("PORT")

@@ -20,7 +20,7 @@ graph TD
 ### 1. Auth Service (`auth_services/`)
 - **Port**: `8000`
 - **Database**: `auth.db`
-- **Responsibility**: Authenticates credentials, generates cryptographically signed JWT tokens, and exposes user identities (Roles: `admin` or `operator`).
+- **Responsibility**: Authenticates credentials, generates cryptographically signed JWT tokens, and manages the `User` and `Role` definitions. The default initial roles are `System Admin`, `Admin WMS`, `Procurement`, and `POS`.
 
 ### 2. WMS Dashboard Service (`wms_dashboard/`)
 - **Port**: `9901` (dynamically configurable)
@@ -33,20 +33,45 @@ graph TD
 
 The **Master Data Maintenance Registry** manages the physical layouts, product catalog items, units of measure, and dynamic packaging conversions.
 
+### Seeded System Roles
+- **System Admin**: Full cross-system access, role/user administration, and master data mutate permissions.
+- **Admin WMS**: Administrator for warehouse operations and master data mutate permissions.
+- **Procurement**: Operator for incoming logistics, stock adjustments, and master data views.
+- **POS**: Point of Sale operator for outbound picks, stock inquiries, and master data views.
+
 ### Endpoint Matrix & Permissions
 
 | Component | Path Prefix | HTTP Methods | Allowed Roles | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **Products** | `/wms/masters/products` | `GET` (List & Forms) | `admin`, `operator` | View catalog list with Base UoM / open forms |
-| **Products** | `/wms/masters/products` | `POST`, `PUT`, `DELETE` | `admin` only | Create, update, or soft-delete products |
-| **Warehouses** | `/wms/masters/warehouses` | `GET` (List & Forms) | `admin`, `operator` | View facilities list / open forms |
-| **Warehouses** | `/wms/masters/warehouses` | `POST`, `PUT`, `DELETE` | `admin` only | Create, update, or soft-delete facilities |
-| **Locators** | `/wms/masters/locators` | `GET` (List & Forms) | `admin`, `operator` | View locator grid / open forms |
-| **Locators** | `/wms/masters/locators` | `POST`, `PUT`, `DELETE` | `admin` only | Create, update, or soft-delete shelf locators |
-| **Units of Measure** | `/wms/masters/uoms` | `GET` (List & Forms) | `admin`, `operator` | View UoM list and Conversions split panel / open forms |
-| **Units of Measure** | `/wms/masters/uoms` | `POST`, `PUT`, `DELETE` | `admin` only | Create, update, or soft-delete standard units |
-| **Conversions** | `/wms/masters/conversions` | `GET` (Form) | `admin`, `operator` | Open conversion modal with dynamic formula preview |
-| **Conversions** | `/wms/masters/conversions` | `POST`, `DELETE` | `admin` only | Create or delete conversion rules |
+| **Products** | `/wms/masters/products` | `GET` (List & Forms) | All logged-in roles | View catalog list with Base UoM / open forms |
+| **Products** | `/wms/masters/products` | `POST`, `PUT`, `DELETE` | `System Admin`, `Admin WMS` | Create, update, or soft-delete products |
+| **Warehouses** | `/wms/masters/warehouses` | `GET` (List & Forms) | All logged-in roles | View facilities list / open forms |
+| **Warehouses** | `/wms/masters/warehouses` | `POST`, `PUT`, `DELETE` | `System Admin`, `Admin WMS` | Create, update, or soft-delete facilities |
+| **Locators** | `/wms/masters/locators` | `GET` (List & Forms) | All logged-in roles | View locator grid / open forms |
+| **Locators** | `/wms/masters/locators` | `POST`, `PUT`, `DELETE` | `System Admin`, `Admin WMS` | Create, update, or soft-delete shelf locators |
+| **Units of Measure** | `/wms/masters/uoms` | `GET` (List & Forms) | All logged-in roles | View UoM list and Conversions split panel / open forms |
+| **Units of Measure** | `/wms/masters/uoms` | `POST`, `PUT`, `DELETE` | `System Admin`, `Admin WMS` | Create, update, or soft-delete standard units |
+| **Conversions** | `/wms/masters/conversions` | `GET` (Form) | All logged-in roles | Open conversion modal with dynamic formula preview |
+| **Conversions** | `/wms/masters/conversions` | `POST`, `DELETE` | `System Admin`, `Admin WMS` | Create or delete conversion rules |
+| **System Roles** | `/wms/system/roles` | `GET`, `POST`, `DELETE` | `System Admin`, `Admin WMS` | Manage operational roles |
+| **System Users** | `/wms/system/users` | `GET`, `POST`, `PUT` | `System Admin`, `Admin WMS` | Manage users and their roles |
+
+---
+
+## 🗃️ Database Migrations System
+
+To prevent SQLite lockups and crash-prone schema synchronization in production, **GORM `AutoMigrate()` has been deprecated** for core schemas (except for tracking migrations). Instead, the system uses a custom pure-Go transactional SQL migration runner.
+
+### Structural Details
+- **Migration Location**: `/migrations/` (found in both `auth_services` and `wms_dashboard` roots).
+- **Execution Mechanism**: Under `database.InitDB()`, the runner:
+  1. Spawns/maintains a lightweight GORM-managed tracking table called `schema_migrations`.
+  2. Reads all `.sql` files in the service's `migrations/` directory.
+  3. Sorts them alphabetically and cross-checks them against already applied records.
+  4. Executes any pending migrations inside a **single ACID transaction** using raw SQL.
+- **Current Seed Scripts**:
+  - `auth_services/migrations/0002_seed_roles.sql`: Seeds the operational system roles.
+  - `wms_dashboard/migrations/0002_seed_wms_master.sql`: Seeds default physical layouts, base units, and conversions.
 
 ---
 

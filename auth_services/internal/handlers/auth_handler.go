@@ -65,7 +65,7 @@ func generateToken(user models.User) (string, error) {
 	claims := &Claims{
 		UserID:    user.ID,
 		Email:     user.Email,
-		Role:      user.Role,
+		Role:      user.Role.Name,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -110,9 +110,16 @@ func Register(c *fiber.Ctx) error {
 		})
 	}
 
-	role := req.Role
-	if role == "" {
-		role = "operator"
+	roleName := req.Role
+	if roleName == "" {
+		roleName = "POS"
+	}
+
+	var role models.Role
+	if err := database.DB.Where("name = ?", roleName).First(&role).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid role specified",
+		})
 	}
 
 	newUser := models.User{
@@ -121,7 +128,7 @@ func Register(c *fiber.Ctx) error {
 		PasswordHash: pwdHash,
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
-		Role:         role,
+		RoleID:       role.ID,
 		IsActive:     true,
 	}
 
@@ -153,7 +160,7 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	var user models.User
-	if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+	if err := database.DB.Preload("Role").Where("email = ?", req.Email).First(&user).Error; err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid email or password",
 		})
@@ -198,7 +205,7 @@ func Login(c *fiber.Ctx) error {
 			"email":      user.Email,
 			"first_name": user.FirstName,
 			"last_name":  user.LastName,
-			"role":       user.Role,
+			"role":       user.Role.Name,
 		},
 	})
 }
@@ -255,4 +262,42 @@ func VerifyToken(c *fiber.Ctx) error {
 			"last_name":  claims.LastName,
 		},
 	})
+}
+
+// AdminMiddleware ensures the request is made by a System Admin or Admin WMS
+func AdminMiddleware(c *fiber.Ctx) error {
+	tokenString := c.Cookies("jwt_token")
+	if tokenString == "" {
+		authHeader := c.Get("Authorization")
+		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+			tokenString = authHeader[7:]
+		}
+	}
+
+	if tokenString == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Missing token",
+		})
+	}
+
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid or expired token",
+		})
+	}
+
+	if claims.Role != "System Admin" && claims.Role != "Admin WMS" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Access denied. Admin role required.",
+		})
+	}
+
+	// Store claims in context if needed
+	c.Locals("user_claims", claims)
+	return c.Next()
 }

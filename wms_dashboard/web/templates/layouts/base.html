@@ -72,6 +72,20 @@
                         <i data-lucide="scale" class="w-3.5 h-3.5 text-blue-400"></i>
                         <span>Units of Measure</span>
                     </a>
+
+                    {{if or (eq .UserRole "System Admin") (eq .UserRole "Admin WMS")}}
+                    <!-- SYSTEM ADMINISTRATION GROUP HEADER -->
+                    <div class="px-4 pt-4 pb-1.5 text-[9px] font-bold text-slate-500 tracking-widest uppercase">System Administration</div>
+                    
+                    <a href="/wms/system/users" hx-get="/wms/system/users" hx-target="#main-workspace" hx-push-url="true" class="flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200 cursor-pointer pl-6">
+                        <i data-lucide="users" class="w-3.5 h-3.5 text-rose-400"></i>
+                        <span>System Users</span>
+                    </a>
+                    <a href="/wms/system/roles" hx-get="/wms/system/roles" hx-target="#main-workspace" hx-push-url="true" class="flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200 cursor-pointer pl-6">
+                        <i data-lucide="shield" class="w-3.5 h-3.5 text-fuchsia-400"></i>
+                        <span>System Roles</span>
+                    </a>
+                    {{end}}
                 </nav>
             </div>
 

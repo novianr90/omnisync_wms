@@ -3,8 +3,6 @@ package database
 import (
 	"log"
 	"os"
-
-	"wms_dashboard/internal/models"
 	"gorm.io/driver/postgres"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -43,21 +41,8 @@ func InitDB() *gorm.DB {
 
 	log.Println("Database db_wms connected successfully.")
 
-	// Run Automigrations for WMS Schemas
-	err = DB.AutoMigrate(
-		&models.UoM{},
-		&models.UoMConversion{},
-		&models.Product{},
-		&models.Warehouse{},
-		&models.Locator{},
-		&models.Storage{},
-		&models.InventoryMovement{},
-		&models.InventoryMovementLine{},
-	)
-	if err != nil {
-		log.Fatalf("Failed to run db_wms automigrations: %v", err)
-	}
-	log.Println("Database db_wms automigrations completed.")
+	// Run Custom SQL Migrations
+	RunMigrations(DB, "migrations")
 
 	return DB
 }
