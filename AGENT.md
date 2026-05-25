@@ -20,7 +20,7 @@ graph TD
 ### 1. Auth Service (`auth_services/`)
 - **Port**: `8000`
 - **Database**: `auth.db`
-- **Responsibility**: Authenticates credentials, generates cryptographically signed JWT tokens, and exposes user identities (Roles: `admin` or `operator`).
+- **Responsibility**: Authenticates credentials, generates cryptographically signed JWT tokens, and manages the `User` and `Role` definitions. The default initial roles are `System Admin`, `Admin WMS`, `Procurement`, and `POS`.
 
 ### 2. WMS Dashboard Service (`wms_dashboard/`)
 - **Port**: `9901` (dynamically configurable)
@@ -47,6 +47,8 @@ The **Master Data Maintenance Registry** manages the physical layouts, product c
 | **Units of Measure** | `/wms/masters/uoms` | `POST`, `PUT`, `DELETE` | `admin` only | Create, update, or soft-delete standard units |
 | **Conversions** | `/wms/masters/conversions` | `GET` (Form) | `admin`, `operator` | Open conversion modal with dynamic formula preview |
 | **Conversions** | `/wms/masters/conversions` | `POST`, `DELETE` | `admin` only | Create or delete conversion rules |
+| **System Roles** | `/wms/system/roles` | `GET`, `POST`, `DELETE` | `System Admin`, `Admin WMS` | Manage operational roles |
+| **System Users** | `/wms/system/users` | `GET`, `POST`, `PUT` | `System Admin`, `Admin WMS` | Manage users and their roles |
 
 ---
 

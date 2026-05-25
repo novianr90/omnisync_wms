@@ -260,6 +260,17 @@ func main() {
 	app.Post("/wms/masters/conversions", adminOnly, handlers.CreateConversion)
 	app.Delete("/wms/masters/conversions/:id", adminOnly, handlers.DeleteConversion)
 
+	// --- SYSTEM ADMINISTRATION ENDPOINTS (ADMIN ONLY) ---
+	app.Get("/wms/system/users", adminOnly, handlers.ServeUsersMaster)
+	app.Get("/wms/system/users/rows", adminOnly, handlers.GetUsersRows)
+	app.Post("/wms/system/users", adminOnly, handlers.CreateUser)
+	app.Put("/wms/system/users/:id/status", adminOnly, handlers.UpdateUserStatus)
+
+	app.Get("/wms/system/roles", adminOnly, handlers.ServeRolesMaster)
+	app.Get("/wms/system/roles/rows", adminOnly, handlers.GetRolesRows)
+	app.Post("/wms/system/roles", adminOnly, handlers.CreateRole)
+	app.Delete("/wms/system/roles/:id", adminOnly, handlers.DeleteRole)
+
 	// 7. Start the Dashboard Service
 	port := os.Getenv("PORT")
 	if port == "" {

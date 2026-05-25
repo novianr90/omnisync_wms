@@ -1,0 +1,31 @@
+{{define "role_rows"}}
+{{range .Roles}}
+<tr class="hover:bg-slate-900/30 transition-colors group">
+    <td class="px-6 py-4">
+        <div class="font-medium text-slate-200">{{.Name}}</div>
+        <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{.ID}}</div>
+    </td>
+    <td class="px-6 py-4 text-slate-400">
+        {{if .Description}}{{.Description}}{{else}}<span class="italic text-slate-600">No description provided</span>{{end}}
+    </td>
+    <td class="px-6 py-4 text-center">
+        <div class="flex items-center justify-center gap-2">
+            <!-- Prevent deletion of default core roles (System Admin, Admin WMS, etc) if you want, or just let backend handle it -->
+            <button hx-delete="/wms/system/roles/{{.ID}}" hx-confirm="Are you sure you want to delete this role?" hx-swap="none"
+                    class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-md transition tooltip" title="Delete Role">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{{else}}
+<tr>
+    <td colspan="3" class="px-6 py-12 text-center text-slate-500">
+        <div class="flex flex-col items-center justify-center gap-2">
+            <i data-lucide="shield" class="w-8 h-8 opacity-50"></i>
+            <p>No roles found in the system registry.</p>
+        </div>
+    </td>
+</tr>
+{{end}}
+{{end}}
