@@ -98,6 +98,19 @@ go test -v ./internal/repository/...
 
 ---
 
+## ⚠️ AI Agent Development Gotchas & Best Practices
+
+1. **Environment Variables & Secrets:** 
+   - There are **no hardcoded credentials** in the source code. Both services strictly require `.env` files.
+   - If writing custom run scripts (like `run_all.ps1`), remember that background child processes or new PowerShell windows **do not** automatically inherit `.env` context via `godotenv`. You must explicitly parse the `.env` file and export the variables into the parent shell environment before launching child processes.
+2. **GORM Pluralization Quirk:**
+   - GORM's automatic snake_case pluralization breaks on acronyms with mixed casing. For example, `UoM` becomes `uo_ms` and `UoMConversion` becomes `uo_m_conversions`. 
+   - **Rule:** Always use explicit `TableName()` receiver methods on models involving acronyms to enforce clean database table names (e.g., `func (UoM) TableName() string { return "uoms" }`).
+3. **Number Inputs with Absolute Text:**
+   - Avoid absolutely positioning text (like `Factor`) inside a `<input type="number">` on the right side. Browser default spinner arrows (up/down) will render over the text. Prefer putting labels outside the input or using browser-native styling hacks.
+
+---
+
 ## 💡 Tech Stack Checklist
 - **Backend Framework**: Go Fiber v2
 - **Database Mapping**: GORM v2 (ORM) + Pure-Go SQLite Driver (`github.com/glebarez/sqlite`)
