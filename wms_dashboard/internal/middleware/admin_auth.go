@@ -36,7 +36,7 @@ func renderWarningToast(c *fiber.Ctx, msg string) error {
 func RequireAdmin() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		role := c.Locals("user_role")
-		if role != "admin" {
+		if role != "System Admin" && role != "Admin WMS" {
 			// For HTMX AJAX requests expecting HTML swaps, return a beautiful notification toast
 			if isHtmlRequest(c) {
 				return renderWarningToast(c, "Access Denied: Admin role required to modify master data.")
