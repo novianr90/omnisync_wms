@@ -40,17 +40,25 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 text-indigo-400"></i>
                         <span>Dashboard</span>
                     </a>
-                    <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200">
+                    <a href="#" class="hidden flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200">
                         <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-500"></i>
                         <span>Inbound Receipts</span>
                     </a>
-                    <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200">
+                    <a href="#" class="hidden flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200">
                         <i data-lucide="arrow-up-right" class="w-4 h-4 text-indigo-500"></i>
                         <span>Outbound Picks</span>
                     </a>
-                    <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200">
+                    <a href="#" class="hidden flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200">
                         <i data-lucide="database" class="w-4 h-4 text-amber-500"></i>
                         <span>Master Storage</span>
+                    </a>
+                    <a href="/wms/adjustments" hx-get="/wms/adjustments" hx-target="#main-workspace" hx-push-url="true" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200 cursor-pointer">
+                        <i data-lucide="file-edit" class="w-4 h-4 text-rose-500"></i>
+                        <span>Adjustments</span>
+                    </a>
+                    <a href="/wms/kitting" hx-get="/wms/kitting" hx-target="#main-workspace" hx-push-url="true" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200 cursor-pointer">
+                        <i data-lucide="package-plus" class="w-4 h-4 text-fuchsia-400"></i>
+                        <span>Kitting / Assembly</span>
                     </a>
 
                     <!-- MASTER DATA GROUP HEADER -->
@@ -138,6 +146,9 @@
 
     <!-- Lucide Icons initialization -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- JsBarcode for barcode generation -->
+    <script src="https://unpkg.com/jsbarcode@latest/dist/JsBarcode.all.min.js"></script>
+
     <script>
         lucide.createIcons();
         
@@ -145,6 +156,44 @@
         document.body.addEventListener('htmx:afterSwap', function() {
             lucide.createIcons();
         });
+
+        // Global function to print barcodes for products and locators
+        window.printBarcode = function(value, title) {
+            const printWindow = window.open('', '_blank', 'width=400,height=300');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Print Barcode - ${title}</title>
+                        <style>
+                            body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
+                            svg { max-width: 100%; height: auto; }
+                            h2 { margin-bottom: 5px; font-size: 16px; }
+                        </style>
+                        <script src="https://unpkg.com/jsbarcode@latest/dist/JsBarcode.all.min.js"></script>
+                    </head>
+                    <body>
+                        <h2>${title}</h2>
+                        <svg id="barcode"></svg>
+                        <script>
+                            window.onload = function() {
+                                JsBarcode("#barcode", "${value}", {
+                                    format: "CODE128",
+                                    lineColor: "#000",
+                                    width: 2,
+                                    height: 100,
+                                    displayValue: true
+                                });
+                                setTimeout(() => {
+                                    window.print();
+                                    window.close();
+                                }, 500);
+                            }
+                        </script>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        };
     </script>
 </body>
 </html>

@@ -69,6 +69,13 @@ func renderPage(c *fiber.Ctx, pageTemplate string, data fiber.Map) error {
 
 // Helper to render partial html files (no base layout)
 func renderPartial(c *fiber.Ctx, partialPath string, templateName string, data fiber.Map) error {
+	if data == nil {
+		data = fiber.Map{}
+	}
+	data["Username"] = c.Locals("user_name")
+	data["UserRole"] = c.Locals("user_role")
+	data["UserEmail"] = c.Locals("user_email")
+
 	fp := filepath.Join("web", "templates", partialPath)
 	tmpl, err := template.ParseFiles(fp)
 	if err != nil {

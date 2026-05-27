@@ -47,9 +47,14 @@ func CreateProduct(c *fiber.Ctx) error {
 	description := c.FormValue("description")
 	category := c.FormValue("category")
 	priceStr := c.FormValue("price")
+	isBundle := c.FormValue("is_bundle") == "true"
 
 	var price float64
-	_, _ = fmt.Sscanf(priceStr, "%f", &price)
+	if isBundle {
+		price = 0.0
+	} else {
+		_, _ = fmt.Sscanf(priceStr, "%f", &price)
+	}
 
 	if sku == "" || name == "" {
 		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
@@ -64,6 +69,7 @@ func CreateProduct(c *fiber.Ctx) error {
 		Description: description,
 		Category:    category,
 		Price:       price,
+		IsBundle:    isBundle,
 		UoMID:       c.FormValue("uom_id"),
 	}
 
@@ -115,8 +121,14 @@ func UpdateProduct(c *fiber.Ctx) error {
 	product.Category = c.FormValue("category")
 	product.UoMID = c.FormValue("uom_id")
 
+	product.IsBundle = c.FormValue("is_bundle") == "true"
+
 	var price float64
-	_, _ = fmt.Sscanf(c.FormValue("price"), "%f", &price)
+	if product.IsBundle {
+		price = 0.0
+	} else {
+		_, _ = fmt.Sscanf(c.FormValue("price"), "%f", &price)
+	}
 	product.Price = price
 
 	if err := repository.UpdateProduct(&product); err != nil {

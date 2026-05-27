@@ -40,12 +40,26 @@
                     <input type="text" id="prod-cat" name="category" placeholder="Electronics"
                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
                 </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Is Bundle -->
+                <div class="flex flex-col gap-1.5 justify-center">
+                    <label class="flex items-center gap-2 cursor-pointer mt-5">
+                        <input type="checkbox" id="prod-is-bundle" name="is_bundle" value="true" onchange="togglePriceInput(this.checked, 'prod-price-container')"
+                               class="w-4 h-4 rounded border-slate-800 bg-slate-950 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-900 transition">
+                        <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Is Bundle Product?</span>
+                    </label>
+                </div>
 
                 <!-- Unit Price -->
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1.5" id="prod-price-container">
                     <label for="prod-price" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Unit Price (USD)</label>
                     <input type="number" id="prod-price" name="price" step="0.01" min="0" placeholder="99.99"
                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div class="flex flex-col gap-1.5 hidden justify-center mt-5" id="prod-price-info">
+                    <span class="text-[10px] text-fuchsia-400 italic"><i data-lucide="info" class="w-3 h-3 inline"></i> Bundle price is auto-calculated during kitting.</span>
                 </div>
             </div>
 
@@ -92,6 +106,21 @@
 
     // Auto close only on successful save event
     document.body.addEventListener('refreshProductsList', closeProductModal, { once: true });
+
+    function togglePriceInput(isBundle, containerId) {
+        const priceContainer = document.getElementById(containerId);
+        const infoContainer = priceContainer.nextElementSibling;
+        const priceInput = priceContainer.querySelector('input');
+        
+        if (isBundle) {
+            priceContainer.classList.add('hidden');
+            infoContainer.classList.remove('hidden');
+            priceInput.value = '0';
+        } else {
+            priceContainer.classList.remove('hidden');
+            infoContainer.classList.add('hidden');
+        }
+    }
 </script>
 {{end}}
 
@@ -134,16 +163,30 @@
             <div class="grid grid-cols-2 gap-4">
                 <!-- Category -->
                 <div class="flex flex-col gap-1.5">
-                    <label for="prod-cat" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
-                    <input type="text" id="prod-cat" name="category" value="{{.Product.Category}}"
+                    <label for="edit-prod-cat" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
+                    <input type="text" id="edit-prod-cat" name="category" value="{{.Product.Category}}"
                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Is Bundle -->
+                <div class="flex flex-col gap-1.5 justify-center">
+                    <label class="flex items-center gap-2 cursor-pointer mt-5">
+                        <input type="checkbox" id="edit-prod-is-bundle" name="is_bundle" value="true" onchange="toggleEditPriceInput(this.checked)" {{if .Product.IsBundle}}checked{{end}}
+                               class="w-4 h-4 rounded border-slate-800 bg-slate-950 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-900 transition">
+                        <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Is Bundle Product?</span>
+                    </label>
                 </div>
 
                 <!-- Unit Price -->
-                <div class="flex flex-col gap-1.5">
-                    <label for="prod-price" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Unit Price (USD)</label>
-                    <input type="number" id="prod-price" name="price" step="0.01" min="0" value="{{.Product.Price}}"
+                <div class="flex flex-col gap-1.5 {{if .Product.IsBundle}}hidden{{end}}" id="edit-prod-price-container">
+                    <label for="edit-prod-price" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Unit Price (USD)</label>
+                    <input type="number" id="edit-prod-price" name="price" step="0.01" min="0" value="{{.Product.Price}}"
                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div class="flex flex-col gap-1.5 {{if not .Product.IsBundle}}hidden{{end}} justify-center mt-5" id="edit-prod-price-info">
+                    <span class="text-[10px] text-fuchsia-400 italic"><i data-lucide="info" class="w-3 h-3 inline"></i> Bundle price is auto-calculated during kitting.</span>
                 </div>
             </div>
 
@@ -189,5 +232,20 @@
 
     // Auto close only on successful save event
     document.body.addEventListener('refreshProductsList', closeProductModal, { once: true });
+
+    function toggleEditPriceInput(isBundle) {
+        const priceContainer = document.getElementById('edit-prod-price-container');
+        const infoContainer = document.getElementById('edit-prod-price-info');
+        const priceInput = document.getElementById('edit-prod-price');
+        
+        if (isBundle) {
+            priceContainer.classList.add('hidden');
+            infoContainer.classList.remove('hidden');
+            priceInput.value = '0';
+        } else {
+            priceContainer.classList.remove('hidden');
+            infoContainer.classList.add('hidden');
+        }
+    }
 </script>
 {{end}}

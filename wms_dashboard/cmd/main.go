@@ -50,6 +50,20 @@ func main() {
 	app.Post("/wms/movements/:id/complete", handlers.CompleteMovement)
 	app.Post("/wms/movements/:id/reject", handlers.RejectMovement)
 
+	// Adjustments
+	app.Get("/wms/adjustments", handlers.ServeAdjustments)
+	app.Get("/wms/adjustments/locators", handlers.ServeAdjustmentLocatorsByProduct)
+	app.Post("/wms/adjustments/new", handlers.CreateAdjustment)
+	app.Post("/wms/adjustments/:id/journal", handlers.JournalAdjustment)
+	app.Post("/wms/adjustments/:id/reject", handlers.RejectAdjustment)
+
+	// Kitting
+	app.Get("/wms/kitting", handlers.ServeKittingOrders)
+	app.Get("/wms/kitting/locators", handlers.ServeKittingLocatorsByProduct)
+	app.Post("/wms/kitting/new", handlers.CreateKittingOrder)
+	app.Post("/wms/kitting/:id/journal", handlers.JournalKittingOrder)
+	app.Post("/wms/kitting/:id/reject", handlers.RejectKittingOrder)
+
 	// --- MASTER MAINTENANCE CRUD ENDPOINTS ---
 	// View lists (Operator & Admin)
 	app.Get("/wms/masters/products", handlers.ServeProductsMaster)
@@ -99,6 +113,16 @@ func main() {
 	app.Get("/wms/system/roles/rows", adminOnly, handlers.GetRolesRows)
 	app.Post("/wms/system/roles", adminOnly, handlers.CreateRole)
 	app.Delete("/wms/system/roles/:id", adminOnly, handlers.DeleteRole)
+
+	// --- MOBILE APP REST API ENDPOINTS ---
+	api := app.Group("/api/v1")
+	api.Post("/auth/login", handlers.APILogin) // Public Login
+
+	// Protected API Routes
+	protectedApi := api.Group("/", middleware.JWTAuth())
+	protectedApi.Get("/products/scan/:sku", handlers.APIGetProductBySKU)
+	protectedApi.Get("/locators/scan/:code", handlers.APIGetLocatorByCode)
+	protectedApi.Post("/movements", handlers.APICreateMovement)
 
 	// 7. Start the Dashboard Service
 	port := os.Getenv("PORT")
