@@ -46,6 +46,7 @@ omnisync_wms/
 - 📦 **Inventory Tracking** — Real-time stock levels with FIFO batch management
 - 🏭 **Master Data Registry** — Products, Warehouses, Locators, and Units of Measure
 - ⚖️ **Dynamic UoM Conversions** — User-defined formulas (e.g. convert `kg` ↔ `packs`)
+- 📝 **Inventory Transactions** — Direct stock adjustments and Product Kitting/Assembly
 - 🚚 **Inventory Movements** — Inbound, outbound, and transfer workflows with claim/journal/complete lifecycle
 - 🔒 **Role-Based Access Control** — `admin` and `operator` roles enforced at the API level
 - ⚡ **HTMX-Powered UI** — No page reloads, instant feedback via server-side HTML fragments
