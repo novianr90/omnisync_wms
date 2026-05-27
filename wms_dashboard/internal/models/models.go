@@ -67,6 +67,11 @@ type Storage struct {
 	Locator Locator `gorm:"foreignKey:LocatorID" json:"locator,omitempty"`
 }
 
+// AvailableQty returns the quantity in this storage lot that is not reserved or on hold
+func (s Storage) AvailableQty() int {
+	return s.QtyOnHand - s.QtyReserved - s.QtyOnHold
+}
+
 // InventoryMovement represents an inbound/outbound/internal ticket header
 type InventoryMovement struct {
 	ID                 string    `gorm:"type:varchar(36);primaryKey" json:"id"`

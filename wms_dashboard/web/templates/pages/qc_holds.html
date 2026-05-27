@@ -150,7 +150,7 @@
                     <option value="">Select a storage lot...</option>
                     {{range .Storages}}
                     <option value="{{.ID}}">
-                        {{.Product.Name}} ({{.Product.SKU}}) — {{.Locator.Warehouse.Code}}/{{.Locator.Code}} — Batch: {{.BatchNumber}}
+                        {{.Product.Name}} ({{.Product.SKU}}) — {{.Locator.Warehouse.Code}}/{{.Locator.Code}} — Batch: {{.BatchNumber}} (Available: {{.AvailableQty}})
                     </option>
                     {{end}}
                 </select>
