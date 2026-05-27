@@ -1,61 +1,42 @@
 {{define "notification"}}
-<div class="bg-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 min-w-[320px] transition-all duration-300 ease-out border border-slate-200 pointer-events-auto" hx-swap-oob="afterbegin:#toast-container">
-    <!-- Success/Failure Icon -->
-    <div class="shrink-0 flex items-center justify-center {{if .Success}}text-emerald-500{{else}}text-rose-500{{end}}">
-        {{if .Success}}
-        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-        {{else}}
-        <i data-lucide="alert-circle" class="w-5 h-5"></i>
-        {{end}}
-    </div>
-    
-    <!-- Text -->
-    <div class="flex-1 min-w-0">
-        <p class="text-[13px] font-semibold text-slate-800 tracking-wide break-words">{{.Message}}</p>
-    </div>
-    
-    <!-- Close button -->
-    <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 transition shrink-0 cursor-pointer p-1">
-        <i data-lucide="x" class="w-4 h-4"></i>
-    </button>
-
-    <!-- Auto-initialize Lucide and set auto-fade timer -->
+<div hx-swap-oob="beforeend:#toast-container">
     <script>
         (function() {
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            const card = document.currentScript.parentElement;
-            const delay = {{if .Success}}3500{{else}}8000{{end}};
-            let timeoutId;
-
-            // Initial animation setup
-            card.style.opacity = '0';
-            card.style.transform = 'translateX(20px) scale(0.95)';
-            
-            // Trigger animation frame for entry
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateX(0) scale(1)';
+            // Initialize Notyf globally if it doesn't exist
+            if (!window.notyf) {
+                window.notyf = new Notyf({
+                    duration: 4000,
+                    position: {x: 'right', y: 'top'},
+                    dismissible: true,
+                    ripple: true,
+                    types: [
+                        {
+                            type: 'success',
+                            background: '#10b981', // Tailwind emerald-500
+                            icon: {
+                                className: 'notyf__icon--success',
+                                tagName: 'i',
+                            }
+                        },
+                        {
+                            type: 'error',
+                            background: '#f43f5e', // Tailwind rose-500
+                            duration: 8000,
+                            icon: {
+                                className: 'notyf__icon--error',
+                                tagName: 'i',
+                            }
+                        }
+                    ]
                 });
-            });
-
-            function startTimer() {
-                timeoutId = setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateX(20px) scale(0.95)';
-                    setTimeout(() => card.remove(), 400);
-                }, delay);
             }
-
-            function stopTimer() {
-                clearTimeout(timeoutId);
-            }
-
-            if (card) {
-                startTimer();
-                card.addEventListener('mouseenter', stopTimer);
-                card.addEventListener('mouseleave', startTimer);
-            }
+            
+            // Trigger the notification
+            {{if .Success}}
+            window.notyf.success("{{.Message}}");
+            {{else}}
+            window.notyf.error("{{.Message}}");
+            {{end}}
         })();
     </script>
 </div>
