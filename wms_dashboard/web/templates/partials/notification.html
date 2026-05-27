@@ -1,53 +1,42 @@
 {{define "notification"}}
-<div class="glass-panel p-4 rounded-xl shadow-2xl flex items-start gap-3 relative min-w-[300px] max-w-sm transition-all duration-300 {{if .Success}}border-l-4 border-l-emerald-500{{else}}border-l-4 border-l-rose-500{{end}}" hx-swap-oob="afterbegin:#toast-container">
-    <!-- Success/Failure Icon -->
-    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-inner {{if .Success}}bg-emerald-500/20 text-emerald-400{{else}}bg-rose-500/20 text-rose-400{{end}}">
-        {{if .Success}}
-        <i data-lucide="check" class="w-4 h-4 font-bold"></i>
-        {{else}}
-        <i data-lucide="alert-triangle" class="w-4 h-4 font-bold"></i>
-        {{end}}
-    </div>
-    
-    <!-- Text -->
-    <div class="flex-1 min-w-0 mt-0.5">
-        <h5 class="text-xs font-bold tracking-wider uppercase {{if .Success}}text-emerald-400{{else}}text-rose-400{{end}}">
-            {{if .Success}}Operation Succeeded{{else}}Operation Failed{{end}}
-        </h5>
-        <p class="text-xs text-slate-200 mt-1 leading-relaxed break-words">{{.Message}}</p>
-    </div>
-    
-    <!-- Close button -->
-    <button onclick="this.parentElement.remove()" class="text-slate-500 hover:text-slate-300 transition shrink-0 cursor-pointer mt-1">
-        <i data-lucide="x" class="w-4 h-4"></i>
-    </button>
-
-    <!-- Auto-initialize Lucide and set auto-fade timer -->
+<div hx-swap-oob="beforeend:#toast-container">
     <script>
         (function() {
-            lucide.createIcons();
-            const card = document.currentScript.parentElement;
-            const delay = {{if .Success}}4000{{else}}10000{{end}};
-            let timeoutId;
-
-            function startTimer() {
-                timeoutId = setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(-10px)';
-                    card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    setTimeout(() => card.remove(), 400);
-                }, delay);
+            // Initialize Notyf globally if it doesn't exist
+            if (!window.notyf) {
+                window.notyf = new Notyf({
+                    duration: 4000,
+                    position: {x: 'right', y: 'top'},
+                    dismissible: true,
+                    ripple: true,
+                    types: [
+                        {
+                            type: 'success',
+                            background: '#10b981', // Tailwind emerald-500
+                            icon: {
+                                className: 'notyf__icon--success',
+                                tagName: 'i',
+                            }
+                        },
+                        {
+                            type: 'error',
+                            background: '#f43f5e', // Tailwind rose-500
+                            duration: 8000,
+                            icon: {
+                                className: 'notyf__icon--error',
+                                tagName: 'i',
+                            }
+                        }
+                    ]
+                });
             }
-
-            function stopTimer() {
-                clearTimeout(timeoutId);
-            }
-
-            if (card) {
-                startTimer();
-                card.addEventListener('mouseenter', stopTimer);
-                card.addEventListener('mouseleave', startTimer);
-            }
+            
+            // Trigger the notification
+            {{if .Success}}
+            window.notyf.success("{{.Message}}");
+            {{else}}
+            window.notyf.error("{{.Message}}");
+            {{end}}
         })();
     </script>
 </div>
