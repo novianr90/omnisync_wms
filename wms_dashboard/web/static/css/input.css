@@ -87,3 +87,79 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(99, 102, 241, 0.3);
 }
+
+/* ==========================================================================
+   Responsive & Collapsible Sidebar Rules
+   ========================================================================== */
+
+/* Base transition parameters */
+#sidebar {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              border-color 0.3s ease;
+}
+
+#sidebar-backdrop {
+  transition: opacity 0.3s ease;
+}
+
+/* Mobile Sidebar (default < 768px viewport) */
+@media (max-width: 767.98px) {
+  #sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    width: 16rem; /* w-64 */
+    display: flex !important; /* overrides hidden default */
+  }
+
+  .mobile-sidebar-open #sidebar {
+    transform: translateX(0);
+  }
+
+  #sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background-color: rgba(2, 6, 23, 0.6); /* slate-950/60 */
+    backdrop-filter: blur(4px);
+    opacity: 0;
+  }
+
+  .mobile-sidebar-open #sidebar-backdrop {
+    display: block;
+    opacity: 1;
+  }
+}
+
+/* Desktop Sidebar (>= 768px viewport) */
+@media (min-width: 768px) {
+  #sidebar {
+    position: relative;
+    transform: none !important;
+    display: flex !important;
+  }
+
+  #sidebar-toggle {
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    left: 244px; /* 256px (w-64) - 12px (half of trigger width) */
+  }
+
+  /* Desktop collapsed state rules */
+  html.sidebar-collapsed #sidebar {
+    width: 0 !important;
+    opacity: 0;
+    border-right-color: transparent !important;
+    pointer-events: none; /* prevent invisible interactions */
+  }
+
+  html.sidebar-collapsed #sidebar-toggle {
+    left: -12px !important;
+  }
+}
+
