@@ -207,11 +207,12 @@ func ServeDashboard(c *fiber.Ctx) error {
 	// Compute stock totals for header stats
 	totalOnHand := 0
 	totalReserved := 0
+	totalAvailable := 0
 	for _, item := range catalog {
 		totalOnHand += item.QtyOnHand
 		totalReserved += item.QtyReserved
+		totalAvailable += item.QtyAvailable
 	}
-	totalAvailable := totalOnHand - totalReserved
 
 	return renderPage(c, "dashboard.html", fiber.Map{
 		"Catalog":        catalog,

@@ -64,6 +64,11 @@ func main() {
 	app.Post("/wms/kitting/:id/journal", handlers.JournalKittingOrder)
 	app.Post("/wms/kitting/:id/reject", handlers.RejectKittingOrder)
 
+	// QC Holds
+	app.Get("/wms/qc-holds", handlers.ServeQCHolds)
+	app.Post("/wms/qc-holds", handlers.CreateQCHold)
+	app.Post("/wms/qc-holds/:id/release", handlers.ReleaseQCHold)
+
 	// --- MASTER MAINTENANCE CRUD ENDPOINTS ---
 	// View lists (Operator & Admin)
 	app.Get("/wms/masters/products", handlers.ServeProductsMaster)

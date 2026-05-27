@@ -32,7 +32,7 @@ func CreateInventoryAdjustment(adjustment *models.InventoryAdjustment, lines []m
 				var available int
 				err := tx.Model(&models.Storage{}).
 					Where("product_id = ? AND locator_id = ?", line.ProductID, line.LocatorID).
-					Select("COALESCE(SUM(qty_on_hand - qty_reserved), 0)").
+					Select("COALESCE(SUM(qty_on_hand - qty_reserved - qty_on_hold), 0)").
 					Scan(&available).Error
 
 				if err != nil {
@@ -81,6 +81,7 @@ func JournalizeInventoryAdjustment(adjustmentID string) error {
 					ReceivedAt:  time.Now(),
 					QtyOnHand:   line.QtyDelta,
 					QtyReserved: 0,
+					QtyOnHold:   0,
 					UpdatedAt:   time.Now(),
 				}
 				if err := tx.Create(&storage).Error; err != nil {
@@ -90,7 +91,7 @@ func JournalizeInventoryAdjustment(adjustmentID string) error {
 				// Negative adjustment -> deduct from oldest batches in locator
 				deductAmount := -line.QtyDelta
 				var lots []models.Storage
-				err := tx.Where("product_id = ? AND locator_id = ? AND (qty_on_hand - qty_reserved) > 0", line.ProductID, line.LocatorID).
+				err := tx.Where("product_id = ? AND locator_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", line.ProductID, line.LocatorID).
 					Order("received_at ASC").
 					Find(&lots).Error
 
@@ -103,7 +104,7 @@ func JournalizeInventoryAdjustment(adjustmentID string) error {
 						break
 					}
 
-					available := lot.QtyOnHand - lot.QtyReserved
+					available := lot.QtyOnHand - lot.QtyReserved - lot.QtyOnHold
 					take := deductAmount
 					if available < take {
 						take = available

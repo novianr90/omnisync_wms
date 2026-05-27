@@ -39,7 +39,7 @@ func ServeKittingLocatorsByProduct(c *fiber.Ctx) error {
 
 	var lots []models.Storage
 	_ = database.DB.Preload("Locator.Warehouse").
-		Where("product_id = ? AND (qty_on_hand - qty_reserved) > 0", productID).
+		Where("product_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", productID).
 		Find(&lots).Error
 
 	if len(lots) == 0 {

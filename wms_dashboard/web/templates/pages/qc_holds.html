@@ -1,0 +1,334 @@
+{{define "content"}}
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-400">
+                    <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                </div>
+                <h2 class="text-xl font-bold text-slate-100 font-outfit tracking-wide">Quality Control (QC) Holds</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1 pl-10">Freeze and quarantine specific stock lots under investigation to prevent dispatch or consumption.</p>
+        </div>
+        <!-- Trigger Create Hold Modal -->
+        <button onclick="document.getElementById('modal-create-hold').classList.remove('hidden')"
+            class="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg transition-all duration-300 cursor-pointer shadow-lg shadow-amber-500/20 active:scale-95 shrink-0">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+            <span>Freeze Stock</span>
+        </button>
+    </div>
+
+    <!-- Stats Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <!-- Stat 1: Total Holds -->
+        <div class="glass-panel p-5 rounded-xl border border-slate-800/80 flex items-center justify-between relative overflow-hidden shrink-0">
+            <div class="flex flex-col gap-1 z-10">
+                <span class="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Hold Registry</span>
+                <span class="text-3xl font-extrabold text-white leading-none font-outfit mt-1">{{len .Holds}}</span>
+                <span class="text-[10px] text-slate-500 font-semibold mt-1.5">Historical audit entries</span>
+            </div>
+            <div class="w-11 h-11 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 z-10 shadow-inner">
+                <i data-lucide="history" class="w-4 h-4"></i>
+            </div>
+        </div>
+
+        <!-- Stat 2: Active Holds -->
+        <div class="glass-panel p-5 rounded-xl border border-slate-800/80 flex items-center justify-between relative overflow-hidden shrink-0">
+            <div class="flex flex-col gap-1 z-10">
+                <span class="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Active Holds</span>
+                <span class="text-3xl font-extrabold text-amber-400 leading-none font-outfit mt-1">{{.ActiveCount}}</span>
+                <span class="text-[10px] text-amber-500/80 font-semibold mt-1.5">Currently frozen lots</span>
+            </div>
+            <div class="w-11 h-11 rounded-lg bg-amber-950/40 border border-amber-900/40 flex items-center justify-center text-amber-400 z-10 shadow-inner">
+                <i data-lucide="lock" class="w-4 h-4"></i>
+            </div>
+        </div>
+
+        <!-- Stat 3: Total Held Quantity -->
+        <div class="glass-panel p-5 rounded-xl border border-slate-800/80 flex items-center justify-between relative overflow-hidden shrink-0">
+            <div class="flex flex-col gap-1 z-10">
+                <span class="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Total Locked Qty</span>
+                <span class="text-3xl font-extrabold text-rose-400 leading-none font-outfit mt-1">{{.TotalHeldQty}}</span>
+                <span class="text-[10px] text-rose-500 font-semibold mt-1.5">Frozen units in warehouse</span>
+            </div>
+            <div class="w-11 h-11 rounded-lg bg-rose-950/40 border border-rose-900/40 flex items-center justify-center text-rose-400 z-10 shadow-inner">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            </div>
+        </div>
+
+        <!-- Stat 4: Lots Eligible for Hold -->
+        <div class="glass-panel p-5 rounded-xl border border-slate-800/80 flex items-center justify-between relative overflow-hidden shrink-0">
+            <div class="flex flex-col gap-1 z-10">
+                <span class="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Lots Eligible</span>
+                <span class="text-3xl font-extrabold text-emerald-400 leading-none font-outfit mt-1">{{len .Storages}}</span>
+                <span class="text-[10px] text-emerald-500 font-semibold mt-1.5">Lots with available stock</span>
+            </div>
+            <div class="w-11 h-11 rounded-lg bg-emerald-950/40 border border-emerald-900/40 flex items-center justify-center text-emerald-400 z-10 shadow-inner">
+                <i data-lucide="check-square" class="w-4 h-4"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- QC Holds Table Panel -->
+    <div class="glass-panel rounded-2xl border border-slate-800/80 shadow-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/20">
+            <div class="flex items-center gap-2.5">
+                <i data-lucide="shield-alert" class="w-4.5 h-4.5 text-amber-500"></i>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-200">Quarantined Stock Registry</h3>
+                    <p class="text-[10px] text-slate-500">Full audit log of active quarantines and released stock transactions</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b border-slate-800 bg-slate-950/60 font-semibold tracking-wider text-slate-400 uppercase select-none">
+                        <th class="px-6 py-4">SKU & Product Name</th>
+                        <th class="px-6 py-4">Locator Location</th>
+                        <th class="px-6 py-4">Batch Number</th>
+                        <th class="px-6 py-4 text-right">Quantity Held</th>
+                        <th class="px-6 py-4 text-center">Reason</th>
+                        <th class="px-6 py-4 text-center">Status</th>
+                        <th class="px-6 py-4">Date Created</th>
+                        <th class="px-6 py-4">Notes</th>
+                        <th class="px-6 py-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/40">
+                    {{if .Holds}}
+                    {{range .Holds}}
+                    <tr class="hover:bg-slate-900/30 text-slate-300 font-medium transition duration-150">
+                        <!-- Product SKU & Title -->
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col gap-0.5">
+                                <span class="font-bold text-slate-100 tracking-wide uppercase font-outfit">{{.Storage.Product.SKU}}</span>
+                                <span class="text-slate-400 font-normal text-[11px] truncate max-w-[200px]" title="{{.Storage.Product.Name}}">{{.Storage.Product.Name}}</span>
+                            </div>
+                        </td>
+                        
+                        <!-- Locator Location -->
+                        <td class="px-6 py-4 text-left" style="text-align: left;">
+                            <div class="flex items-start gap-1.5 justify-start text-left" style="text-align: left;">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400 opacity-85 mt-0.5 shrink-0"></i>
+                                <div class="flex flex-col gap-0.5 text-left" style="text-align: left;">
+                                    <span class="font-bold text-slate-200 font-mono text-[11px] tracking-wide" style="white-space: nowrap; text-align: left; display: block;">{{.Storage.Locator.Code}}</span>
+                                    <span class="text-slate-500 text-[10px] font-normal" style="white-space: nowrap; text-align: left; display: block;">{{.Storage.Locator.Warehouse.Name}}</span>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <!-- Batch Number -->
+                        <td class="px-6 py-4 font-mono text-slate-400 tracking-tight font-semibold">
+                            {{.Storage.BatchNumber}}
+                        </td>
+                        
+                        <!-- Qty Held -->
+                        <td class="px-6 py-4 text-right">
+                            <span class="font-extrabold text-amber-400 text-sm font-outfit">{{.Qty}}</span>
+                            <span class="text-[9px] text-slate-500 uppercase ml-0.5 font-normal tracking-wide">{{.Storage.Product.UoM.Code}}</span>
+                        </td>
+                        
+                        <!-- Reason Badge -->
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-wider border select-none
+                                {{if eq .Reason "DAMAGED"}}bg-rose-950/40 text-rose-400 border-rose-900/40
+                                {{else if eq .Reason "INVESTIGATION"}}bg-amber-950/40 text-amber-400 border-amber-900/40
+                                {{else if eq .Reason "EXPIRED"}}bg-orange-950/40 text-orange-400 border-orange-900/40
+                                {{else}}bg-slate-900 text-slate-400 border-slate-800{{end}}">
+                                {{.Reason}}
+                            </span>
+                        </td>
+                        
+                        <!-- Status Badge -->
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center select-none">
+                                {{if eq .Status "ACTIVE"}}
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-950/40 text-amber-400 border border-amber-900/40 animate-pulse">
+                                    LOCKED
+                                </span>
+                                {{else}}
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-950/40 text-emerald-400 border border-emerald-900/40">
+                                    RELEASED
+                                </span>
+                                {{end}}
+                            </div>
+                        </td>
+                        
+                        <!-- Date Created -->
+                        <td class="px-6 py-4 text-slate-500 text-[11px] whitespace-nowrap">
+                            {{.CreatedAt.Format "02 Jan 2006 15:04"}}
+                        </td>
+                        
+                        <!-- Notes -->
+                        <td class="px-6 py-4 max-w-[120px] truncate text-slate-400 text-[11px]" title="{{.Notes}}">
+                            {{if .Notes}}"{{.Notes}}"{{else}}<span class="text-slate-650 italic">No notes</span>{{end}}
+                        </td>
+                        
+                        <!-- Action Button -->
+                        <td class="px-6 py-4 text-center">
+                            {{if eq .Status "ACTIVE"}}
+                            <!-- Trigger Button -->
+                            <button
+                                onclick="document.getElementById('confirm-modal-{{.ID}}').classList.remove('hidden')"
+                                class="inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 rounded-lg border border-emerald-500/20 hover:border-emerald-400 transition-all duration-300 shadow-sm hover:shadow-emerald-500/15 cursor-pointer active:scale-[0.98]">
+                                Release
+                            </button>
+
+                            <!-- Sleek Inline Confirm Release Modal (Specific to this row) -->
+                            <div id="confirm-modal-{{.ID}}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 transition-all duration-300 animate-in fade-in duration-200">
+                                <div class="glass-panel w-full max-w-sm rounded-2xl border border-slate-800 shadow-2xl p-6 relative overflow-hidden text-left" style="text-align: left;">
+                                    <!-- Accent Glow -->
+                                    <div class="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent"></div>
+                                    
+                                    <h3 class="text-sm font-bold text-slate-100 font-outfit flex items-center gap-2">
+                                        <i data-lucide="unlock" class="w-4 h-4 text-emerald-400"></i>
+                                        <span>Confirm Release</span>
+                                    </h3>
+                                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                                        Are you sure you want to release this stock hold? The quarantined quantity will immediately return to the available inventory pool.
+                                    </p>
+                                    
+                                    <div class="flex gap-3 mt-5">
+                                        <button type="button" onclick="document.getElementById('confirm-modal-{{.ID}}').classList.add('hidden')" 
+                                            class="flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80 transition-all duration-200 cursor-pointer active:scale-98">
+                                            Cancel
+                                        </button>
+                                        <button type="button"
+                                            hx-post="/wms/qc-holds/{{.ID}}/release"
+                                            hx-target="#toast-container"
+                                            hx-swap="beforeend"
+                                            hx-on::after-request="document.getElementById('confirm-modal-{{.ID}}').classList.add('hidden')"
+                                            class="flex-1 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-200 cursor-pointer shadow-lg shadow-emerald-600/15 active:scale-98 flex items-center justify-center gap-1.5">
+                                            Confirm
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {{else}}
+                            <div class="text-slate-600 text-[10px] font-bold uppercase select-none tracking-widest">Released</div>
+                            {{end}}
+                        </td>
+                    </tr>
+                    {{end}}
+                    {{else}}
+                    <tr>
+                        <td colspan="9" class="px-6 py-16 text-center text-slate-500 font-medium bg-slate-900/5">
+                            <div class="flex flex-col items-center justify-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/5">
+                                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                                </div>
+                                <div class="space-y-1">
+                                    <span class="text-xs font-bold text-slate-200 block">No Active Holds Found</span>
+                                    <span class="text-[10px] text-slate-500 max-w-[280px] block leading-relaxed">All inventory is currently clear. No stock is flagged or restricted under quality control.</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLEEK CREATE QC HOLD MODAL ===== -->
+<div id="modal-create-hold" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 transition-all duration-300">
+    <div class="glass-panel w-full max-w-lg rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <!-- Accent Glow -->
+        <div class="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-950/30">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                    <i data-lucide="lock" class="w-4 h-4 text-amber-500"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-100 font-outfit">Create Quality Control Hold</h3>
+                    <p class="text-[10px] text-slate-500">Freeze stock units to exclude them from the available sales pool</p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('modal-create-hold').classList.add('hidden')"
+                class="p-1.5 rounded-lg hover:bg-slate-850 text-slate-400 hover:text-slate-200 transition-all duration-200 cursor-pointer active:scale-90">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Modal Form -->
+        <form hx-post="/wms/qc-holds"
+              hx-target="#toast-container"
+              hx-swap="beforeend"
+              hx-on::after-request="if(event.detail.successful){ document.getElementById('modal-create-hold').classList.add('hidden'); }"
+              class="px-6 py-5 space-y-4">
+
+            <!-- Storage Lot -->
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest">Select Target Storage Lot</label>
+                <div class="relative">
+                    <select name="storage_id" required
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10 cursor-pointer transition-all duration-200 appearance-none">
+                        <option value="">Choose a storage lot...</option>
+                        {{range .Storages}}
+                        <option value="{{.ID}}">
+                            {{.Product.Name}} ({{.Product.SKU}}) — {{.Locator.Warehouse.Code}}/{{.Locator.Code}} — Lot: {{.BatchNumber}} (Available: {{.AvailableQty}})
+                        </option>
+                        {{end}}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Quantity -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest">Quantity to Hold</label>
+                    <input type="number" name="qty" min="1" required placeholder="e.g. 10"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10 transition-all duration-200">
+                </div>
+
+                <!-- Reason -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest">Hold Reason</label>
+                    <div class="relative">
+                        <select name="reason" required
+                            class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10 cursor-pointer transition-all duration-200 appearance-none">
+                            <option value="">Select reason...</option>
+                            {{range .Reasons}}
+                            <option value="{{.}}">{{.}}</option>
+                            {{end}}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest">Investigation Notes <span class="normal-case text-slate-650 font-medium">(optional)</span></label>
+                <textarea name="notes" rows="3" placeholder="Describe the physical condition or reason for hold, e.g. 'Packaging moisture detected during shelf check. Needs QA testing.'"
+                    class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10 transition-all duration-200 resize-none placeholder:text-slate-650 leading-relaxed"></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 pt-3">
+                <button type="button" onclick="document.getElementById('modal-create-hold').classList.add('hidden')"
+                    class="flex-1 py-2.5 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80 transition-all duration-250 cursor-pointer active:scale-98">
+                    Cancel
+                </button>
+                <button type="submit"
+                    class="flex-1 py-2.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all duration-250 cursor-pointer shadow-lg shadow-amber-500/10 active:scale-98 flex items-center justify-center gap-1.5">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                    <span>Execute Hold</span>
+                </button>
+            </div>
+        </form>
+</div>
+{{end}}

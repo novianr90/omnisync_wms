@@ -32,7 +32,7 @@ func FetchInventoryCatalog(search string) ([]ProductInventory, error) {
 		Select("products.id, products.sku, products.name, products.category, products.price, uoms.code as uom_code, " +
 			"COALESCE(SUM(storages.qty_on_hand), 0) as qty_on_hand, " +
 			"COALESCE(SUM(storages.qty_reserved), 0) as qty_reserved, " +
-			"COALESCE(SUM(storages.qty_on_hand - storages.qty_reserved), 0) as qty_available")
+			"COALESCE(SUM(storages.qty_on_hand - storages.qty_reserved - storages.qty_on_hold), 0) as qty_available")
 
 	if search != "" {
 		query = query.Where("products.name LIKE ? OR products.sku LIKE ?", "%"+search+"%", "%"+search+"%")
@@ -72,7 +72,7 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 
 				// Query active storage lots sorted by received_at ASC (FIFO)
 				var lots []models.Storage
-				err := tx.Where("product_id = ? AND (qty_on_hand - qty_reserved) > 0", line.ProductID).
+				err := tx.Where("product_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", line.ProductID).
 					Order("received_at ASC").
 					Find(&lots).Error
 
@@ -81,7 +81,7 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 				}
 
 				for _, lot := range lots {
-					available := lot.QtyOnHand - lot.QtyReserved
+					available := lot.QtyOnHand - lot.QtyReserved - lot.QtyOnHold
 					take := requiredQty - allocatedQty
 					if take <= 0 {
 						break
@@ -147,14 +147,15 @@ func JournalizeInventoryMovement(movementID string) error {
 
 				// Create new storage balance record
 				storage := models.Storage{
-					ID:           uuid.New().String(),
-					ProductID:    line.ProductID,
-					LocatorID:    line.ToLocatorID,
-					BatchNumber:  batchNo,
-					ReceivedAt:   time.Now(),
-					QtyOnHand:    actualQty,
-					QtyReserved:  0,
-					UpdatedAt:    time.Now(),
+					ID:          uuid.New().String(),
+					ProductID:   line.ProductID,
+					LocatorID:   line.ToLocatorID,
+					BatchNumber: batchNo,
+					ReceivedAt:  time.Now(),
+					QtyOnHand:   actualQty,
+					QtyReserved: 0,
+					QtyOnHold:   0,
+					UpdatedAt:   time.Now(),
 				}
 
 				if err := tx.Create(&storage).Error; err != nil {
