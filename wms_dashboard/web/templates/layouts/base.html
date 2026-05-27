@@ -17,13 +17,32 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
+    <script>
+        // Immediately check sidebar collapse state to prevent FOUC
+        (function() {
+            const isCollapsed = localStorage.getItem("sidebar_collapsed") === "true";
+            if (isCollapsed && window.innerWidth >= 768) {
+                document.documentElement.classList.add("sidebar-collapsed");
+            }
+        })();
+    </script>
     <!-- Dynamic Alert Banner Toast Area (Used for executing HTMX script responses) -->
     <div id="toast-container" style="display: none;"></div>
 
     <!-- Main Outer Container -->
-    <div class="flex-1 flex overflow-hidden h-screen">
+    <div id="app-container" class="flex-1 flex overflow-hidden h-screen relative">
+        <!-- Mobile Sidebar Backdrop -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 hidden transition-opacity duration-300"></div>
+
+        <!-- Sidebar Toggle Trigger (Desktop only, placed outside aside to prevent clipping & opacity inheritance) -->
+        <button id="sidebar-toggle" class="absolute top-6 w-6 h-6 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer shadow-md hover:bg-slate-800 transition-all duration-200 z-50 hidden md:flex">
+            <i id="toggle-icon" data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+        </button>
+
         <!-- Sidebar Navigation -->
-        <aside class="w-64 glass-panel border-r border-slate-800/80 flex flex-col justify-between hidden md:flex">
+        <aside id="sidebar" class="w-64 glass-panel border-r border-slate-800/80 flex flex-col justify-between hidden md:flex shrink-0 transition-all duration-300 relative">
+            <!-- Content Wrapper (prevents text-wrapping / squeezing during transition) -->
+            <div class="w-64 h-full flex flex-col justify-between shrink-0">
             <div>
                 <!-- Brand logo -->
                 <div class="h-16 px-6 flex items-center gap-3 border-b border-slate-800/60 bg-slate-950/20">
@@ -118,6 +137,7 @@
                     </a>
                 </div>
             </div>
+            </div> <!-- End of Content Wrapper -->
         </aside>
 
         <!-- Right Side Panel Content -->
@@ -125,7 +145,7 @@
             <!-- Header Bar -->
             <header class="h-16 px-6 border-b border-slate-800/60 flex items-center justify-between glass-panel glow-border z-10 shrink-0">
                 <div class="flex items-center gap-4">
-                    <button class="md:hidden p-1.5 text-slate-400 hover:bg-slate-900 rounded-lg">
+                    <button id="mobile-menu-toggle" class="md:hidden p-1.5 text-slate-400 hover:bg-slate-900 rounded-lg">
                         <i data-lucide="menu" class="w-5 h-5"></i>
                     </button>
                     <h2 class="font-bold text-sm text-slate-200 tracking-wide uppercase">Operational Center</h2>
@@ -158,6 +178,65 @@
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
 
     <script>
+        // Collapsible Sidebar & Mobile Drawer Controller
+        document.addEventListener("DOMContentLoaded", () => {
+            const sidebar = document.getElementById("sidebar");
+            const toggleBtn = document.getElementById("sidebar-toggle");
+            const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+            const backdrop = document.getElementById("sidebar-backdrop");
+
+            function setToggleIcon(iconName) {
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = `<i id="toggle-icon" data-lucide="${iconName}" class="w-3.5 h-3.5"></i>`;
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+
+            // 1. Initial State Sync for chevron icon
+            const isCollapsed = localStorage.getItem("sidebar_collapsed") === "true";
+            if (isCollapsed && window.innerWidth >= 768) {
+                setToggleIcon("chevron-right");
+            } else {
+                setToggleIcon("chevron-left");
+            }
+
+            // 2. Desktop Toggle Click Handler
+            if (toggleBtn) {
+                toggleBtn.addEventListener("click", () => {
+                    const isCurrentlyCollapsed = document.documentElement.classList.contains("sidebar-collapsed");
+                    if (isCurrentlyCollapsed) {
+                        document.documentElement.classList.remove("sidebar-collapsed");
+                        localStorage.setItem("sidebar_collapsed", "false");
+                        setToggleIcon("chevron-left");
+                    } else {
+                        document.documentElement.classList.add("sidebar-collapsed");
+                        localStorage.setItem("sidebar_collapsed", "true");
+                        setToggleIcon("chevron-right");
+                    }
+                });
+            }
+
+            // 3. Mobile Drawer Controls
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener("click", () => {
+                    document.body.classList.add("mobile-sidebar-open");
+                });
+            }
+
+            if (backdrop) {
+                backdrop.addEventListener("click", () => {
+                    document.body.classList.remove("mobile-sidebar-open");
+                });
+            }
+
+            // 4. Auto-close mobile drawer on HTMX dynamic navigation swaps
+            document.body.addEventListener('htmx:afterSwap', () => {
+                document.body.classList.remove("mobile-sidebar-open");
+            });
+        });
+
         lucide.createIcons();
         
         // Listen to HTMX events to recreate icons on dynamic swaps
