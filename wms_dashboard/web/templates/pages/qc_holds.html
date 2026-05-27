@@ -21,7 +21,7 @@
     </div>
 
     <!-- Stats Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <!-- Stat 1: Total Holds -->
         <div class="glass-panel p-5 rounded-xl border border-slate-800/80 flex items-center justify-between relative overflow-hidden shrink-0">
             <div class="flex flex-col gap-1 z-10">
@@ -332,7 +332,7 @@
 </div>
 
 <script>
-function openConfirmReleaseModal(holdId) {
+window.openConfirmReleaseModal = function(holdId) {
     const modal = document.getElementById('modal-confirm-release');
     const submitBtn = document.getElementById('btn-confirm-release-submit');
     
@@ -344,11 +344,11 @@ function openConfirmReleaseModal(holdId) {
     
     // Show modal
     modal.classList.remove('hidden');
-}
+};
 
-function closeConfirmReleaseModal() {
+window.closeConfirmReleaseModal = function() {
     const modal = document.getElementById('modal-confirm-release');
     modal.classList.add('hidden');
-}
+};
 </script>
 {{end}}
