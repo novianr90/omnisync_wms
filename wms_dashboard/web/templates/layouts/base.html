@@ -34,13 +34,13 @@
         <!-- Mobile Sidebar Backdrop -->
         <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 hidden transition-opacity duration-300"></div>
 
+        <!-- Sidebar Toggle Trigger (Desktop only, placed outside aside to prevent clipping & opacity inheritance) -->
+        <button id="sidebar-toggle" class="absolute top-6 w-6 h-6 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer shadow-md hover:bg-slate-800 transition-all duration-200 z-50 hidden md:flex">
+            <i id="toggle-icon" data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+        </button>
+
         <!-- Sidebar Navigation -->
         <aside id="sidebar" class="w-64 glass-panel border-r border-slate-800/80 flex flex-col justify-between hidden md:flex shrink-0 transition-all duration-300 relative">
-            <!-- Sidebar Toggle Trigger (Desktop only) -->
-            <button id="sidebar-toggle" class="absolute -right-3 top-6 w-6 h-6 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer shadow-md hover:bg-slate-800 transition-all duration-200 z-50 hidden md:flex">
-                <i id="toggle-icon" data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-            </button>
-            
             <!-- Content Wrapper (prevents text-wrapping / squeezing during transition) -->
             <div class="w-64 h-full flex flex-col justify-between shrink-0">
             <div>
