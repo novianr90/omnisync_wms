@@ -112,9 +112,12 @@
                         
                         <!-- Locator Location -->
                         <td class="px-6 py-4">
-                            <div class="flex items-center gap-1.5 text-slate-400">
-                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-500 opacity-80"></i>
-                                <span>{{.Storage.Locator.Warehouse.Code}} / <span class="text-slate-200 font-bold font-mono">{{.Storage.Locator.Code}}</span></span>
+                            <div class="flex items-start gap-1.5">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400 opacity-85 mt-0.5 shrink-0"></i>
+                                <div class="flex flex-col gap-0.5">
+                                    <span class="font-bold text-slate-200 font-mono text-[11px] whitespace-nowrap tracking-wide">{{.Storage.Locator.Code}}</span>
+                                    <span class="text-slate-550 text-[10px] font-normal whitespace-nowrap">{{.Storage.Locator.Warehouse.Name}}</span>
+                                </div>
                             </div>
                         </td>
                         
@@ -131,7 +134,7 @@
                         
                         <!-- Reason Badge -->
                         <td class="px-6 py-4 text-center">
-                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border select-none
+                            <span class="px-2.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none
                                 {{if eq .Reason "DAMAGED"}}bg-rose-950/40 text-rose-400 border-rose-900/40
                                 {{else if eq .Reason "INVESTIGATION"}}bg-amber-950/40 text-amber-400 border-amber-900/40
                                 {{else if eq .Reason "EXPIRED"}}bg-orange-950/40 text-orange-400 border-orange-900/40
@@ -142,14 +145,14 @@
                         
                         <!-- Status Badge -->
                         <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center">
+                            <div class="flex items-center justify-center select-none">
                                 {{if eq .Status "ACTIVE"}}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20 select-none animate-pulse">
-                                    <i data-lucide="lock" class="w-2.5 h-2.5"></i> Locked
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-950/40 text-amber-400 border border-amber-900/40 animate-pulse">
+                                    LOCKED
                                 </span>
                                 {{else}}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 select-none">
-                                    <i data-lucide="unlock" class="w-2.5 h-2.5"></i> Released
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-950/40 text-emerald-400 border border-emerald-900/40">
+                                    RELEASED
                                 </span>
                                 {{end}}
                             </div>
