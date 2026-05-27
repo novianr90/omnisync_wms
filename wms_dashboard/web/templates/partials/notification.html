@@ -29,20 +29,20 @@
 
             // Initial animation setup
             card.style.opacity = '0';
-            card.style.transform = 'translateY(20px) scale(0.95)';
+            card.style.transform = 'translateX(20px) scale(0.95)';
             
             // Trigger animation frame for entry
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     card.style.opacity = '1';
-                    card.style.transform = 'translateY(0) scale(1)';
+                    card.style.transform = 'translateX(0) scale(1)';
                 });
             });
 
             function startTimer() {
                 timeoutId = setTimeout(() => {
                     card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px) scale(0.95)';
+                    card.style.transform = 'translateX(20px) scale(0.95)';
                     setTimeout(() => card.remove(), 400);
                 }, delay);
             }
