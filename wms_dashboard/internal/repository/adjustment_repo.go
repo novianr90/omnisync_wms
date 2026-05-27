@@ -14,6 +14,11 @@ import (
 // CreateInventoryAdjustment creates a new adjustment ticket
 func CreateInventoryAdjustment(adjustment *models.InventoryAdjustment, lines []models.InventoryAdjustmentLine) error {
 	return database.DB.Transaction(func(tx *gorm.DB) error {
+		docNo, err := GetNextSequence(tx, "inventory_adjustments")
+		if err != nil {
+			return err
+		}
+		adjustment.DocumentNo = docNo
 		adjustment.ID = uuid.New().String()
 		adjustment.CreatedAt = time.Now()
 		adjustment.UpdatedAt = time.Now()
@@ -72,7 +77,10 @@ func JournalizeInventoryAdjustment(adjustmentID string) error {
 
 			if line.QtyDelta > 0 {
 				// Positive adjustment -> create new storage lot (found stock)
-				batchNo := fmt.Sprintf("ADJ-%s-%s", adj.DocumentNo, line.ID[:8])
+				batchNo, err := GetNextSequence(tx, "storages")
+				if err != nil {
+					return err
+				}
 				storage := models.Storage{
 					ID:          uuid.New().String(),
 					ProductID:   line.ProductID,

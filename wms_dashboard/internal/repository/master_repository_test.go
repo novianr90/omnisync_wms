@@ -16,6 +16,11 @@ func setupTestDB(t *testing.T) {
 		t.Fatalf("failed to open in-memory sqlite db: %v", err)
 	}
 
+	sqlDB, err := db.DB()
+	if err == nil {
+		sqlDB.SetMaxOpenConns(1)
+	}
+
 	err = db.AutoMigrate(
 		&models.UoM{},
 		&models.UoMConversion{},
@@ -25,10 +30,21 @@ func setupTestDB(t *testing.T) {
 		&models.Storage{},
 		&models.InventoryMovement{},
 		&models.InventoryMovementLine{},
+		&models.QCHold{},
+		&models.SequenceGenerator{},
 	)
 	if err != nil {
 		t.Fatalf("failed to migrate test db: %v", err)
 	}
+
+	// Seed default sequences for testing
+	db.Create([]models.SequenceGenerator{
+		{ID: "seq-mov", UsageTable: "inventory_movements", Prefix: "MOV", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
+		{ID: "seq-adj", UsageTable: "inventory_adjustments", Prefix: "ADJ", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
+		{ID: "seq-kit", UsageTable: "inventory_kittings", Prefix: "KIT", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
+		{ID: "seq-qch", UsageTable: "qc_holds", Prefix: "QCH", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
+		{ID: "seq-stor", UsageTable: "storages", Prefix: "BAT", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 6},
+	})
 
 	database.DB = db
 }

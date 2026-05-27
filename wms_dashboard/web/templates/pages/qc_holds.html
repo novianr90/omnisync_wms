@@ -87,6 +87,7 @@
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
                     <tr class="border-b border-slate-800 bg-slate-950/60 font-semibold tracking-wider text-slate-400 uppercase select-none">
+                        <th class="px-6 py-4">Hold Number</th>
                         <th class="px-6 py-4">SKU & Product Name</th>
                         <th class="px-6 py-4">Locator Location</th>
                         <th class="px-6 py-4">Batch Number</th>
@@ -102,6 +103,11 @@
                     {{if .Holds}}
                     {{range .Holds}}
                     <tr class="hover:bg-slate-900/30 text-slate-300 font-medium transition duration-150">
+                        <!-- Hold Number -->
+                        <td class="px-6 py-4 font-mono text-amber-400 tracking-tight font-bold whitespace-nowrap">
+                            {{if .DocumentNo}}{{.DocumentNo}}{{else}}<span class="text-slate-650 italic">Legacy</span>{{end}}
+                        </td>
+                        
                         <!-- Product SKU & Title -->
                         <td class="px-6 py-4">
                             <div class="flex flex-col gap-0.5">
@@ -216,7 +222,7 @@
                     {{end}}
                     {{else}}
                     <tr>
-                        <td colspan="9" class="px-6 py-16 text-center text-slate-500 font-medium bg-slate-900/5">
+                        <td colspan="10" class="px-6 py-16 text-center text-slate-500 font-medium bg-slate-900/5">
                             <div class="flex flex-col items-center justify-center gap-3">
                                 <div class="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/5">
                                     <i data-lucide="shield-check" class="w-6 h-6"></i>

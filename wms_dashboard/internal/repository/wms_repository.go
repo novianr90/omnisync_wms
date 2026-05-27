@@ -50,6 +50,11 @@ func FetchInventoryCatalog(search string) ([]ProductInventory, error) {
 // CreateInventoryMovement handles creating movement headers and lines, allocating stock for OUTBOUND FIFO
 func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.InventoryMovementLine) error {
 	return database.DB.Transaction(func(tx *gorm.DB) error {
+		docNo, err := GetNextSequence(tx, "inventory_movements")
+		if err != nil {
+			return err
+		}
+		movement.DocumentNo = docNo
 		movement.ID = uuid.New().String()
 		movement.CreatedAt = time.Now()
 		movement.UpdatedAt = time.Now()
@@ -142,7 +147,10 @@ func JournalizeInventoryMovement(movementID string) error {
 
 			if movement.MovementType == "INBOUND" {
 				// Generate a FIFO batch number for the inbound lot
-				batchNo := fmt.Sprintf("BAT-%s-%s", movement.DocumentNo, line.ID[:8])
+				batchNo, err := GetNextSequence(tx, "storages")
+				if err != nil {
+					return err
+				}
 				line.BatchNumber = batchNo
 
 				// Create new storage balance record

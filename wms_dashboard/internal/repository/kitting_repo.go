@@ -14,6 +14,11 @@ import (
 // CreateKittingOrder creates a new kitting order
 func CreateKittingOrder(kitting *models.InventoryKitting, lines []models.InventoryKittingLine) error {
 	return database.DB.Transaction(func(tx *gorm.DB) error {
+		docNo, err := GetNextSequence(tx, "inventory_kittings")
+		if err != nil {
+			return err
+		}
+		kitting.DocumentNo = docNo
 		kitting.ID = uuid.New().String()
 		kitting.CreatedAt = time.Now()
 		kitting.UpdatedAt = time.Now()
@@ -118,7 +123,10 @@ func JournalizeKittingOrder(kittingID string) error {
 		}
 
 		// 2. Add finished product
-		batchNo := fmt.Sprintf("KIT-%s", kitting.DocumentNo)
+		batchNo, err := GetNextSequence(tx, "storages")
+		if err != nil {
+			return err
+		}
 		storage := models.Storage{
 			ID:          uuid.New().String(),
 			ProductID:   kitting.FinishedProductID,

@@ -48,6 +48,7 @@ omnisync_wms/
 - ⚖️ **Dynamic UoM Conversions** — User-defined formulas (e.g. convert `kg` ↔ `packs`)
 - 📝 **Inventory Transactions** — Direct stock adjustments and Product Kitting/Assembly
 - 🚚 **Inventory Movements** — Inbound, outbound, and transfer workflows with claim/journal/complete lifecycle
+- 🔢 **Dynamic Numbering Sequence Engine** — Traceable document/batch numbers using transactional row locks (SELECT FOR UPDATE) and auto fiscal-year rollover
 - 🛡️ **QC Hold (Stock Freeze)** — Quarantine specific stock quantities under QC investigation; frozen stock is excluded from all outbound movements and kitting
 - 🔒 **Role-Based Access Control** — `admin` and `operator` roles enforced at the API level
 - ⚡ **HTMX-Powered UI** — No page reloads, instant feedback via server-side HTML fragments
