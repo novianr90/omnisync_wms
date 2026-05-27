@@ -37,15 +37,21 @@ func CreateQCHold(storageID string, qty int, reason, notes, createdBy string) er
 		}
 
 		// 4. Create the QC Hold record
+		docNo, err := GetNextSequence(tx, "qc_holds")
+		if err != nil {
+			return err
+		}
+
 		hold := models.QCHold{
-			ID:        uuid.New().String(),
-			StorageID: storageID,
-			Qty:       qty,
-			Reason:    reason,
-			Status:    "ACTIVE",
-			Notes:     notes,
-			CreatedBy: createdBy,
-			CreatedAt: time.Now(),
+			ID:         uuid.New().String(),
+			DocumentNo: docNo,
+			StorageID:  storageID,
+			Qty:        qty,
+			Reason:     reason,
+			Status:     "ACTIVE",
+			Notes:      notes,
+			CreatedBy:  createdBy,
+			CreatedAt:  time.Now(),
 		}
 		return tx.Create(&hold).Error
 	})

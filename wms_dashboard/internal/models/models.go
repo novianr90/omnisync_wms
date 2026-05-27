@@ -201,6 +201,7 @@ type InventoryKittingLine struct {
 // QCHold represents a Quality Control stock freeze record
 type QCHold struct {
 	ID         string     `gorm:"type:varchar(36);primaryKey" json:"id"`
+	DocumentNo string     `gorm:"type:varchar(50);uniqueIndex" json:"document_no"`
 	StorageID  string     `gorm:"type:varchar(36);not null;index" json:"storage_id"`
 	Qty        int        `gorm:"type:int;not null" json:"qty"`
 	Reason     string     `gorm:"type:varchar(50);not null" json:"reason"`     // DAMAGED, INVESTIGATION, EXPIRED, OTHER
@@ -214,3 +215,18 @@ type QCHold struct {
 	// Preloads
 	Storage Storage `gorm:"foreignKey:StorageID" json:"storage,omitempty"`
 }
+
+// SequenceGenerator represents a dynamic sequence config and offset for a target context
+type SequenceGenerator struct {
+	ID            string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+	UsageTable    string    `gorm:"type:varchar(50);uniqueIndex;not null" json:"usage_table"` // e.g. 'inventory_movements'
+	Prefix        string    `gorm:"type:varchar(10);not null" json:"prefix"`                  // e.g. 'MOV'
+	FiscalYear    int       `gorm:"type:int;not null" json:"fiscal_year"`                     // e.g. 2026
+	CurrentNumber int       `gorm:"type:int;not null;default:1" json:"current_number"`
+	NumberLength  int       `gorm:"type:int;not null;default:5" json:"number_length"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+func (SequenceGenerator) TableName() string { return "sequence_generators" }
+

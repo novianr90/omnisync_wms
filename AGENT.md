@@ -102,6 +102,29 @@ To protect historical movement transactions and inventory records, the repositor
 
 ---
 
+## 🔢 Centralized Sequence & Numbering Engine
+
+Omnisync WMS uses a transaction-locked dynamic numbering sequence engine to generate standardized, traceable document and batch numbers.
+
+### 1. Database Schema (`sequence_generators`)
+Tracks prefixes, lengths, current offset, and fiscal year per table context:
+- `usage_table` (Unique Index, e.g. `inventory_movements`, `qc_holds`, `storages`)
+- `prefix` (e.g. `MOV`, `ADJ`, `KIT`, `QCH`, `BAT`)
+- `fiscal_year` (e.g. `2026`)
+- `current_number` (Atomic increment offset)
+- `number_length` (Padded length)
+
+### 2. ACID Transaction Safety
+Sequences are requested entirely within GORM transaction blocks using GORM `.Clauses(clause.Locking{Strength: "UPDATE"})` to trigger standard row-level transaction locks (`SELECT FOR UPDATE`), preventing collisions or duplicate numbers during high-volume operations.
+
+### 3. Dynamic Fiscal Year Rollover
+If the calendar system year is greater than the stored `fiscal_year`, the engine:
+1. Resets `current_number` back to `1`.
+2. Updates `fiscal_year` to the current year.
+3. Automatically transitions numbering patterns seamlessly (e.g. `MOV-2026-00001` -> `MOV-2027-00001`).
+
+---
+
 ## 🛠️ Operations & Development Playbook
 
 ### Running the Services Locally

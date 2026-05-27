@@ -33,6 +33,14 @@ func InitDB() *gorm.DB {
 		DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Info),
 		})
+		if err == nil {
+			sqlDB, err := DB.DB()
+			if err == nil {
+				_, _ = sqlDB.Exec("PRAGMA journal_mode = WAL;")
+				_, _ = sqlDB.Exec("PRAGMA busy_timeout = 5000;")
+				_, _ = sqlDB.Exec("PRAGMA synchronous = NORMAL;")
+			}
+		}
 	}
 
 	if err != nil {
