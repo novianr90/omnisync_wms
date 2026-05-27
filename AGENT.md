@@ -55,6 +55,8 @@ The **Master Data Maintenance Registry** manages the physical layouts, product c
 | **Conversions** | `/wms/masters/conversions` | `POST`, `DELETE` | `System Admin`, `Admin WMS` | Create or delete conversion rules |
 | **System Roles** | `/wms/system/roles` | `GET`, `POST`, `DELETE` | `System Admin`, `Admin WMS` | Manage operational roles |
 | **System Users** | `/wms/system/users` | `GET`, `POST`, `PUT` | `System Admin`, `Admin WMS` | Manage users and their roles |
+| **Adjustments** | `/wms/adjustments` | `GET`, `POST` | All logged-in roles | View and create direct stock adjustments |
+| **Kitting** | `/wms/kitting` | `GET`, `POST` | All logged-in roles | Perform product assembly and kitting |
 
 ---
 
