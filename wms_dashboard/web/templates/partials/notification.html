@@ -26,17 +26,30 @@
 <!-- Auto-initialize Lucide and set auto-fade timer -->
 <script>
     lucide.createIcons();
-    // Locate the dynamic notification card and auto-dismiss after 4 seconds
+    // Locate the dynamic notification card and auto-dismiss after delay
     (function() {
         const selfScript = document.currentScript;
         const card = selfScript.previousElementSibling;
-        if (card) {
-            setTimeout(() => {
+        const delay = {{if .Success}}4000{{else}}10000{{end}};
+        let timeoutId;
+
+        function startTimer() {
+            timeoutId = setTimeout(() => {
                 card.style.opacity = '0';
                 card.style.transform = 'translateY(-10px)';
                 card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
                 setTimeout(() => card.remove(), 400);
-            }, 4000);
+            }, delay);
+        }
+
+        function stopTimer() {
+            clearTimeout(timeoutId);
+        }
+
+        if (card) {
+            startTimer();
+            card.addEventListener('mouseenter', stopTimer);
+            card.addEventListener('mouseleave', startTimer);
         }
     })();
 </script>
