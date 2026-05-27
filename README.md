@@ -52,6 +52,7 @@ omnisync_wms/
 - 🔒 **Role-Based Access Control** — `admin` and `operator` roles enforced at the API level
 - ⚡ **HTMX-Powered UI** — No page reloads, instant feedback via server-side HTML fragments
 - 🌑 **Glassmorphism Dark Theme** — Tailwind CSS v4 with custom design tokens
+- 🗺️ **Collapsible & Responsive Navigation** — Clean collapsible sidebar on desktop (state persistent via `localStorage` with FOUC prevention) and fluid drawer slide-over navigation on mobile views
 
 ---
 

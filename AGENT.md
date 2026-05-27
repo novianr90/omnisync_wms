@@ -141,6 +141,10 @@ go test -v ./internal/repository/...
    - **Rule:** Always use explicit `TableName()` receiver methods on models involving acronyms to enforce clean database table names (e.g., `func (UoM) TableName() string { return "uoms" }`).
 3. **Number Inputs with Absolute Text:**
    - Avoid absolutely positioning text (like `Factor`) inside a `<input type="number">` on the right side. Browser default spinner arrows (up/down) will render over the text. Prefer putting labels outside the input or using browser-native styling hacks.
+4. **Dynamic Lucide Re-rendering & UI Collapses:**
+   - Lucide converts standard `<i>` tags into `<svg>` elements on load. Calling `.setAttribute("data-lucide", ...)` directly on the generated `<svg>` tag will **not** trigger Lucide to re-draw.
+   - **Rule:** To dynamically change an icon, always recreate a fresh `<i>` element inside the container (e.g. `container.innerHTML = '<i data-lucide="..."></i>'`) and trigger `lucide.createIcons()` again.
+   - **Clipping/Opacity on Collapsible Containers:** When animating a container to `width: 0` and `opacity: 0` (like a collapsed sidebar), do **not** place toggle triggers inside that container. They will inherit transparency and clipping, rendering them invisible. Keep floating controllers outside the collapsed aside in the DOM tree.
 
 ---
 
