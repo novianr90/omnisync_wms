@@ -19,12 +19,23 @@ func ServeQCHolds(c *fiber.Ctx) error {
 		storages = nil
 	}
 
+	activeCount := 0
+	totalHeldQty := 0
+	for _, h := range holds {
+		if h.Status == "ACTIVE" {
+			activeCount++
+			totalHeldQty += h.Qty
+		}
+	}
+
 	reasons := []string{"DAMAGED", "INVESTIGATION", "EXPIRED", "OTHER"}
 
 	return renderPage(c, "qc_holds.html", fiber.Map{
-		"Holds":    holds,
-		"Storages": storages,
-		"Reasons":  reasons,
+		"Holds":        holds,
+		"Storages":     storages,
+		"Reasons":      reasons,
+		"ActiveCount":  activeCount,
+		"TotalHeldQty": totalHeldQty,
 	})
 }
 
