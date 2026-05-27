@@ -182,16 +182,24 @@
         document.addEventListener("DOMContentLoaded", () => {
             const sidebar = document.getElementById("sidebar");
             const toggleBtn = document.getElementById("sidebar-toggle");
-            const toggleIcon = document.getElementById("toggle-icon");
             const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
             const backdrop = document.getElementById("sidebar-backdrop");
+
+            function setToggleIcon(iconName) {
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = `<i id="toggle-icon" data-lucide="${iconName}" class="w-3.5 h-3.5"></i>`;
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
 
             // 1. Initial State Sync for chevron icon
             const isCollapsed = localStorage.getItem("sidebar_collapsed") === "true";
             if (isCollapsed && window.innerWidth >= 768) {
-                if (toggleIcon) {
-                    toggleIcon.setAttribute("data-lucide", "chevron-right");
-                }
+                setToggleIcon("chevron-right");
+            } else {
+                setToggleIcon("chevron-left");
             }
 
             // 2. Desktop Toggle Click Handler
@@ -201,19 +209,11 @@
                     if (isCurrentlyCollapsed) {
                         document.documentElement.classList.remove("sidebar-collapsed");
                         localStorage.setItem("sidebar_collapsed", "false");
-                        if (toggleIcon) {
-                            toggleIcon.setAttribute("data-lucide", "chevron-left");
-                        }
+                        setToggleIcon("chevron-left");
                     } else {
                         document.documentElement.classList.add("sidebar-collapsed");
                         localStorage.setItem("sidebar_collapsed", "true");
-                        if (toggleIcon) {
-                            toggleIcon.setAttribute("data-lucide", "chevron-right");
-                        }
-                    }
-                    // Re-trigger Lucide icons to draw the correct chevron arrow
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
+                        setToggleIcon("chevron-right");
                     }
                 });
             }
