@@ -171,11 +171,43 @@
                         <!-- Action Button -->
                         <td class="px-6 py-4 text-center">
                             {{if eq .Status "ACTIVE"}}
+                            <!-- Trigger Button -->
                             <button
-                                onclick="openConfirmReleaseModal('{{.ID}}')"
+                                onclick="document.getElementById('confirm-modal-{{.ID}}').classList.remove('hidden')"
                                 class="inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 rounded-lg border border-emerald-500/20 hover:border-emerald-400 transition-all duration-300 shadow-sm hover:shadow-emerald-500/15 cursor-pointer active:scale-[0.98]">
                                 Release
                             </button>
+
+                            <!-- Sleek Inline Confirm Release Modal (Specific to this row) -->
+                            <div id="confirm-modal-{{.ID}}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 transition-all duration-300 animate-in fade-in duration-200">
+                                <div class="glass-panel w-full max-w-sm rounded-2xl border border-slate-800 shadow-2xl p-6 relative overflow-hidden text-left" style="text-align: left;">
+                                    <!-- Accent Glow -->
+                                    <div class="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent"></div>
+                                    
+                                    <h3 class="text-sm font-bold text-slate-100 font-outfit flex items-center gap-2">
+                                        <i data-lucide="unlock" class="w-4 h-4 text-emerald-400"></i>
+                                        <span>Confirm Release</span>
+                                    </h3>
+                                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                                        Are you sure you want to release this stock hold? The quarantined quantity will immediately return to the available inventory pool.
+                                    </p>
+                                    
+                                    <div class="flex gap-3 mt-5">
+                                        <button type="button" onclick="document.getElementById('confirm-modal-{{.ID}}').classList.add('hidden')" 
+                                            class="flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80 transition-all duration-200 cursor-pointer active:scale-98">
+                                            Cancel
+                                        </button>
+                                        <button type="button"
+                                            hx-post="/wms/qc-holds/{{.ID}}/release"
+                                            hx-target="#toast-container"
+                                            hx-swap="beforeend"
+                                            hx-on::after-request="document.getElementById('confirm-modal-{{.ID}}').classList.add('hidden')"
+                                            class="flex-1 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-200 cursor-pointer shadow-lg shadow-emerald-600/15 active:scale-98 flex items-center justify-center gap-1.5">
+                                            Confirm
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             {{else}}
                             <div class="text-slate-600 text-[10px] font-bold uppercase select-none tracking-widest">Released</div>
                             {{end}}
@@ -299,56 +331,4 @@
             </div>
         </form>
 </div>
-
-<!-- ===== SLEEK CONFIRM RELEASE MODAL ===== -->
-<div id="modal-confirm-release" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 transition-all duration-300 animate-in fade-in duration-200">
-    <div class="glass-panel w-full max-w-sm rounded-2xl border border-slate-800 shadow-2xl p-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <!-- Accent Glow -->
-        <div class="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent"></div>
-        
-        <h3 class="text-sm font-bold text-slate-100 font-outfit flex items-center gap-2">
-            <i data-lucide="unlock" class="w-4 h-4 text-emerald-400"></i>
-            <span>Confirm Release</span>
-        </h3>
-        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-            Are you sure you want to release this stock hold? The quarantined quantity will immediately return to the available inventory pool.
-        </p>
-        
-        <div class="flex gap-3 mt-5">
-            <button type="button" onclick="closeConfirmReleaseModal()" 
-                class="flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80 transition-all duration-200 cursor-pointer active:scale-98">
-                Cancel
-            </button>
-            <button id="btn-confirm-release-submit" type="button"
-                hx-post=""
-                hx-target="#toast-container"
-                hx-swap="beforeend"
-                hx-on::after-request="closeConfirmReleaseModal()"
-                class="flex-1 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-200 cursor-pointer shadow-lg shadow-emerald-600/15 active:scale-98 flex items-center justify-center gap-1.5">
-                Confirm
-            </button>
-        </div>
-    </div>
-</div>
-
-<script>
-window.openConfirmReleaseModal = function(holdId) {
-    const modal = document.getElementById('modal-confirm-release');
-    const submitBtn = document.getElementById('btn-confirm-release-submit');
-    
-    // Dynamically set target URL
-    submitBtn.setAttribute('hx-post', `/wms/qc-holds/${holdId}/release`);
-    
-    // Process the button so HTMX registers the new attribute
-    htmx.process(submitBtn);
-    
-    // Show modal
-    modal.classList.remove('hidden');
-};
-
-window.closeConfirmReleaseModal = function() {
-    const modal = document.getElementById('modal-confirm-release');
-    modal.classList.add('hidden');
-};
-</script>
 {{end}}
