@@ -59,6 +59,7 @@ type Storage struct {
 	ReceivedAt   time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"received_at"`          // Used for FIFO ordering
 	QtyOnHand    int       `gorm:"type:int;default:0" json:"qty_on_hand"`                // Physical stock sitting on shelf
 	QtyReserved  int       `gorm:"type:int;default:0" json:"qty_reserved"`               // Reserved stock for open movements
+	QtyOnHold    int       `gorm:"type:int;default:0" json:"qty_on_hold"`                // Stock frozen by QC Hold
 	UpdatedAt    time.Time `json:"updated_at"`
 
 	// Preloads
@@ -190,4 +191,21 @@ type InventoryKittingLine struct {
 	// Preloads
 	Product Product `gorm:"foreignKey:ProductID" json:"product,omitempty"`
 	Locator Locator `gorm:"foreignKey:LocatorID" json:"locator,omitempty"`
+}
+
+// QCHold represents a Quality Control stock freeze record
+type QCHold struct {
+	ID         string     `gorm:"type:varchar(36);primaryKey" json:"id"`
+	StorageID  string     `gorm:"type:varchar(36);not null;index" json:"storage_id"`
+	Qty        int        `gorm:"type:int;not null" json:"qty"`
+	Reason     string     `gorm:"type:varchar(50);not null" json:"reason"`     // DAMAGED, INVESTIGATION, EXPIRED, OTHER
+	Status     string     `gorm:"type:varchar(20);default:'ACTIVE'" json:"status"` // ACTIVE, RELEASED
+	Notes      string     `gorm:"type:text" json:"notes"`
+	CreatedBy  string     `gorm:"type:varchar(36);not null" json:"created_by"`
+	ReleasedBy string     `gorm:"type:varchar(36)" json:"released_by,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	ReleasedAt *time.Time `json:"released_at,omitempty"`
+
+	// Preloads
+	Storage Storage `gorm:"foreignKey:StorageID" json:"storage,omitempty"`
 }

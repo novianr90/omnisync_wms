@@ -57,6 +57,8 @@ The **Master Data Maintenance Registry** manages the physical layouts, product c
 | **System Users** | `/wms/system/users` | `GET`, `POST`, `PUT` | `System Admin`, `Admin WMS` | Manage users and their roles |
 | **Adjustments** | `/wms/adjustments` | `GET`, `POST` | All logged-in roles | View and create direct stock adjustments |
 | **Kitting** | `/wms/kitting` | `GET`, `POST` | All logged-in roles | Perform product assembly and kitting |
+| **QC Holds** | `/wms/qc-holds` | `GET`, `POST` | All logged-in roles | Freeze stock quantities under QC investigation |
+| **QC Holds** | `/wms/qc-holds/:id/release` | `POST` | All logged-in roles | Release frozen stock back to available inventory |
 
 ---
 
@@ -91,6 +93,10 @@ To protect historical movement transactions and inventory records, the repositor
 4. **UoM Deletion Block**:
    - Deletion is prevented if any product uses it as its Base UoM.
    - Deletion is prevented if any active conversion rule references it.
+
+5. **QC Hold Stock Freeze**:
+   - The `Storage` model now carries a `qty_on_hold` column. This quantity is excluded from **all** available-stock calculations across Outbound Movements, Kitting, and Adjustments.
+   - Only the `ReleaseQCHold` function can decrement `qty_on_hold` back to available stock.
 
 *Note: All deleted master records are **soft-deleted** (`gorm.DeletedAt` GORM schema attribute) to preserve ledger audits.*
 
