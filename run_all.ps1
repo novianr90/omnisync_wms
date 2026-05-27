@@ -1,3 +1,8 @@
+# ── Auto-Clean Zombie Processes ─────────────────────────────────
+Write-Host "Cleaning up old ghost processes..." -ForegroundColor DarkYellow
+Stop-Process -Name "main" -Force -ErrorAction SilentlyContinue
+# Comment to kill Go.exe
+# Stop-Process -Name "go" -Force -ErrorAction SilentlyContinue
 # Set D-drive caching to completely prevent your C: drive from filling up!
 $env:GOMODCACHE="D:\Code\projects\omnisync_wms\go_cache\pkg\mod"
 $env:GOCACHE="D:\Code\projects\omnisync_wms\go_cache\build"
