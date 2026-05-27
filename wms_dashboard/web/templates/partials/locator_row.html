@@ -23,9 +23,14 @@
         </span>
         {{end}}
     </td>
-    {{if eq $.UserRole "admin"}}
+    {{if or (eq $.UserRole "System Admin") (eq $.UserRole "Admin WMS")}}
     <td class="px-6 py-4">
         <div class="flex items-center justify-center gap-2">
+            <button onclick="printBarcode('{{.Code}}', 'Shelf {{.Code}}')"
+                    class="p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 hover:text-emerald-300 transition cursor-pointer" 
+                    title="Print Barcode">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            </button>
             <button hx-get="/wms/masters/locators/{{.ID}}/edit" hx-target="#modal-container"
                     class="p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 hover:text-amber-300 transition cursor-pointer" 
                     title="Edit Shelf Coordinates">
@@ -43,7 +48,7 @@
 </tr>
 {{else}}
 <tr>
-    <td colspan="{{if eq .UserRole "admin"}}8{{else}}7{{end}}" class="px-6 py-12 text-center text-slate-500">
+    <td colspan="{{if or (eq .UserRole "System Admin") (eq .UserRole "Admin WMS")}}8{{else}}7{{end}}" class="px-6 py-12 text-center text-slate-500">
         <div class="flex flex-col items-center justify-center gap-2">
             <i data-lucide="inbox" class="w-8 h-8 opacity-40"></i>
             <span class="text-xs">No shelf locators registered.</span>

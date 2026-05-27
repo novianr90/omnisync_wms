@@ -4,7 +4,7 @@
     <td class="px-6 py-4 font-mono text-[11px] font-bold text-blue-400 select-all">{{.Code}}</td>
     <td class="px-6 py-4 font-semibold text-slate-200">{{.Name}}</td>
     <td class="px-6 py-4 text-slate-400 max-w-xs truncate" title="{{.Description}}">{{if .Description}}{{.Description}}{{else}}<span class="text-slate-600 italic">No description provided</span>{{end}}</td>
-    {{if eq $.UserRole "admin"}}
+    {{if or (eq $.UserRole "System Admin") (eq $.UserRole "Admin WMS")}}
     <td class="px-6 py-4">
         <div class="flex items-center justify-center gap-2">
             <button hx-get="/wms/masters/uoms/{{.ID}}/edit" hx-target="#modal-container"
@@ -24,7 +24,7 @@
 </tr>
 {{else}}
 <tr>
-    <td colspan="{{if eq .UserRole "admin"}}4{{else}}3{{end}}" class="px-6 py-12 text-center text-slate-500">
+    <td colspan="{{if or (eq .UserRole "System Admin") (eq .UserRole "Admin WMS")}}4{{else}}3{{end}}" class="px-6 py-12 text-center text-slate-500">
         <div class="flex flex-col items-center justify-center gap-2">
             <i data-lucide="inbox" class="w-8 h-8 opacity-40"></i>
             <span class="text-xs">No Units of Measure defined.</span>
@@ -68,7 +68,7 @@
     </td>
 
     <!-- Action Delete -->
-    {{if eq $.UserRole "admin"}}
+    {{if or (eq $.UserRole "System Admin") (eq $.UserRole "Admin WMS")}}
     <td class="px-6 py-4">
         <div class="flex items-center justify-center">
             <button hx-delete="/wms/masters/conversions/{{.ID}}" 
@@ -83,7 +83,7 @@
 </tr>
 {{else}}
 <tr>
-    <td colspan="{{if eq .UserRole "admin"}}3{{else}}2{{end}}" class="px-6 py-12 text-center text-slate-500">
+    <td colspan="{{if or (eq .UserRole "System Admin") (eq .UserRole "Admin WMS")}}3{{else}}2{{end}}" class="px-6 py-12 text-center text-slate-500">
         <div class="flex flex-col items-center justify-center gap-2">
             <i data-lucide="calculator" class="w-8 h-8 opacity-40"></i>
             <span class="text-xs">No conversion formulas mapped.</span>

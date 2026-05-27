@@ -1,0 +1,205 @@
+{{define "content"}}
+<div class="h-full flex flex-col">
+    <!-- Header -->
+    <div class="p-6 pb-0 flex items-center justify-between shrink-0">
+        <div>
+            <h2 class="text-xl font-bold text-slate-200">Kitting / Assembly</h2>
+            <p class="text-xs text-slate-400 mt-1">Bundle components into finished goods</p>
+        </div>
+        <button onclick="document.getElementById('newKittingModal').classList.remove('hidden')" class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-fuchsia-500/20 flex items-center gap-2">
+            <i data-lucide="package-plus" class="w-4 h-4"></i>
+            New Kitting Order
+        </button>
+    </div>
+
+    <!-- Table List -->
+    <div class="flex-1 p-6 overflow-hidden flex flex-col">
+        <div class="glass-panel border border-slate-800/60 rounded-xl overflow-hidden flex-1 flex flex-col">
+            <div class="overflow-y-auto flex-1 custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead class="sticky top-0 bg-slate-900/90 backdrop-blur-md z-10">
+                        <tr>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Doc No</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Status</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Finished Good</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Target Locator</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Target Qty</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        {{range .Kittings}}
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-3 px-4 text-sm font-medium text-slate-200">{{.DocumentNo}}</td>
+                            <td class="py-3 px-4">
+                                {{if eq .Status "OPEN"}}
+                                <span class="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-xs font-medium tracking-wide">OPEN</span>
+                                {{else if eq .Status "JOURNALED"}}
+                                <span class="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded text-xs font-medium tracking-wide">JOURNALED</span>
+                                {{else}}
+                                <span class="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-2 py-0.5 rounded text-xs font-medium tracking-wide">{{.Status}}</span>
+                                {{end}}
+                            </td>
+                            <td class="py-3 px-4 text-sm text-slate-300">{{.FinishedProduct.Name}} ({{.FinishedProduct.SKU}})</td>
+                            <td class="py-3 px-4 text-sm text-slate-300">{{.FinishedLocator.Code}}</td>
+                            <td class="py-3 px-4 text-sm text-emerald-400 font-medium">+{{.FinishedQty}} <span class="text-xs text-slate-500 ml-1">{{.FinishedProduct.UoM.Code}}</span></td>
+                            <td class="py-3 px-4 text-right">
+                                {{if eq .Status "OPEN"}}
+                                <div class="flex items-center justify-end gap-2">
+                                    <button hx-post="/wms/kitting/{{.ID}}/journal" hx-swap="none" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded border border-emerald-500/20 text-xs font-medium transition">Journal</button>
+                                    <button hx-post="/wms/kitting/{{.ID}}/reject" hx-swap="none" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/20 text-xs font-medium transition">Reject</button>
+                                </div>
+                                {{else}}
+                                <span class="text-xs text-slate-500 italic">Closed</span>
+                                {{end}}
+                            </td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-500 text-sm">No kitting orders found.</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Kitting Modal -->
+<div id="newKittingModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40 shrink-0">
+            <h3 class="font-bold text-slate-200">New Kitting Order</h3>
+            <button onclick="document.getElementById('newKittingModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-200 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form hx-post="/wms/kitting/new" hx-target="#toast-container" hx-swap="beforeend" onsubmit="document.getElementById('newKittingModal').classList.add('hidden')" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar">
+            
+            <!-- Finished Good Section -->
+            <div class="bg-fuchsia-500/5 border border-fuchsia-500/20 rounded-xl p-4">
+                <h4 class="text-xs font-bold text-fuchsia-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="box" class="w-4 h-4"></i> Resulting Finished Good
+                </h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Bundle Product</label>
+                        <select name="finished_product_id" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-fuchsia-500 transition">
+                            <option value="">Select the product to build...</option>
+                            {{range .Products}}
+                            <option value="{{.ID}}">{{.SKU}} - {{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Putaway Locator</label>
+                        <select name="finished_locator_id" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-fuchsia-500 transition">
+                            <option value="">Select destination locator...</option>
+                            {{range .Locators}}
+                            <option value="{{.ID}}">{{.Warehouse.Code}} / {{.Code}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Quantity to Build</label>
+                        <input type="number" name="finished_qty" min="1" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-fuchsia-500 transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Components Section -->
+            <div class="border border-slate-800 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="layers" class="w-4 h-4"></i> Components Consumed
+                    </h4>
+                    <button type="button" onclick="addComponentRow()" class="text-xs text-fuchsia-400 hover:text-fuchsia-300 font-medium flex items-center gap-1">
+                        <i data-lucide="plus" class="w-3 h-3"></i> Add Component
+                    </button>
+                </div>
+                
+                <div id="componentsContainer" class="flex flex-col gap-3">
+                    <!-- Component Rows will go here -->
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Remarks</label>
+                <input type="text" name="remarks" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-fuchsia-500 transition" placeholder="Optional notes...">
+            </div>
+
+            <div class="mt-2 flex justify-end gap-3 pt-4 border-t border-slate-800 shrink-0">
+                <button type="button" onclick="document.getElementById('newKittingModal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-fuchsia-500/20 transition">Create Order</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Template for Component Row -->
+<template id="componentRowTemplate">
+    <div class="flex items-center gap-4 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80 shadow-sm">
+        <div class="flex-1">
+            <select name="comp_product_id[]" required onchange="fetchLocators(this)" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-fuchsia-500 transition">
+                <option value="">Select component...</option>
+                {{range .Products}}
+                <option value="{{.ID}}">{{.SKU}} - {{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+        <div class="flex-1">
+            <select name="comp_locator_id[]" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-fuchsia-500 transition">
+                <option value="">Select source locator...</option>
+                {{range .Locators}}
+                <option value="{{.ID}}">{{.Warehouse.Code}} / {{.Code}}</option>
+                {{end}}
+            </select>
+        </div>
+        <div class="w-28">
+            <input type="number" name="comp_qty[]" min="1" required placeholder="Qty" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-fuchsia-500 transition">
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" class="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+    </div>
+</template>
+
+<script>
+    function addComponentRow() {
+        const template = document.getElementById('componentRowTemplate');
+        const clone = template.content.cloneNode(true);
+        document.getElementById('componentsContainer').appendChild(clone);
+        // Re-initialize lucide icons for the new row
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    }
+
+    // Add initial row on load
+    document.addEventListener("DOMContentLoaded", function() {
+        addComponentRow();
+    });
+
+    function fetchLocators(selectElem) {
+        const productId = selectElem.value;
+        const row = selectElem.closest('.flex.items-center');
+        const locatorSelect = row.querySelector('select[name="comp_locator_id[]"]');
+        
+        if (!productId) {
+            locatorSelect.innerHTML = '<option value="">Select source locator...</option>';
+            return;
+        }
+
+        fetch(`/wms/kitting/locators?product_id=${productId}`)
+            .then(res => res.text())
+            .then(html => {
+                locatorSelect.innerHTML = html;
+            })
+            .catch(err => {
+                console.error("Failed to fetch locators", err);
+                locatorSelect.innerHTML = '<option value="">Error fetching locators</option>';
+            });
+    }
+</script>
+{{end}}

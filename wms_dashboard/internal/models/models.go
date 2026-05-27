@@ -14,6 +14,7 @@ type Product struct {
 	Description string         `gorm:"type:text" json:"description"`
 	Category    string         `gorm:"type:varchar(100)" json:"category"`
 	Price       float64        `gorm:"type:decimal(12,2);default:0.00" json:"price"`
+	IsBundle    bool           `gorm:"type:boolean;default:false" json:"is_bundle"`
 	UoMID       string         `gorm:"type:varchar(36);index;column:uom_id" json:"uom_id"`
 	UoM         UoM            `gorm:"foreignKey:UoMID" json:"uom,omitempty"`
 	CreatedAt   time.Time      `json:"created_at"`
@@ -130,3 +131,63 @@ type UoMConversion struct {
 
 // TableName overrides GORM's default naming (which would produce "uo_m_conversions").
 func (UoMConversion) TableName() string { return "uom_conversions" }
+
+// InventoryAdjustment represents a stock correction ticket
+type InventoryAdjustment struct {
+	ID          string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+	DocumentNo  string    `gorm:"type:varchar(50);uniqueIndex;not null" json:"document_no"`
+	Status      string    `gorm:"type:varchar(20);default:'OPEN'" json:"status"` // OPEN, JOURNALED, REJECTED
+	ReasonCode  string    `gorm:"type:varchar(50);not null" json:"reason_code"`  // DAMAGED, LOST, FOUND, EXPIRED
+	Remarks     string    `gorm:"type:text" json:"remarks"`
+	CreatedBy   string    `gorm:"type:varchar(36);not null" json:"created_by"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+
+	// Nested Preloads
+	Lines []InventoryAdjustmentLine `gorm:"foreignKey:AdjustmentID" json:"lines,omitempty"`
+}
+
+// InventoryAdjustmentLine represents individual stock changes
+type InventoryAdjustmentLine struct {
+	ID           string `gorm:"type:varchar(36);primaryKey" json:"id"`
+	AdjustmentID string `gorm:"type:varchar(36);not null;index" json:"adjustment_id"`
+	ProductID    string `gorm:"type:varchar(36);not null;index" json:"product_id"`
+	LocatorID    string `gorm:"type:varchar(36);not null;index" json:"locator_id"`
+	QtyDelta     int    `gorm:"type:int;not null" json:"qty_delta"` // Negative to deduct, Positive to add
+	
+	// Preloads
+	Product Product `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+	Locator Locator `gorm:"foreignKey:LocatorID" json:"locator,omitempty"`
+}
+
+// InventoryKitting represents a light assembly / bundling ticket
+type InventoryKitting struct {
+	ID                string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+	DocumentNo        string    `gorm:"type:varchar(50);uniqueIndex;not null" json:"document_no"`
+	Status            string    `gorm:"type:varchar(20);default:'OPEN'" json:"status"` // OPEN, JOURNALED, REJECTED
+	FinishedProductID string    `gorm:"type:varchar(36);not null;index" json:"finished_product_id"`
+	FinishedLocatorID string    `gorm:"type:varchar(36);not null" json:"finished_locator_id"`
+	FinishedQty       int       `gorm:"type:int;not null" json:"finished_qty"`
+	Remarks           string    `gorm:"type:text" json:"remarks"`
+	CreatedBy         string    `gorm:"type:varchar(36);not null" json:"created_by"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+
+	// Preloads
+	FinishedProduct Product                `gorm:"foreignKey:FinishedProductID" json:"finished_product,omitempty"`
+	FinishedLocator Locator                `gorm:"foreignKey:FinishedLocatorID" json:"finished_locator,omitempty"`
+	ComponentLines  []InventoryKittingLine `gorm:"foreignKey:KittingID" json:"component_lines,omitempty"`
+}
+
+// InventoryKittingLine represents the components consumed to build the bundle
+type InventoryKittingLine struct {
+	ID           string `gorm:"type:varchar(36);primaryKey" json:"id"`
+	KittingID    string `gorm:"type:varchar(36);not null;index" json:"kitting_id"`
+	ProductID    string `gorm:"type:varchar(36);not null;index" json:"product_id"`
+	LocatorID    string `gorm:"type:varchar(36);not null;index" json:"locator_id"`
+	ConsumedQty  int    `gorm:"type:int;not null" json:"consumed_qty"` // Must be > 0
+
+	// Preloads
+	Product Product `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+	Locator Locator `gorm:"foreignKey:LocatorID" json:"locator,omitempty"`
+}

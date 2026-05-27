@@ -1,0 +1,185 @@
+{{define "content"}}
+<div class="h-full flex flex-col">
+    <!-- Header -->
+    <div class="p-6 pb-0 flex items-center justify-between shrink-0">
+        <div>
+            <h2 class="text-xl font-bold text-slate-200">Inventory Adjustments</h2>
+            <p class="text-xs text-slate-400 mt-1">Manage physical stock corrections</p>
+        </div>
+        <button onclick="document.getElementById('newAdjustmentModal').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            New Adjustment
+        </button>
+    </div>
+
+    <!-- Table List -->
+    <div class="flex-1 p-6 overflow-hidden flex flex-col">
+        <div class="glass-panel border border-slate-800/60 rounded-xl overflow-hidden flex-1 flex flex-col">
+            <div class="overflow-y-auto flex-1 custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead class="sticky top-0 bg-slate-900/90 backdrop-blur-md z-10">
+                        <tr>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Doc No</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Status</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Reason</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Product</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Locator</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800">Qty Delta</th>
+                            <th class="py-3 px-4 text-xs font-semibold text-slate-400 border-b border-slate-800 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        {{range .Adjustments}}
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-3 px-4 text-sm font-medium text-slate-200">{{.DocumentNo}}</td>
+                            <td class="py-3 px-4">
+                                {{if eq .Status "OPEN"}}
+                                <span class="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-xs font-medium tracking-wide">OPEN</span>
+                                {{else if eq .Status "JOURNALED"}}
+                                <span class="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded text-xs font-medium tracking-wide">JOURNALED</span>
+                                {{else}}
+                                <span class="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-2 py-0.5 rounded text-xs font-medium tracking-wide">{{.Status}}</span>
+                                {{end}}
+                            </td>
+                            <td class="py-3 px-4 text-sm text-slate-400">{{.ReasonCode}}</td>
+                            <td class="py-3 px-4 text-sm text-slate-300">
+                                {{if .Lines}}
+                                    {{(index .Lines 0).Product.Name}} ({{(index .Lines 0).Product.SKU}})
+                                {{end}}
+                            </td>
+                            <td class="py-3 px-4 text-sm text-slate-300">
+                                {{if .Lines}}
+                                    {{(index .Lines 0).Locator.Code}}
+                                {{end}}
+                            </td>
+                            <td class="py-3 px-4 text-sm">
+                                {{if .Lines}}
+                                    {{if gt (index .Lines 0).QtyDelta 0}}
+                                    <span class="text-emerald-400 font-medium">+{{(index .Lines 0).QtyDelta}}</span>
+                                    {{else}}
+                                    <span class="text-rose-400 font-medium">{{(index .Lines 0).QtyDelta}}</span>
+                                    {{end}}
+                                    <span class="text-xs text-slate-500 ml-1">{{(index .Lines 0).Product.UoM.Code}}</span>
+                                {{end}}
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                {{if eq .Status "OPEN"}}
+                                <div class="flex items-center justify-end gap-2">
+                                    <button hx-post="/wms/adjustments/{{.ID}}/journal" hx-swap="none" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded border border-emerald-500/20 text-xs font-medium transition">Journal</button>
+                                    <button hx-post="/wms/adjustments/{{.ID}}/reject" hx-swap="none" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded border border-rose-500/20 text-xs font-medium transition">Reject</button>
+                                </div>
+                                {{else}}
+                                <span class="text-xs text-slate-500 italic">Closed</span>
+                                {{end}}
+                            </td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-slate-500 text-sm">No adjustments found.</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Adjustment Modal -->
+<div id="newAdjustmentModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+        <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
+            <h3 class="font-bold text-slate-200">New Adjustment</h3>
+            <button onclick="document.getElementById('newAdjustmentModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-200 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form hx-post="/wms/adjustments/new" hx-target="#toast-container" hx-swap="beforeend" onsubmit="document.getElementById('newAdjustmentModal').classList.add('hidden')" class="p-6 flex flex-col gap-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Product</label>
+                <select name="product_id" required onchange="fetchLocatorsAdjustment(this)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                    <option value="">Select a product...</option>
+                    {{range .Products}}
+                    <option value="{{.ID}}">{{.SKU}} - {{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Locator</label>
+                <select name="locator_id" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                    <option value="">Select a locator...</option>
+                    {{range .Locators}}
+                    <option value="{{.ID}}">{{.Warehouse.Code}} / {{.Code}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Quantity Delta</label>
+                    <input type="number" name="qty_delta" required placeholder="e.g. -5 or 10" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                    <p class="text-[10px] text-slate-500 mt-1">Use negative to deduct, positive to add.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Reason Code</label>
+                    <select name="reason_code" id="reason_code_select" required onchange="updateReasonDescription(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        <option value="STOCK_TAKE">Stock Take</option>
+                        <option value="DAMAGED">Damaged</option>
+                        <option value="LOST">Lost</option>
+                        <option value="FOUND">Found</option>
+                        <option value="EXPIRED">Expired</option>
+                    </select>
+                    <p id="reason_description" class="text-[10px] text-fuchsia-400/80 mt-1 italic">Use this to sync physical count (can add or reduce).</p>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Remarks</label>
+                <input type="text" name="remarks" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition" placeholder="Optional notes...">
+            </div>
+            <div class="mt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('newAdjustmentModal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-indigo-500/20 transition">Create Adjustment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function fetchLocatorsAdjustment(selectElem) {
+        const productId = selectElem.value;
+        const locatorSelect = document.querySelector('#newAdjustmentModal select[name="locator_id"]');
+        
+        if (!productId) {
+            locatorSelect.innerHTML = '<option value="">Select a locator...</option>';
+            return;
+        }
+
+        fetch(`/wms/adjustments/locators?product_id=${productId}`)
+            .then(res => res.text())
+            .then(html => {
+                locatorSelect.innerHTML = html;
+            })
+            .catch(err => {
+                console.error("Failed to fetch locators", err);
+                locatorSelect.innerHTML = '<option value="">Error fetching locators</option>';
+            });
+    }
+
+    function updateReasonDescription(reason) {
+        const descElem = document.getElementById('reason_description');
+        const descriptions = {
+            "STOCK_TAKE": "Use this to sync physical count. (Use negative to deduct, positive to add).",
+            "DAMAGED": "Reduces stock due to physical damage. (System will auto-deduct this amount).",
+            "LOST": "Reduces stock due to missing item. (System will auto-deduct this amount).",
+            "FOUND": "Adds stock that was found without record. (System will auto-add this amount).",
+            "EXPIRED": "Reduces stock due to expiration. (System will auto-deduct this amount)."
+        };
+        descElem.textContent = descriptions[reason] || "";
+    }
+
+    // Initialize reason description on load if needed
+    document.addEventListener("DOMContentLoaded", function() {
+        const select = document.getElementById('reason_code_select');
+        if (select) updateReasonDescription(select.value);
+    });
+</script>
+{{end}}
