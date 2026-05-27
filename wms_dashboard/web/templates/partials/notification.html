@@ -1,5 +1,5 @@
 {{define "notification"}}
-<div class="glass-panel p-4 rounded-xl shadow-2xl flex items-start gap-3 relative min-w-[300px] max-w-sm transition-all duration-300 {{if .Success}}border-l-4 border-l-emerald-500{{else}}border-l-4 border-l-rose-500{{end}}" hx-swap-oob="afterbegin:#toast-container">
+<div class="bg-slate-900 p-4 rounded-xl shadow-2xl flex items-start gap-3 relative min-w-[300px] max-w-sm transition-all duration-300 border border-slate-800 {{if .Success}}border-l-4 border-l-emerald-500{{else}}border-l-4 border-l-rose-500{{end}}" hx-swap-oob="afterbegin:#toast-container">
     <!-- Success/Failure Icon -->
     <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-inner {{if .Success}}bg-emerald-500/20 text-emerald-400{{else}}bg-rose-500/20 text-rose-400{{end}}">
         {{if .Success}}
