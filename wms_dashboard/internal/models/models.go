@@ -76,7 +76,7 @@ func (s Storage) AvailableQty() int {
 type InventoryMovement struct {
 	ID                 string    `gorm:"type:varchar(36);primaryKey" json:"id"`
 	DocumentNo         string    `gorm:"type:varchar(50);uniqueIndex;not null" json:"document_no"` // e.g. "MOV-2026-0001"
-	MovementType       string    `gorm:"type:varchar(20);not null" json:"movement_type"`           // INBOUND, OUTBOUND, INTERNAL
+	MovementType       string    `gorm:"type:varchar(20);not null" json:"movement_type"`           // INBOUND, OUTBOUND, INTERNAL, RTV
 	Status             string    `gorm:"type:varchar(20);default:'OPEN'" json:"status"`            // OPEN, IN_PROGRESS, RECEIPT, JOURNALED, COMPLETED, REJECTED
 	CreatedBy          string    `gorm:"type:varchar(36);not null" json:"created_by"`             // User ID from JWT
 	AssignedOperatorID string    `gorm:"type:varchar(36)" json:"assigned_operator_id"`            // Operator assigned (User ID)
@@ -99,6 +99,7 @@ type InventoryMovementLine struct {
 	ToLocatorID       string `gorm:"type:varchar(36);index" json:"to_locator_id,omitempty"`   // For Inbound/Internal
 	RequestedQuantity int    `gorm:"type:int;not null" json:"requested_quantity"`
 	ActualQuantity    int    `gorm:"type:int;default:0" json:"actual_quantity"`
+	IsFromHold        bool   `gorm:"type:boolean;default:false" json:"is_from_hold"`
 
 	// Preloads
 	Product     Product  `gorm:"foreignKey:ProductID" json:"product,omitempty"`
