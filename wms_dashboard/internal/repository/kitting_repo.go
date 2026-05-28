@@ -106,6 +106,12 @@ func JournalizeKittingOrder(kittingID string) error {
 					return err
 				}
 
+				// Insert Ledger (KITTING COMPONENT: Debit WIP 11020, Credit Raw Materials 11000)
+				err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "KITTING", kitting.DocumentNo, -take, lot.QtyOnHand, "11020", "11000", kitting.CreatedBy)
+				if err != nil {
+					return err
+				}
+
 				deductAmount -= take
 			}
 
@@ -139,6 +145,12 @@ func JournalizeKittingOrder(kittingID string) error {
 			UpdatedAt:   time.Now(),
 		}
 		if err := tx.Create(&storage).Error; err != nil {
+			return err
+		}
+
+		// Insert Ledger (KITTING FINISHED: Debit Finished Goods 11010, Credit WIP 11020)
+		err = InsertInventoryLedger(tx, time.Now(), kitting.FinishedProductID, kitting.FinishedLocatorID, batchNo, "KITTING", kitting.DocumentNo, kitting.FinishedQty, storage.QtyOnHand, "11010", "11020", kitting.CreatedBy)
+		if err != nil {
 			return err
 		}
 

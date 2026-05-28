@@ -95,6 +95,12 @@ func JournalizeInventoryAdjustment(adjustmentID string) error {
 				if err := tx.Create(&storage).Error; err != nil {
 					return err
 				}
+
+				// Insert Ledger (ADJUSTMENT POSITIVE: Debit Inventory 11000, Credit Adjustment Exp 51010)
+				err = InsertInventoryLedger(tx, time.Now(), line.ProductID, line.LocatorID, batchNo, "ADJUSTMENT", adj.DocumentNo, line.QtyDelta, storage.QtyOnHand, "11000", "51010", adj.CreatedBy)
+				if err != nil {
+					return err
+				}
 			} else {
 				// Negative adjustment -> deduct from oldest batches in locator
 				deductAmount := -line.QtyDelta
@@ -122,6 +128,12 @@ func JournalizeInventoryAdjustment(adjustmentID string) error {
 					lot.UpdatedAt = time.Now()
 
 					if err := tx.Save(&lot).Error; err != nil {
+						return err
+					}
+
+					// Insert Ledger (ADJUSTMENT NEGATIVE: Debit Adjustment Exp 51010, Credit Inventory 11000)
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "ADJUSTMENT", adj.DocumentNo, -take, lot.QtyOnHand, "51010", "11000", adj.CreatedBy)
+					if err != nil {
 						return err
 					}
 

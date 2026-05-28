@@ -11,6 +11,25 @@ import (
 	"wms_dashboard/internal/models"
 )
 
+// InsertInventoryLedger creates an atomic stock mutation record in the ledger
+func InsertInventoryLedger(tx *gorm.DB, date time.Time, productID, locatorID, batchNo, txnType, docNo string, qtyChange, runningBalance int, accountNo, contraAccountNo, createdBy string) error {
+	ledger := models.InventoryLedger{
+		ID:              uuid.New().String(),
+		TransactionDate: date,
+		ProductID:       productID,
+		LocatorID:       locatorID,
+		BatchNumber:     batchNo,
+		TransactionType: txnType,
+		DocumentNo:      docNo,
+		QtyChange:       qtyChange,
+		RunningBalance:  runningBalance,
+		AccountNo:       accountNo,
+		ContraAccountNo: contraAccountNo,
+		CreatedBy:       createdBy,
+	}
+	return tx.Create(&ledger).Error
+}
+
 // ProductInventory represents an aggregated catalog row for the main dashboard view
 type ProductInventory struct {
 	ID          string  `json:"id"`
@@ -242,6 +261,12 @@ func JournalizeInventoryMovement(movementID string) error {
 				if err := tx.Create(&storage).Error; err != nil {
 					return err
 				}
+
+				// Insert Ledger (INBOUND: Debit Inventory 11000, Credit AP 21000)
+				err = InsertInventoryLedger(tx, time.Now(), line.ProductID, line.ToLocatorID, batchNo, "INBOUND", movement.DocumentNo, actualQty, storage.QtyOnHand, "11000", "21000", movement.CreatedBy)
+				if err != nil {
+					return err
+				}
 			} else if movement.MovementType == "OUTBOUND" {
 				// Deduct stock from the reserved storage lots
 				remainingDeduct := actualQty
@@ -274,6 +299,12 @@ func JournalizeInventoryMovement(movementID string) error {
 						return err
 					}
 
+					// Insert Ledger (OUTBOUND: Debit COGS 51000, Credit Inventory 11000)
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "OUTBOUND", movement.DocumentNo, -deduct, lot.QtyOnHand, "51000", "11000", movement.CreatedBy)
+					if err != nil {
+						return err
+					}
+
 					remainingDeduct -= deduct
 				}
 			} else if movement.MovementType == "RTV" {
@@ -297,6 +328,12 @@ func JournalizeInventoryMovement(movementID string) error {
 					lot.QtyOnHold -= actualQty
 					lot.UpdatedAt = time.Now()
 					if err := tx.Save(&lot).Error; err != nil {
+						return err
+					}
+
+					// Insert Ledger (RTV from Hold: Debit AP 21000, Credit Inventory 11000)
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -actualQty, lot.QtyOnHand, "21000", "11000", movement.CreatedBy)
+					if err != nil {
 						return err
 					}
 
@@ -361,6 +398,12 @@ func JournalizeInventoryMovement(movementID string) error {
 							return err
 						}
 
+						// Insert Ledger (RTV Normal: Debit AP 21000, Credit Inventory 11000)
+						err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -deduct, lot.QtyOnHand, "21000", "11000", movement.CreatedBy)
+						if err != nil {
+							return err
+						}
+
 						remainingDeduct -= deduct
 					}
 
@@ -383,6 +426,13 @@ func JournalizeInventoryMovement(movementID string) error {
 							if err := tx.Save(&lot).Error; err != nil {
 								return err
 							}
+
+							// Insert Ledger (RTV Fallback: Debit AP 21000, Credit Inventory 11000)
+							err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -deduct, lot.QtyOnHand, "21000", "11000", movement.CreatedBy)
+							if err != nil {
+								return err
+							}
+
 							remainingDeduct -= deduct
 						}
 					}

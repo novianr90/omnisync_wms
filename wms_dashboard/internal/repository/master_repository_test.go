@@ -36,6 +36,8 @@ func setupTestDB(t *testing.T) {
 		&models.InventoryKittingLine{},
 		&models.InventoryAdjustment{},
 		&models.InventoryAdjustmentLine{},
+		&models.Account{},
+		&models.InventoryLedger{},
 	)
 	if err != nil {
 		t.Fatalf("failed to migrate test db: %v", err)

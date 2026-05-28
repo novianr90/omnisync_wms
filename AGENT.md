@@ -125,6 +125,27 @@ If the calendar system year is greater than the stored `fiscal_year`, the engine
 
 ---
 
+## 📓 Inventory Ledger Integration (Stock Ledger)
+
+Omnisync WMS now features an integrated `InventoryLedger` that acts as an immutable, append-only audit trail (rekening koran) for all physical stock movements, alongside their financial account mappings.
+
+### 1. Model Structure
+- Tracks granular details: `TransactionDate`, `ProductID`, `LocatorID`, `BatchNumber`, `TransactionType` (INBOUND, OUTBOUND, TRANSFER, RTV, KITTING, ADJUSTMENT, HOLD, RELEASE), and `DocumentNo`.
+- **Financial Mapping**: Links movements to a Chart of Accounts (`account_no` and `contra_account_no`) for downstream COGS and valuation analysis.
+
+### 2. Acid Compliance & Triggers
+Every core WMS physical modification automatically inserts a ledger row within the same ACID `gorm.DB.Transaction`:
+- **Inbound Receipts**: Debits Raw Materials/Inventory (`11000`), Credits AP (`21000`).
+- **Outbound Dispatch**: Debits COGS (`51000`), Credits Inventory (`11000`).
+- **RTV (Return to Vendor)**: Debits AP (`21000`), Credits Inventory (`11000`).
+- **Adjustments (Found)**: Debits Inventory (`11000`), Credits Adjustment Exp (`51010`).
+- **Adjustments (Lost)**: Debits Adjustment Exp (`51010`), Credits Inventory (`11000`).
+- **Kitting (Components)**: Debits WIP (`11020`), Credits Inventory (`11000`).
+- **Kitting (Finished)**: Debits Finished Goods (`11010`), Credits WIP (`11020`).
+- **QC Hold & Release**: Logged purely for physical tracking with `QtyChange = 0`.
+
+---
+
 ## 🛠️ Operations & Development Playbook
 
 ### Running the Services Locally
