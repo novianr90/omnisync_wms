@@ -258,9 +258,9 @@ type InventoryLedger struct {
 	TransactionType string    `gorm:"type:varchar(50);not null;index" json:"transaction_type"` // INBOUND, OUTBOUND, TRANSFER, RTV, KITTING, ADJUSTMENT, HOLD, RELEASE
 	DocumentNo      string    `gorm:"type:varchar(50);not null;index" json:"document_no"`
 	QtyChange       int       `gorm:"type:int;not null" json:"qty_change"`
-	RunningBalance  int       `gorm:"type:int;not null" json:"running_balance"`
-	AccountNo       string    `gorm:"type:varchar(50);index" json:"account_no,omitempty"`               // Reference to Account for Inventory Valuation
-	ContraAccountNo string    `gorm:"type:varchar(50);index" json:"contra_account_no,omitempty"`        // Reference to balancing Account (COGS, Adjustment, etc)
+	BatchBalance    int       `gorm:"type:int;not null" json:"batch_balance"`
+	AccountNo       *string   `gorm:"type:varchar(50);index" json:"account_no,omitempty"`               // Reference to Account for Inventory Valuation
+	ContraAccountNo *string   `gorm:"type:varchar(50);index" json:"contra_account_no,omitempty"`        // Reference to balancing Account (COGS, Adjustment, etc)
 	CreatedBy       string    `gorm:"type:varchar(36);not null" json:"created_by"`
 
 	// Preloads

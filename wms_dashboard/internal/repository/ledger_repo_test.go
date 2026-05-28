@@ -31,7 +31,7 @@ func TestFetchInventoryLedger(t *testing.T) {
 			DocumentNo:      "DOC-001",
 			BatchNumber:     "BAT-001",
 			QtyChange:       10,
-			RunningBalance:  10,
+			BatchBalance:    10,
 		},
 		{
 			ID:              uuid.New().String(),
@@ -41,7 +41,7 @@ func TestFetchInventoryLedger(t *testing.T) {
 			DocumentNo:      "DOC-002",
 			BatchNumber:     "BAT-001",
 			QtyChange:       -5,
-			RunningBalance:  5,
+			BatchBalance:    5,
 		},
 	}
 	for _, l := range ledgers {

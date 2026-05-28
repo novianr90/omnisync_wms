@@ -104,14 +104,14 @@
                             {{ end }}
                         </td>
                         <td class="px-6 py-3 text-right font-medium text-slate-900">
-                            {{ .RunningBalance }}
+                            {{ .BatchBalance }}
                         </td>
                         <td class="px-6 py-3 text-xs text-slate-500">
-                            {{ if .AccountNo }}
-                            <div>DR: {{ .AccountNo }} {{ if .Account.AccountNo }}({{ .Account.AccountName }}){{ end }}</div>
+                            {{ if .Account }}
+                            <div>DR: {{ .Account.AccountNo }} ({{ .Account.AccountName }})</div>
                             {{ end }}
-                            {{ if .ContraAccountNo }}
-                            <div>CR: {{ .ContraAccountNo }} {{ if .ContraAccount.AccountNo }}({{ .ContraAccount.AccountName }}){{ end }}</div>
+                            {{ if .ContraAccount }}
+                            <div>CR: {{ .ContraAccount.AccountNo }} ({{ .ContraAccount.AccountName }})</div>
                             {{ end }}
                         </td>
                     </tr>

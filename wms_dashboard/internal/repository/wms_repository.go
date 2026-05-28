@@ -12,7 +12,16 @@ import (
 )
 
 // InsertInventoryLedger creates an atomic stock mutation record in the ledger
-func InsertInventoryLedger(tx *gorm.DB, date time.Time, productID, locatorID, batchNo, txnType, docNo string, qtyChange, runningBalance int, accountNo, contraAccountNo, createdBy string) error {
+func InsertInventoryLedger(tx *gorm.DB, date time.Time, productID, locatorID, batchNo, txnType, docNo string, qtyChange, batchBalance int, accountNo, contraAccountNo, createdBy string) error {
+	var accPtr *string
+	if accountNo != "" {
+		accPtr = &accountNo
+	}
+	var contraAccPtr *string
+	if contraAccountNo != "" {
+		contraAccPtr = &contraAccountNo
+	}
+
 	ledger := models.InventoryLedger{
 		ID:              uuid.New().String(),
 		TransactionDate: date,
@@ -22,9 +31,9 @@ func InsertInventoryLedger(tx *gorm.DB, date time.Time, productID, locatorID, ba
 		TransactionType: txnType,
 		DocumentNo:      docNo,
 		QtyChange:       qtyChange,
-		RunningBalance:  runningBalance,
-		AccountNo:       accountNo,
-		ContraAccountNo: contraAccountNo,
+		BatchBalance:    batchBalance,
+		AccountNo:       accPtr,
+		ContraAccountNo: contraAccPtr,
 		CreatedBy:       createdBy,
 	}
 	return tx.Create(&ledger).Error
