@@ -35,10 +35,21 @@ func ServeLedger(c *fiber.Ctx) error {
 
 	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
+	prevPage := page - 1
+	if prevPage < 1 {
+		prevPage = 1
+	}
+	nextPage := page + 1
+	if nextPage > totalPages {
+		nextPage = totalPages
+	}
+
 	data := fiber.Map{
 		"Role":        c.Locals("user_role"),
 		"Ledgers":     ledgers,
 		"CurrentPage": page,
+		"PrevPage":    prevPage,
+		"NextPage":    nextPage,
 		"TotalPages":  totalPages,
 		"Filter":      filter,
 	}

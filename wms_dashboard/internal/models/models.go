@@ -239,6 +239,15 @@ type Account struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+const (
+	AccInventoryAsset      = "11000" // Raw Materials & General Inventory
+	AccFinishedGoods       = "11010"
+	AccWIP                 = "11020" // Work In Progress (Kitting)
+	AccAccountsPayable     = "21000" // A/P (GRNI)
+	AccCOGS                = "51000" // Cost of Goods Sold
+	AccInventoryAdjustment = "51010" // Inventory Adjustment Expense
+)
+
 // InventoryLedger tracks atomic stock mutations for audit and valuation
 type InventoryLedger struct {
 	ID              string    `gorm:"type:varchar(36);primaryKey" json:"id"`

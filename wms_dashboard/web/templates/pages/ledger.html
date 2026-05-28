@@ -1,4 +1,4 @@
-{{ define "ledger" }}
+{{ define "content" }}
 <div class="space-y-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -128,14 +128,14 @@
         </p>
         <div class="flex gap-2">
             {{ if gt .CurrentPage 1 }}
-            <button hx-get="/wms/ledger?page={{ subtract .CurrentPage 1 }}&search={{ .Filter.Search }}&sku={{ .Filter.ProductSKU }}&start_date={{ .Filter.StartDate }}&end_date={{ .Filter.EndDate }}" 
+            <button hx-get="/wms/ledger?page={{ .PrevPage }}&search={{ .Filter.Search }}&sku={{ .Filter.ProductSKU }}&start_date={{ .Filter.StartDate }}&end_date={{ .Filter.EndDate }}" 
                     hx-target="#ledger-table-container"
                     class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                 Previous
             </button>
             {{ end }}
             {{ if lt .CurrentPage .TotalPages }}
-            <button hx-get="/wms/ledger?page={{ add .CurrentPage 1 }}&search={{ .Filter.Search }}&sku={{ .Filter.ProductSKU }}&start_date={{ .Filter.StartDate }}&end_date={{ .Filter.EndDate }}" 
+            <button hx-get="/wms/ledger?page={{ .NextPage }}&search={{ .Filter.Search }}&sku={{ .Filter.ProductSKU }}&start_date={{ .Filter.StartDate }}&end_date={{ .Filter.EndDate }}" 
                     hx-target="#ledger-table-container"
                     class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                 Next

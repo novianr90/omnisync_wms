@@ -263,7 +263,7 @@ func JournalizeInventoryMovement(movementID string) error {
 				}
 
 				// Insert Ledger (INBOUND: Debit Inventory 11000, Credit AP 21000)
-				err = InsertInventoryLedger(tx, time.Now(), line.ProductID, line.ToLocatorID, batchNo, "INBOUND", movement.DocumentNo, actualQty, storage.QtyOnHand, "11000", "21000", movement.CreatedBy)
+				err = InsertInventoryLedger(tx, time.Now(), line.ProductID, line.ToLocatorID, batchNo, "INBOUND", movement.DocumentNo, actualQty, storage.QtyOnHand, models.AccInventoryAsset, models.AccAccountsPayable, movement.CreatedBy)
 				if err != nil {
 					return err
 				}
@@ -300,7 +300,7 @@ func JournalizeInventoryMovement(movementID string) error {
 					}
 
 					// Insert Ledger (OUTBOUND: Debit COGS 51000, Credit Inventory 11000)
-					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "OUTBOUND", movement.DocumentNo, -deduct, lot.QtyOnHand, "51000", "11000", movement.CreatedBy)
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "OUTBOUND", movement.DocumentNo, -deduct, lot.QtyOnHand, models.AccCOGS, models.AccInventoryAsset, movement.CreatedBy)
 					if err != nil {
 						return err
 					}
@@ -332,7 +332,7 @@ func JournalizeInventoryMovement(movementID string) error {
 					}
 
 					// Insert Ledger (RTV from Hold: Debit AP 21000, Credit Inventory 11000)
-					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -actualQty, lot.QtyOnHand, "21000", "11000", movement.CreatedBy)
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -actualQty, lot.QtyOnHand, models.AccAccountsPayable, models.AccInventoryAsset, movement.CreatedBy)
 					if err != nil {
 						return err
 					}
@@ -399,7 +399,7 @@ func JournalizeInventoryMovement(movementID string) error {
 						}
 
 						// Insert Ledger (RTV Normal: Debit AP 21000, Credit Inventory 11000)
-						err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -deduct, lot.QtyOnHand, "21000", "11000", movement.CreatedBy)
+						err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -deduct, lot.QtyOnHand, models.AccAccountsPayable, models.AccInventoryAsset, movement.CreatedBy)
 						if err != nil {
 							return err
 						}
@@ -428,7 +428,7 @@ func JournalizeInventoryMovement(movementID string) error {
 							}
 
 							// Insert Ledger (RTV Fallback: Debit AP 21000, Credit Inventory 11000)
-							err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -deduct, lot.QtyOnHand, "21000", "11000", movement.CreatedBy)
+							err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "RTV", movement.DocumentNo, -deduct, lot.QtyOnHand, models.AccAccountsPayable, models.AccInventoryAsset, movement.CreatedBy)
 							if err != nil {
 								return err
 							}

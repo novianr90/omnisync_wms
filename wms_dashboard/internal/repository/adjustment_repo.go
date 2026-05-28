@@ -97,7 +97,7 @@ func JournalizeInventoryAdjustment(adjustmentID string) error {
 				}
 
 				// Insert Ledger (ADJUSTMENT POSITIVE: Debit Inventory 11000, Credit Adjustment Exp 51010)
-				err = InsertInventoryLedger(tx, time.Now(), line.ProductID, line.LocatorID, batchNo, "ADJUSTMENT", adj.DocumentNo, line.QtyDelta, storage.QtyOnHand, "11000", "51010", adj.CreatedBy)
+				err = InsertInventoryLedger(tx, time.Now(), line.ProductID, line.LocatorID, batchNo, "ADJUSTMENT", adj.DocumentNo, line.QtyDelta, storage.QtyOnHand, models.AccInventoryAsset, models.AccInventoryAdjustment, adj.CreatedBy)
 				if err != nil {
 					return err
 				}
@@ -132,7 +132,7 @@ func JournalizeInventoryAdjustment(adjustmentID string) error {
 					}
 
 					// Insert Ledger (ADJUSTMENT NEGATIVE: Debit Adjustment Exp 51010, Credit Inventory 11000)
-					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "ADJUSTMENT", adj.DocumentNo, -take, lot.QtyOnHand, "51010", "11000", adj.CreatedBy)
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "ADJUSTMENT", adj.DocumentNo, -take, lot.QtyOnHand, models.AccInventoryAdjustment, models.AccInventoryAsset, adj.CreatedBy)
 					if err != nil {
 						return err
 					}
