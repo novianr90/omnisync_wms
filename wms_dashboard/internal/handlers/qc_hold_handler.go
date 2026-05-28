@@ -64,11 +64,8 @@ func CreateQCHold(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
-	return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
-		"Success": true,
-		"Message": "Stock successfully placed on QC Hold.",
-	})
+	setReloadToast(c, "Hold executed successfully.", true)
+	return c.SendStatus(fiber.StatusOK)
 }
 
 // POST /wms/qc-holds/:id/release
@@ -84,9 +81,6 @@ func ReleaseQCHold(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
-	return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
-		"Success": true,
-		"Message": "QC Hold released. Stock is now available.",
-	})
+	setReloadToast(c, "QC Hold released successfully.", true)
+	return c.SendStatus(fiber.StatusOK)
 }
