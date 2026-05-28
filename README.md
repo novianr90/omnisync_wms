@@ -133,6 +133,35 @@ chmod +x run_all.sh && ./run_all.sh
 
 ---
 
+## Running Tests
+
+Omnisync WMS comes equipped with robust unit and end-to-end testing suites.
+
+### 1. Backend Unit Tests
+Run backend unit tests offline using local, isolated SQLite test databases:
+```bash
+cd wms_dashboard
+go test -v ./...
+```
+
+### 2. Playwright E2E Tests
+To run full end-to-end browser workflows (encompassing Authentication, Side-menu HTMX navigation, Inbound, FIFO Outbound, QC Hold quarantine, Stock Adjustments, and Kitting Light Assembly):
+
+1. **Clear DB locks & clean states**:
+   ```powershell
+   # Windows PowerShell
+   Stop-Process -Name "main" -Force -ErrorAction SilentlyContinue
+   Stop-Process -Name "wms_dashboard" -Force -ErrorAction SilentlyContinue
+   Remove-Item -Path "wms_dashboard\wms.db*", "auth_services\auth.db*" -Force -ErrorAction SilentlyContinue
+   ```
+2. **Execute Playwright runner**:
+   ```bash
+   cd wms_dashboard
+   npx playwright test
+   ```
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
