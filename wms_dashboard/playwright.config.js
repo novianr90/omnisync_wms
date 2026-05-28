@@ -49,9 +49,9 @@ module.exports = defineConfig({
       cwd: '../auth_services',
       url: 'http://localhost:8000/health', // Standardized health check returns 200 OK
       reuseExistingServer: !isCI,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      timeout: 300 * 1000,
+      stdout: 'inherit', // Stream logs in real-time to terminal
+      stderr: 'inherit',
+      timeout: 60 * 1000, // Pre-built binary boots instantly, 60s is extremely safe
       env: {
         PORT: '8000',
         JWT_SECRET_KEY: process.env.JWT_SECRET_KEY || 'test-signing-key-for-auth-services-unit-tests-12345',
@@ -63,9 +63,9 @@ module.exports = defineConfig({
       cwd: '.',
       url: 'http://localhost:9901/health', // Standardized health check returns 200 OK
       reuseExistingServer: !isCI,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      timeout: 300 * 1000,
+      stdout: 'inherit', // Stream logs in real-time to terminal
+      stderr: 'inherit',
+      timeout: 60 * 1000, // Pre-built binary boots instantly, 60s is extremely safe
       env: {
         PORT: '9901',
         JWT_SECRET_KEY: process.env.JWT_SECRET_KEY || 'test-signing-key-for-auth-services-unit-tests-12345',
