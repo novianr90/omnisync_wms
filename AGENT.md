@@ -168,6 +168,8 @@ go test -v ./internal/repository/...
    - Lucide converts standard `<i>` tags into `<svg>` elements on load. Calling `.setAttribute("data-lucide", ...)` directly on the generated `<svg>` tag will **not** trigger Lucide to re-draw.
    - **Rule:** To dynamically change an icon, always recreate a fresh `<i>` element inside the container (e.g. `container.innerHTML = '<i data-lucide="..."></i>'`) and trigger `lucide.createIcons()` again.
    - **Clipping/Opacity on Collapsible Containers:** When animating a container to `width: 0` and `opacity: 0` (like a collapsed sidebar), do **not** place toggle triggers inside that container. They will inherit transparency and clipping, rendering them invisible. Keep floating controllers outside the collapsed aside in the DOM tree.
+5. **No Manual Closing of GitHub Issues:**
+   - **Rule:** Do NOT manually close GitHub issues. Always leave issues open and let the Pull Request automatically close the linked issue upon merging (e.g. by using the `Closes #XX` or `Resolves #XX` pattern in the PR body description). Ensure you commit all changes, push them to a feature branch, and create a PR instead of directly closing the issue.
 
 ---
 
