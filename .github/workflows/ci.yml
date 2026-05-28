@@ -1,0 +1,236 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+# Cancel redundant runs on the same branch/PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────────
+  # Gate: Detect docs-only changes to skip heavy jobs
+  # ──────────────────────────────────────────────────
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.filter.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if changes are docs-only
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          else
+            CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          fi
+
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          # Docs-only if every changed file matches these patterns
+          DOCS_ONLY=true
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            case "$file" in
+              *.md|LICENSE|.gitignore|*.txt|docs/*|.github/workflows/*) ;;
+              *) DOCS_ONLY=false; break ;;
+            esac
+          done <<< "$CHANGED"
+
+          echo "docs_only=$DOCS_ONLY" >> "$GITHUB_OUTPUT"
+          echo "Docs only: $DOCS_ONLY"
+
+  # ──────────────────────────────────────────────────
+  # Gate: Block forbidden files from entering the repo
+  # ──────────────────────────────────────────────────
+  file-blocker:
+    name: File Blocker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Block forbidden files
+        run: |
+          BLOCKED=false
+
+          # Check for .env files (except .env.example)
+          ENV_FILES=$(find . -name '.env' -o -name '.env.local' -o -name '.env.*.local' | grep -v '.env.example' || true)
+          if [ -n "$ENV_FILES" ]; then
+            echo "::error::❌ Forbidden .env files detected:"
+            echo "$ENV_FILES"
+            BLOCKED=true
+          fi
+
+          # Check for SQLite database files
+          DB_FILES=$(find . -name '*.db' -o -name '*.db-journal' -o -name '*.db-shm' -o -name '*.db-wal' | head -20 || true)
+          if [ -n "$DB_FILES" ]; then
+            echo "::error::❌ Forbidden database files detected:"
+            echo "$DB_FILES"
+            BLOCKED=true
+          fi
+
+          # Check for compiled Go binaries
+          EXE_FILES=$(find . -name '*.exe' -o -name '*.exe~' | head -20 || true)
+          if [ -n "$EXE_FILES" ]; then
+            echo "::error::❌ Forbidden binary files detected:"
+            echo "$EXE_FILES"
+            BLOCKED=true
+          fi
+
+          # Check for node_modules committed
+          if [ -d "wms_dashboard/node_modules" ] && git ls-files --error-unmatch wms_dashboard/node_modules >/dev/null 2>&1; then
+            echo "::error::❌ node_modules directory is committed!"
+            BLOCKED=true
+          fi
+
+          if [ "$BLOCKED" = true ]; then
+            echo ""
+            echo "═══════════════════════════════════════════════════"
+            echo "  Files above should be in .gitignore, not in the repo."
+            echo "  Remove them with: git rm --cached <file>"
+            echo "═══════════════════════════════════════════════════"
+            exit 1
+          fi
+
+          echo "✅ No forbidden files detected."
+
+  # ──────────────────────────────────────────────────
+  # Go Lint: go vet for both services
+  # ──────────────────────────────────────────────────
+  lint:
+    name: Go Lint
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.docs_only == 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Vet Auth Service
+        working-directory: auth_services
+        run: go vet ./...
+
+      - name: Vet WMS Dashboard
+        working-directory: wms_dashboard
+        run: go vet ./...
+
+  # ──────────────────────────────────────────────────
+  # Unit Tests: go test for both services
+  # ──────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [changes, lint]
+    if: needs.changes.outputs.docs_only == 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Test Auth Service
+        working-directory: auth_services
+        run: go test -v -race -count=1 ./...
+
+      - name: Test WMS Dashboard
+        working-directory: wms_dashboard
+        run: go test -v -race -count=1 ./...
+
+  # ──────────────────────────────────────────────────
+  # E2E Tests: Playwright against live Go services
+  # ──────────────────────────────────────────────────
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: [changes, unit-tests]
+    if: needs.changes.outputs.docs_only == 'false'
+    env:
+      JWT_SECRET_KEY: ci-test-signing-key-for-github-actions-12345
+      DB_TYPE: sqlite
+      PORT: 9901
+      AUTH_API_URL: http://localhost:8000
+      SEED_ADMIN_EMAIL: admin@omnisync.com
+      SEED_ADMIN_PASSWORD: admin123
+      SEED_OPERATOR_EMAIL: operator@omnisync.com
+      SEED_OPERATOR_PASSWORD: operator123
+      ALLOWED_ORIGIN: http://localhost:9901,http://127.0.0.1:9901
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright
+        working-directory: wms_dashboard
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Create Auth Service .env
+        working-directory: auth_services
+        run: |
+          cat > .env <<EOF
+          JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
+          PORT=8000
+          ALLOWED_ORIGIN=${{ env.ALLOWED_ORIGIN }}
+          DB_TYPE=${{ env.DB_TYPE }}
+          SEED_ADMIN_EMAIL=${{ env.SEED_ADMIN_EMAIL }}
+          SEED_ADMIN_PASSWORD=${{ env.SEED_ADMIN_PASSWORD }}
+          SEED_OPERATOR_EMAIL=${{ env.SEED_OPERATOR_EMAIL }}
+          SEED_OPERATOR_PASSWORD=${{ env.SEED_OPERATOR_PASSWORD }}
+          EOF
+
+      - name: Create WMS Dashboard .env
+        working-directory: wms_dashboard
+        run: |
+          cat > .env <<EOF
+          JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
+          PORT=${{ env.PORT }}
+          AUTH_API_URL=${{ env.AUTH_API_URL }}
+          DB_TYPE=${{ env.DB_TYPE }}
+          EOF
+
+      - name: Run Playwright E2E Tests
+        working-directory: wms_dashboard
+        run: CI=true npx playwright test
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: wms_dashboard/test-results/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────
+  # Docs-only acknowledgement (so required checks pass)
+  # ──────────────────────────────────────────────────
+  docs-only-pass:
+    name: Docs Only — Tests Skipped
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.docs_only == 'true'
+    steps:
+      - run: |
+          echo "📄 This PR only changes documentation files."
+          echo "   Unit tests and E2E tests have been skipped."
+          echo "   ✅ All good!"

@@ -42,8 +42,8 @@ module.exports = defineConfig({
       timeout: 120 * 1000,
       env: {
         JWT_SECRET_KEY: 'test-signing-key-for-auth-services-unit-tests-12345',
-        GOMODCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\pkg\\mod',
-        GOCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\build',
+        ...(process.env.GOMODCACHE ? { GOMODCACHE: process.env.GOMODCACHE } : { GOMODCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\pkg\\mod' }),
+        ...(process.env.GOCACHE ? { GOCACHE: process.env.GOCACHE } : { GOCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\build' }),
       },
     },
   ],

@@ -191,6 +191,9 @@ npx playwright test
 7. **Asynchronous Dropdowns (Race Conditions in Playwright):**
    - **Gotcha:** Selecting a product in dynamic dropdowns (like the Kitting components panel) triggers an async AJAX fetch to load locators containing active stock.
    - **Rule:** When writing Playwright E2E tests, always wait for the options to populate before selecting them by asserting `await expect(row.locator('select[name="comp_locator_id[]"] option[value="loc-001"]')).toBeAttached();` to prevent flake.
+8. **Docs-Only Changes Skip Testing:**
+   - Changes that **only** modify documentation files (e.g. `*.md`, `LICENSE`, `.gitignore`, `*.txt`, `docs/*`, `.github/workflows/*`) do **not** require running unit tests or E2E tests.
+   - **Rule:** If a PR or commit exclusively touches documentation, the CI pipeline will automatically skip the Lint, Unit Tests, and E2E Tests jobs. No manual test runs are needed before pushing docs-only changes.
 
 ---
 
@@ -200,3 +203,4 @@ npx playwright test
 - **Frontend SPA Layer**: HTMX v1.9.10 (Asynchronous swaps & dynamic forms)
 - **Styling Core**: Tailwind CSS v4.0 + Custom Glassmorphism Theme (Outfit + Inter font faces)
 - **Iconsets**: Lucide Icons (asynchronously re-bound on HTMX swaps)
+
