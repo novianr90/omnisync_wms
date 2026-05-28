@@ -33,7 +33,7 @@ module.exports = defineConfig({
       reuseExistingServer: !isCI,
       stdout: 'pipe',
       stderr: 'pipe',
-      timeout: 180 * 1000,
+      timeout: 300 * 1000,
       env: {
         JWT_SECRET_KEY: 'test-signing-key-for-auth-services-unit-tests-12345',
       },
@@ -47,7 +47,7 @@ module.exports = defineConfig({
       reuseExistingServer: !isCI,
       stdout: 'pipe',
       stderr: 'pipe',
-      timeout: 180 * 1000,
+      timeout: 300 * 1000,
       env: {
         JWT_SECRET_KEY: 'test-signing-key-for-auth-services-unit-tests-12345',
         ...(process.env.GOMODCACHE ? { GOMODCACHE: process.env.GOMODCACHE } : { GOMODCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\pkg\\mod' }),
