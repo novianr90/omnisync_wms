@@ -25,3 +25,6 @@ Thumbs.db
 .vscode/
 *.suo
 *.user
+
+# MCP Generated file
+.codegraph
