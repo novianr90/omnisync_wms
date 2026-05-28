@@ -100,6 +100,11 @@ func main() {
 		AppName: "Omnisync WMS - Auth Service",
 	})
 
+	// 3.1 Health Check (before any middleware — used by CI/Playwright readiness probe)
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 	// 4. CORS Middleware
 	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
 	if allowedOrigin == "" {

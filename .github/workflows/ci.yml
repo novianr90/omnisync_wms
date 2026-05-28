@@ -181,12 +181,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: wms_dashboard/package-lock.json
 
-      - name: Install Playwright
+      - name: Cache Playwright Browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('wms_dashboard/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install NPM dependencies
         working-directory: wms_dashboard
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: wms_dashboard
+        run: npx playwright install chromium
+
+      - name: Install Playwright OS Dependencies
+        working-directory: wms_dashboard
+        run: npx playwright install-deps chromium
 
       - name: Create Auth Service .env
         working-directory: auth_services

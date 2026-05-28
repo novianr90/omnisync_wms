@@ -1,12 +1,32 @@
 const { defineConfig, devices } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
 
 const isCI = !!process.env.CI;
 
+// Auto-detect pre-built binaries to run them instead of slow 'go run'
+const authBinaryDir = path.join(__dirname, '../auth_services');
+const authBinaryName = process.platform === 'win32' ? 'auth_services.exe' : 'auth_services';
+const useAuthBinary = fs.existsSync(path.join(authBinaryDir, authBinaryName));
+
+const wmsBinaryDir = __dirname;
+const wmsBinaryName = process.platform === 'win32' ? 'wms_dashboard.exe' : 'wms_dashboard';
+const useWmsBinary = fs.existsSync(path.join(wmsBinaryDir, wmsBinaryName));
+
+const authCmd = useAuthBinary
+  ? (process.platform === 'win32' ? 'auth_services.exe' : './auth_services')
+  : 'go run cmd/main.go';
+
+const wmsCmd = useWmsBinary
+  ? (process.platform === 'win32' ? 'wms_dashboard.exe' : './wms_dashboard')
+  : 'go run cmd/main.go';
+
 module.exports = defineConfig({
   testDir: './e2e',
-  timeout: 30 * 1000,
+  // Timeout per test (CI gets 90s to account for slow runners/DB setup, local gets 45s)
+  timeout: isCI ? 90 * 1000 : 45 * 1000,
   expect: {
-    timeout: 5000,
+    timeout: isCI ? 10000 : 5000,
   },
   fullyParallel: false,
   workers: 1, // Run sequentially to avoid DB locks and race conditions
@@ -25,11 +45,9 @@ module.exports = defineConfig({
   ],
   webServer: [
     {
-      // In CI, run the pre-built binary; locally, use go run
-      command: isCI
-        ? 'cd ../auth_services && ./auth_services'
-        : 'cd ../auth_services && go run cmd/main.go',
-      url: 'http://localhost:8000/auth/verify', // Verify it's ready by polling the verify endpoint (returns 401 but indicates live server)
+      command: authCmd,
+      cwd: '../auth_services',
+      url: 'http://localhost:8000/health', // Standardized health check returns 200 OK
       reuseExistingServer: !isCI,
       stdout: 'pipe',
       stderr: 'pipe',
@@ -39,11 +57,9 @@ module.exports = defineConfig({
       },
     },
     {
-      // In CI, run the pre-built binary; locally, use go run
-      command: isCI
-        ? './wms_dashboard'
-        : 'go run cmd/main.go',
-      url: 'http://localhost:9901/login', // Verify dashboard is ready by loading the login page
+      command: wmsCmd,
+      cwd: '.',
+      url: 'http://localhost:9901/health', // Standardized health check returns 200 OK
       reuseExistingServer: !isCI,
       stdout: 'pipe',
       stderr: 'pipe',
