@@ -74,6 +74,11 @@ func main() {
 	app.Post("/wms/qc-holds", handlers.CreateQCHold)
 	app.Post("/wms/qc-holds/:id/release", handlers.ReleaseQCHold)
 
+	// Return to Vendor (RTV)
+	app.Get("/wms/rtv", handlers.ServeRTV)
+	app.Get("/wms/rtv/storages", handlers.ServeRTVStoragesByProduct)
+	app.Post("/wms/rtv/new", handlers.CreateRTV)
+
 	// --- MASTER MAINTENANCE CRUD ENDPOINTS ---
 	// View lists (Operator & Admin)
 	app.Get("/wms/masters/products", handlers.ServeProductsMaster)

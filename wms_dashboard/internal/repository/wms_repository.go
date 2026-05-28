@@ -116,6 +116,79 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 				if allocatedQty < requiredQty {
 					return fmt.Errorf("insufficient stock for SKU product ID: %s. Requested: %d, Available: %d", line.ProductID, requiredQty, allocatedQty)
 				}
+			} else if movement.MovementType == "RTV" {
+				if line.IsFromHold {
+					if line.FromLocatorID == "" || line.BatchNumber == "" {
+						return errors.New("locator and batch number are required to return from QC Hold")
+					}
+					var lot models.Storage
+					err := tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, line.FromLocatorID, line.BatchNumber).First(&lot).Error
+					if err != nil {
+						return fmt.Errorf("matching storage lot not found for return: %w", err)
+					}
+					if lot.QtyOnHold < line.RequestedQuantity {
+						return fmt.Errorf("insufficient hold stock in selected lot. Requested return: %d, On Hold: %d", line.RequestedQuantity, lot.QtyOnHold)
+					}
+				} else {
+					// Return from regular stock
+					if line.FromLocatorID != "" && line.BatchNumber != "" {
+						// Sourced from a specific lot
+						var lot models.Storage
+						err := tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, line.FromLocatorID, line.BatchNumber).First(&lot).Error
+						if err != nil {
+							return fmt.Errorf("matching storage lot not found for return: %w", err)
+						}
+						available := lot.QtyOnHand - lot.QtyReserved - lot.QtyOnHold
+						if available < line.RequestedQuantity {
+							return fmt.Errorf("insufficient available stock in selected lot. Requested return: %d, Available: %d", line.RequestedQuantity, available)
+						}
+						lot.QtyReserved += line.RequestedQuantity
+						if err := tx.Save(&lot).Error; err != nil {
+							return err
+						}
+					} else {
+						// FIFO allocation fallback
+						requiredQty := line.RequestedQuantity
+						allocatedQty := 0
+
+						var lots []models.Storage
+						err := tx.Where("product_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", line.ProductID).
+							Order("received_at ASC").
+							Find(&lots).Error
+
+						if err != nil {
+							return err
+						}
+
+						for _, lot := range lots {
+							available := lot.QtyOnHand - lot.QtyReserved - lot.QtyOnHold
+							take := requiredQty - allocatedQty
+							if take <= 0 {
+								break
+							}
+
+							if available < take {
+								take = available
+							}
+
+							lot.QtyReserved += take
+							if err := tx.Save(&lot).Error; err != nil {
+								return err
+							}
+
+							if allocatedQty == 0 {
+								line.FromLocatorID = lot.LocatorID
+								line.BatchNumber = lot.BatchNumber
+							}
+
+							allocatedQty += take
+						}
+
+						if allocatedQty < requiredQty {
+							return fmt.Errorf("insufficient stock for SKU product ID: %s. Requested: %d, Available: %d", line.ProductID, requiredQty, allocatedQty)
+						}
+					}
+				}
 			}
 
 			// Save line item
@@ -203,6 +276,117 @@ func JournalizeInventoryMovement(movementID string) error {
 
 					remainingDeduct -= deduct
 				}
+			} else if movement.MovementType == "RTV" {
+				if line.IsFromHold {
+					if line.FromLocatorID == "" || line.BatchNumber == "" {
+						return errors.New("locator and batch number are required to return from QC Hold")
+					}
+					var lot models.Storage
+					err := tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, line.FromLocatorID, line.BatchNumber).First(&lot).Error
+					if err != nil {
+						return fmt.Errorf("matching storage lot not found for return: %w", err)
+					}
+					if lot.QtyOnHold < actualQty {
+						return fmt.Errorf("insufficient hold stock in selected lot. Requested return: %d, On Hold: %d", actualQty, lot.QtyOnHold)
+					}
+					if lot.QtyOnHand < actualQty {
+						return fmt.Errorf("insufficient physical stock in selected lot. Requested return: %d, On Hand: %d", actualQty, lot.QtyOnHand)
+					}
+
+					lot.QtyOnHand -= actualQty
+					lot.QtyOnHold -= actualQty
+					lot.UpdatedAt = time.Now()
+					if err := tx.Save(&lot).Error; err != nil {
+						return err
+					}
+
+					// Fetch active QC hold records and consume them
+					var qcHolds []models.QCHold
+					err = tx.Where("storage_id = ? AND status = 'ACTIVE'", lot.ID).Order("created_at ASC").Find(&qcHolds).Error
+					if err != nil {
+						return err
+					}
+
+					remainingToRelease := actualQty
+					for j := range qcHolds {
+						qcHold := &qcHolds[j]
+						if remainingToRelease <= 0 {
+							break
+						}
+						release := remainingToRelease
+						if qcHold.Qty < release {
+							release = qcHold.Qty
+						}
+						qcHold.Qty -= release
+						if qcHold.Qty == 0 {
+							qcHold.Status = "RELEASED"
+							now := time.Now()
+							qcHold.ReleasedAt = &now
+							qcHold.ReleasedBy = movement.CreatedBy
+						}
+						if err := tx.Save(qcHold).Error; err != nil {
+							return err
+						}
+						remainingToRelease -= release
+					}
+				} else {
+					// Deduct stock from the reserved storage lots
+					remainingDeduct := actualQty
+
+					// Fetch lots that match the product and have reservations
+					var lots []models.Storage
+					err := tx.Where("product_id = ? AND qty_reserved > 0", line.ProductID).
+						Order("received_at ASC").
+						Find(&lots).Error
+
+					if err != nil {
+						return err
+					}
+
+					for _, lot := range lots {
+						if remainingDeduct <= 0 {
+							break
+						}
+
+						deduct := remainingDeduct
+						if lot.QtyReserved < deduct {
+							deduct = lot.QtyReserved
+						}
+
+						lot.QtyOnHand -= deduct
+						lot.QtyReserved -= deduct
+						lot.UpdatedAt = time.Now()
+
+						if err := tx.Save(&lot).Error; err != nil {
+							return err
+						}
+
+						remainingDeduct -= deduct
+					}
+
+					if remainingDeduct > 0 {
+						// Fallback to match specific locator and batch if still remaining
+						var lot models.Storage
+						err := tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, line.FromLocatorID, line.BatchNumber).First(&lot).Error
+						if err == nil {
+							deduct := remainingDeduct
+							if lot.QtyOnHand < deduct {
+								deduct = lot.QtyOnHand
+							}
+							lot.QtyOnHand -= deduct
+							if lot.QtyReserved >= deduct {
+								lot.QtyReserved -= deduct
+							} else {
+								lot.QtyReserved = 0
+							}
+							lot.UpdatedAt = time.Now()
+							if err := tx.Save(&lot).Error; err != nil {
+								return err
+							}
+							remainingDeduct -= deduct
+						}
+					}
+				}
 			}
 
 			// Update line's actual quantity and batch details
@@ -230,10 +414,13 @@ func RejectInventoryMovement(movementID string, reason string) error {
 			return errors.New("movement has already been finalized or closed")
 		}
 
-		if movement.MovementType == "OUTBOUND" {
+		if movement.MovementType == "OUTBOUND" || movement.MovementType == "RTV" {
 			// Release allocations
 			for i := range movement.Lines {
 				line := &movement.Lines[i]
+				if movement.MovementType == "RTV" && line.IsFromHold {
+					continue // No reservation was made for QC Hold returns
+				}
 				releasedQty := line.RequestedQuantity
 
 				var lots []models.Storage
