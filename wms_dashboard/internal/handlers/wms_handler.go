@@ -93,6 +93,27 @@ func renderPartial(c *fiber.Ctx, partialPath string, templateName string, data f
 	return c.Send(buf.Bytes())
 }
 
+// Helper to set a cookie toast for page reloads (HX-Refresh)
+func setReloadToast(c *fiber.Ctx, message string, isSuccess bool) {
+	toastType := "error"
+	if isSuccess {
+		toastType = "success"
+	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "toast_msg",
+		Value:    message,
+		HTTPOnly: false, // JS needs to read it
+		Path:     "/",
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:     "toast_type",
+		Value:    toastType,
+		HTTPOnly: false, // JS needs to read it
+		Path:     "/",
+	})
+	c.Set("HX-Refresh", "true")
+}
+
 // GET /login
 func ServeLogin(c *fiber.Ctx) error {
 	// If already authenticated, redirect to dashboard
@@ -330,7 +351,7 @@ func CreateMovement(c *fiber.Ctx) error {
 	}
 
 	// Refresh client to reload dashboard
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, fmt.Sprintf("Movement %s registered successfully.", docNo), true)
 	return c.SendStatus(fiber.StatusCreated)
 }
 
@@ -357,7 +378,7 @@ func ClaimMovement(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Task claimed successfully.", true)
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -372,7 +393,7 @@ func JournalMovement(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Movement successfully journaled.", true)
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -387,7 +408,7 @@ func CompleteMovement(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Task completed successfully.", true)
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -407,6 +428,6 @@ func RejectMovement(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Movement successfully rejected.", true)
 	return c.SendStatus(fiber.StatusOK)
 }

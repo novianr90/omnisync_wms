@@ -10,10 +10,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS (compiled stylesheet) -->
     <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Notyf CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
     <!-- HTMX CDN -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Notyf for Toast Notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 antialiased">
+    <!-- Dynamic Alert Banner Toast Area (Used for executing HTMX script responses) -->
+    <div id="toast-container" style="display: none;"></div>
+
     <!-- Dynamic alert area -->
     <div id="login-alert" class="fixed top-6 right-6 z-50 max-w-sm"></div>
 

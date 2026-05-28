@@ -146,7 +146,7 @@ func CreateKittingOrder(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Kitting order created successfully.", true)
 	return c.SendStatus(fiber.StatusCreated)
 }
 
@@ -161,7 +161,7 @@ func JournalKittingOrder(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Kitting order successfully journaled.", true)
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -181,6 +181,6 @@ func RejectKittingOrder(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Kitting order successfully rejected.", true)
 	return c.SendStatus(fiber.StatusOK)
 }

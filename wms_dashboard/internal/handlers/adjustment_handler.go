@@ -129,7 +129,7 @@ func CreateAdjustment(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Adjustment ticket registered successfully.", true)
 	return c.SendStatus(fiber.StatusCreated)
 }
 
@@ -144,7 +144,7 @@ func JournalAdjustment(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Adjustment successfully journaled.", true)
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -164,6 +164,6 @@ func RejectAdjustment(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("HX-Refresh", "true")
+	setReloadToast(c, "Adjustment ticket rejected successfully.", true)
 	return c.SendStatus(fiber.StatusOK)
 }
