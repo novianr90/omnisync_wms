@@ -51,9 +51,11 @@ module.exports = defineConfig({
       reuseExistingServer: !isCI,
       stdout: 'pipe',
       stderr: 'pipe',
-      timeout: 600 * 1000,
+      timeout: 300 * 1000,
       env: {
-        JWT_SECRET_KEY: 'test-signing-key-for-auth-services-unit-tests-12345',
+        PORT: '8000',
+        JWT_SECRET_KEY: process.env.JWT_SECRET_KEY || 'test-signing-key-for-auth-services-unit-tests-12345',
+        DB_TYPE: 'sqlite',
       },
     },
     {
@@ -63,9 +65,12 @@ module.exports = defineConfig({
       reuseExistingServer: !isCI,
       stdout: 'pipe',
       stderr: 'pipe',
-      timeout: 600 * 1000,
+      timeout: 300 * 1000,
       env: {
-        JWT_SECRET_KEY: 'test-signing-key-for-auth-services-unit-tests-12345',
+        PORT: '9901',
+        JWT_SECRET_KEY: process.env.JWT_SECRET_KEY || 'test-signing-key-for-auth-services-unit-tests-12345',
+        AUTH_API_URL: 'http://localhost:8000',
+        DB_TYPE: 'sqlite',
         ...(process.env.GOMODCACHE ? { GOMODCACHE: process.env.GOMODCACHE } : { GOMODCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\pkg\\mod' }),
         ...(process.env.GOCACHE ? { GOCACHE: process.env.GOCACHE } : { GOCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\build' }),
       },
