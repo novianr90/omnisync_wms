@@ -143,13 +143,28 @@ go run cmd/main.go
 ```
 
 ### Running Automated Test Suites
-Run the database transaction safeguards test suite offline using an isolated, in-memory SQLite database connection:
+
+#### 1. Backend Unit Tests
+Run the Go unit test suites (which include repository safeguards and Fiber template handlers) offline using isolated SQLite environments:
 
 ```powershell
 cd wms_dashboard
 $env:GOMODCACHE="D:\Code\projects\omnisync_wms\go_cache\pkg\mod"
 $env:GOCACHE="D:\Code\projects\omnisync_wms\go_cache\build"
-go test -v ./internal/repository/...
+go test -v ./...
+```
+
+#### 2. Playwright E2E Tests
+Run the automated end-to-end user journeys inside a headless Chrome environment. Before each run, it is highly recommended to clean local SQLite database files to ensure clean FIFO lot levels and seeded states:
+
+```powershell
+# Stop services, clear DBs, and run Playwright
+Stop-Process -Name "main" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "wms_dashboard" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "wms_dashboard\wms.db*", "auth_services\auth.db*" -Force -ErrorAction SilentlyContinue
+
+cd wms_dashboard
+npx playwright test
 ```
 
 ---
@@ -170,6 +185,12 @@ go test -v ./internal/repository/...
    - **Clipping/Opacity on Collapsible Containers:** When animating a container to `width: 0` and `opacity: 0` (like a collapsed sidebar), do **not** place toggle triggers inside that container. They will inherit transparency and clipping, rendering them invisible. Keep floating controllers outside the collapsed aside in the DOM tree.
 5. **No Manual Closing of GitHub Issues:**
    - **Rule:** Do NOT manually close GitHub issues. Always leave issues open and let the Pull Request automatically close the linked issue upon merging (e.g. by using the `Closes #XX` or `Resolves #XX` pattern in the PR body description). Ensure you commit all changes, push them to a feature branch, and create a PR instead of directly closing the issue.
+6. **Page-Reload Success Toasts (`setReloadToast`):**
+   - **Gotcha:** Operational flows that trigger HTMX client-side reloads (via `HX-Refresh: true` header) will destroy any inline toast notifications sent in the direct HTTP response.
+   - **Rule:** Use `setReloadToast(c, message, isSuccess)` (defined in `wms_handler.go`) which saves the message into temporary cookie stores (`toast_msg` and `toast_type`). The `base.html` layout parses these cookies globally upon reload and renders a sleek, persistent Notyf pop-up.
+7. **Asynchronous Dropdowns (Race Conditions in Playwright):**
+   - **Gotcha:** Selecting a product in dynamic dropdowns (like the Kitting components panel) triggers an async AJAX fetch to load locators containing active stock.
+   - **Rule:** When writing Playwright E2E tests, always wait for the options to populate before selecting them by asserting `await expect(row.locator('select[name="comp_locator_id[]"] option[value="loc-001"]')).toBeAttached();` to prevent flake.
 
 ---
 
