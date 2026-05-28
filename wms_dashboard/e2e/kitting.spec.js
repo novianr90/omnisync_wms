@@ -17,7 +17,6 @@ test.describe('Kitting / Light Assembly E2E Flows', () => {
     await page.click('button:has-text("New Kitting Order")');
     await expect(page.locator('#newKittingModal')).toBeVisible();
 
-    // 3. Fill Finished Good Section
     // Select the seeded bundle product to build (prod-005)
     await page.selectOption('#newKittingModal select[name="finished_product_id"]', 'prod-005');
     await page.selectOption('#newKittingModal select[name="finished_locator_id"]', { index: 1 });
@@ -33,7 +32,9 @@ test.describe('Kitting / Light Assembly E2E Flows', () => {
     await row.locator('select[name="comp_product_id[]"]').selectOption('prod-004');
     
     // Wait for locator dropdown to populate via async fetch
-    await expect(row.locator('select[name="comp_locator_id[]"] option[value="loc-001"]')).toBeAttached();
+    const compOption = row.locator('select[name="comp_locator_id[]"] option[value="loc-001"]');
+    await expect(compOption).toBeAttached({ timeout: 10000 });
+    await page.waitForTimeout(250); // Give HTMX/JS a brief moment to settle the DOM before selecting
     await row.locator('select[name="comp_locator_id[]"]').selectOption('loc-001');
     await row.locator('input[name="comp_qty[]"]').fill('4');
 

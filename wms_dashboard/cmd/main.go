@@ -27,6 +27,11 @@ func main() {
 		AppName: "Omnisync WMS - Dashboard Service",
 	})
 
+	// 3.1 Health Check (before any middleware — used by CI/Playwright readiness probe)
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 	// 4. Mount Static Assets
 	app.Static("/static", "./web/static")
 
