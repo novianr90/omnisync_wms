@@ -79,6 +79,9 @@ func main() {
 	app.Get("/wms/rtv/storages", handlers.ServeRTVStoragesByProduct)
 	app.Post("/wms/rtv/new", handlers.CreateRTV)
 
+	// --- INVENTORY LEDGER ---
+	app.Get("/wms/ledger", middleware.RequireSystemAdmin(), handlers.ServeLedger)
+
 	// --- MASTER MAINTENANCE CRUD ENDPOINTS ---
 	// View lists (Operator & Admin)
 	app.Get("/wms/masters/products", handlers.ServeProductsMaster)

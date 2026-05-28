@@ -1,0 +1,154 @@
+{{ define "ledger" }}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Inventory Ledger</h1>
+            <p class="text-sm text-slate-500 mt-1">Immutable audit trail of all physical stock movements.</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+        <form hx-get="/wms/ledger" hx-target="#ledger-table-container" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Search</label>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" name="search" placeholder="Doc No, Batch..." value="{{ .Filter.Search }}"
+                           class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">SKU</label>
+                <input type="text" name="sku" placeholder="Product SKU" value="{{ .Filter.ProductSKU }}"
+                       class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Start Date</label>
+                <input type="date" name="start_date" value="{{ .Filter.StartDate }}"
+                       class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+            </div>
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">End Date</label>
+                    <input type="date" name="end_date" value="{{ .Filter.EndDate }}"
+                           class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                </div>
+                <button type="submit" class="mb-[1px] px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors h-[38px] flex items-center justify-center">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Container -->
+    <div id="ledger-table-container">
+        {{ template "ledger_table" . }}
+    </div>
+</div>
+<script>
+    // Re-initialize lucide icons if loaded directly
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+{{ end }}
+
+{{ define "ledger_table" }}
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600 whitespace-nowrap">
+            <thead class="bg-slate-50/50 text-slate-500 font-medium border-b border-slate-100">
+                <tr>
+                    <th class="px-6 py-4">Transaction Date</th>
+                    <th class="px-6 py-4">Type</th>
+                    <th class="px-6 py-4">Document / Batch</th>
+                    <th class="px-6 py-4">Product</th>
+                    <th class="px-6 py-4 text-right">Debit / Credit</th>
+                    <th class="px-6 py-4 text-right">Balance</th>
+                    <th class="px-6 py-4">Accounts</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {{ if not .Ledgers }}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                        <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-3 opacity-50"></i>
+                        <p>No ledger entries found matching the filters.</p>
+                    </td>
+                </tr>
+                {{ else }}
+                    {{ range .Ledgers }}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-3 text-slate-900 font-medium">{{ .TransactionDate.Format "2006-01-02 15:04:05" }}</td>
+                        <td class="px-6 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                {{ .TransactionType }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-3">
+                            <div class="font-medium text-slate-900">{{ .DocumentNo }}</div>
+                            <div class="text-xs text-slate-500">Batch: {{ .BatchNumber }}</div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <div class="font-medium text-slate-900">{{ if .Product.ID }}{{ .Product.Name }}{{ else }}{{ .ProductID }}{{ end }}</div>
+                            <div class="text-xs text-slate-500">Loc: {{ if .Locator.ID }}{{ .Locator.Code }}{{ else }}{{ .LocatorID }}{{ end }}</div>
+                        </td>
+                        <td class="px-6 py-3 text-right">
+                            {{ if gt .QtyChange 0 }}
+                                <span class="text-emerald-600 font-medium">+{{ .QtyChange }}</span>
+                            {{ else if lt .QtyChange 0 }}
+                                <span class="text-rose-600 font-medium">{{ .QtyChange }}</span>
+                            {{ else }}
+                                <span class="text-slate-400">0</span>
+                            {{ end }}
+                        </td>
+                        <td class="px-6 py-3 text-right font-medium text-slate-900">
+                            {{ .RunningBalance }}
+                        </td>
+                        <td class="px-6 py-3 text-xs text-slate-500">
+                            {{ if .AccountNo }}
+                            <div>DR: {{ .AccountNo }} {{ if .Account.AccountNo }}({{ .Account.AccountName }}){{ end }}</div>
+                            {{ end }}
+                            {{ if .ContraAccountNo }}
+                            <div>CR: {{ .ContraAccountNo }} {{ if .ContraAccount.AccountNo }}({{ .ContraAccount.AccountName }}){{ end }}</div>
+                            {{ end }}
+                        </td>
+                    </tr>
+                    {{ end }}
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+    
+    {{ if gt .TotalPages 1 }}
+    <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+        <p class="text-sm text-slate-500">
+            Page <span class="font-medium text-slate-900">{{ .CurrentPage }}</span> of <span class="font-medium text-slate-900">{{ .TotalPages }}</span>
+        </p>
+        <div class="flex gap-2">
+            {{ if gt .CurrentPage 1 }}
+            <button hx-get="/wms/ledger?page={{ subtract .CurrentPage 1 }}&search={{ .Filter.Search }}&sku={{ .Filter.ProductSKU }}&start_date={{ .Filter.StartDate }}&end_date={{ .Filter.EndDate }}" 
+                    hx-target="#ledger-table-container"
+                    class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                Previous
+            </button>
+            {{ end }}
+            {{ if lt .CurrentPage .TotalPages }}
+            <button hx-get="/wms/ledger?page={{ add .CurrentPage 1 }}&search={{ .Filter.Search }}&sku={{ .Filter.ProductSKU }}&start_date={{ .Filter.StartDate }}&end_date={{ .Filter.EndDate }}" 
+                    hx-target="#ledger-table-container"
+                    class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                Next
+            </button>
+            {{ end }}
+        </div>
+    </div>
+    {{ end }}
+</div>
+<script>
+    // Re-initialize lucide icons on HTMX partial swap
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+{{ end }}

@@ -123,6 +123,13 @@
                         <span>System Roles</span>
                     </a>
                     {{end}}
+
+                    {{if eq .UserRole "System Admin"}}
+                    <a href="/wms/ledger" hx-get="/wms/ledger" hx-target="#main-workspace" hx-push-url="true" class="flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200 cursor-pointer pl-6">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        <span>Inventory Ledger</span>
+                    </a>
+                    {{end}}
                 </nav>
             </div>
 
