@@ -222,15 +222,51 @@ jobs:
           retention-days: 7
 
   # ──────────────────────────────────────────────────
-  # Docs-only acknowledgement (so required checks pass)
+  # Required Gate: Single status check for branch protection
+  # This job ALWAYS runs and is the only required check.
   # ──────────────────────────────────────────────────
-  docs-only-pass:
-    name: Docs Only — Tests Skipped
+  ci-gate:
+    name: CI Gate
     runs-on: ubuntu-latest
-    needs: [changes]
-    if: needs.changes.outputs.docs_only == 'true'
+    if: always()
+    needs: [changes, file-blocker, lint, unit-tests, e2e-tests]
     steps:
-      - run: |
-          echo "📄 This PR only changes documentation files."
-          echo "   Unit tests and E2E tests have been skipped."
-          echo "   ✅ All good!"
+      - name: Evaluate pipeline result
+        run: |
+          echo "=== CI Gate Summary ==="
+          echo "docs_only:   ${{ needs.changes.outputs.docs_only }}"
+          echo "file-blocker: ${{ needs.file-blocker.result }}"
+          echo "lint:         ${{ needs.lint.result }}"
+          echo "unit-tests:   ${{ needs.unit-tests.result }}"
+          echo "e2e-tests:    ${{ needs.e2e-tests.result }}"
+          echo "======================="
+
+          # File blocker must always pass
+          if [ "${{ needs.file-blocker.result }}" != "success" ]; then
+            echo "❌ File blocker failed — forbidden files detected."
+            exit 1
+          fi
+
+          # Docs-only: lint/test/e2e are skipped, that's OK
+          if [ "${{ needs.changes.outputs.docs_only }}" = "true" ]; then
+            echo "📄 Docs-only change — tests were skipped. ✅"
+            exit 0
+          fi
+
+          # Code change: all test jobs must have succeeded
+          if [ "${{ needs.lint.result }}" != "success" ]; then
+            echo "❌ Lint failed."
+            exit 1
+          fi
+
+          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
+            echo "❌ Unit tests failed."
+            exit 1
+          fi
+
+          if [ "${{ needs.e2e-tests.result }}" != "success" ]; then
+            echo "❌ E2E tests failed."
+            exit 1
+          fi
+
+          echo "✅ All checks passed!"

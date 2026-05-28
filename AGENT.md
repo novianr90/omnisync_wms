@@ -194,6 +194,9 @@ npx playwright test
 8. **Docs-Only Changes Skip Testing:**
    - Changes that **only** modify documentation files (e.g. `*.md`, `LICENSE`, `.gitignore`, `*.txt`, `docs/*`, `.github/workflows/*`) do **not** require running unit tests or E2E tests.
    - **Rule:** If a PR or commit exclusively touches documentation, the CI pipeline will automatically skip the Lint, Unit Tests, and E2E Tests jobs. No manual test runs are needed before pushing docs-only changes.
+9. **CI Gate Must Pass Before Merge:**
+   - The `CI Gate` status check is a **required** check on the `master` branch. PRs **cannot** be merged if any test (lint, unit, or E2E) has failed.
+   - **Rule:** Never bypass or force-merge a PR with a failing CI Gate. Fix the failing tests first, push the fix, and wait for the pipeline to go green before merging.
 
 ---
 
