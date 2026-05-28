@@ -118,6 +118,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
+          cache-dependency-path: |
+            auth_services/go.sum
+            wms_dashboard/go.sum
 
       - name: Vet Auth Service
         working-directory: auth_services
@@ -141,6 +144,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
+          cache-dependency-path: |
+            auth_services/go.sum
+            wms_dashboard/go.sum
 
       - name: Test Auth Service
         working-directory: auth_services
