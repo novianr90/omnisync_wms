@@ -15,7 +15,7 @@ func ServeTransfers(c *fiber.Ctx) error {
 	_ = database.DB.Preload("Lines.Product.UoM").
 		Preload("Lines.FromLocator.Warehouse").
 		Preload("Lines.ToLocator.Warehouse").
-		Where("movement_type = ?", "TRANSFER").
+		Where("movement_type = ?", models.MvtTypeTransfer).
 		Order("updated_at DESC").Find(&movements).Error
 
 	var products []models.Product
@@ -26,9 +26,9 @@ func ServeTransfers(c *fiber.Ctx) error {
 		PendingCount   int64
 		CompletedCount int64
 	}
-	_ = database.DB.Model(&models.InventoryMovement{}).Where("movement_type = ?", "TRANSFER").Count(&stats.TotalCount).Error
-	_ = database.DB.Model(&models.InventoryMovement{}).Where("movement_type = ? AND status IN ('OPEN', 'IN_PROGRESS')", "TRANSFER").Count(&stats.PendingCount).Error
-	_ = database.DB.Model(&models.InventoryMovement{}).Where("movement_type = ? AND status = 'COMPLETED'", "TRANSFER").Count(&stats.CompletedCount).Error
+	_ = database.DB.Model(&models.InventoryMovement{}).Where("movement_type = ?", models.MvtTypeTransfer).Count(&stats.TotalCount).Error
+	_ = database.DB.Model(&models.InventoryMovement{}).Where("movement_type = ? AND status IN (?, ?)", models.MvtTypeTransfer, models.MvtStatusOpen, models.MvtStatusInProgress).Count(&stats.PendingCount).Error
+	_ = database.DB.Model(&models.InventoryMovement{}).Where("movement_type = ? AND status = ?", models.MvtTypeTransfer, models.MvtStatusCompleted).Count(&stats.CompletedCount).Error
 
 	return renderPage(c, "transfers.html", fiber.Map{
 		"Movements":      movements,
@@ -153,8 +153,8 @@ func CreateTransfer(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 
 	movement := models.InventoryMovement{
-		MovementType: "TRANSFER",
-		Status:       "OPEN",
+		MovementType: models.MvtTypeTransfer,
+		Status:       models.MvtStatusOpen,
 		CreatedBy:    userID,
 		Remarks:      remarks,
 	}
