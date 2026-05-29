@@ -78,7 +78,13 @@ func FetchInventoryCatalog(search string) ([]ProductInventory, error) {
 // CreateInventoryMovement handles creating movement headers and lines, allocating stock for OUTBOUND FIFO
 func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.InventoryMovementLine) error {
 	return database.DB.Transaction(func(tx *gorm.DB) error {
-		docNo, err := GetNextSequence(tx, "inventory_movements")
+		var docNo string
+		var err error
+		if movement.MovementType == models.MvtTypeTransfer {
+			docNo, err = GetNextSequence(tx, "inventory_transfers")
+		} else {
+			docNo, err = GetNextSequence(tx, "inventory_movements")
+		}
 		if err != nil {
 			return err
 		}
@@ -98,11 +104,11 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 			line.ID = uuid.New().String()
 			line.MovementID = movement.ID
 
-			if movement.IsCrossDock && movement.MovementType == "INBOUND" {
+			if movement.IsCrossDock && movement.MovementType == models.MvtTypeInbound {
 				line.ToLocatorID = "loc-crossdock-01"
 			}
 
-			if movement.MovementType == "OUTBOUND" {
+			if movement.MovementType == models.MvtTypeOutbound {
 				// FIFO stock allocation
 				requiredQty := line.RequestedQuantity
 				allocatedQty := 0
@@ -148,7 +154,7 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 				if allocatedQty < requiredQty {
 					return fmt.Errorf("insufficient stock for SKU product ID: %s. Requested: %d, Available: %d", line.ProductID, requiredQty, allocatedQty)
 				}
-			} else if movement.MovementType == "RTV" {
+			} else if movement.MovementType == models.MvtTypeRTV {
 				if line.IsFromHold {
 					if line.FromLocatorID == "" || line.BatchNumber == "" {
 						return errors.New("locator and batch number are required to return from QC Hold")
@@ -221,6 +227,52 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 						}
 					}
 				}
+			} else if movement.MovementType == models.MvtTypeTransfer {
+				if line.FromLocatorID == "" || line.ToLocatorID == "" {
+					return errors.New("both source and destination locators are required for transfers")
+				}
+				if line.FromLocatorID == line.ToLocatorID {
+					return errors.New("source and destination locators must be different")
+				}
+
+				requiredQty := line.RequestedQuantity
+				allocatedQty := 0
+
+				var lots []models.Storage
+				err := tx.Where("product_id = ? AND locator_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", line.ProductID, line.FromLocatorID).
+					Order("received_at ASC").
+					Find(&lots).Error
+
+				if err != nil {
+					return err
+				}
+
+				for _, lot := range lots {
+					available := lot.QtyOnHand - lot.QtyReserved - lot.QtyOnHold
+					take := requiredQty - allocatedQty
+					if take <= 0 {
+						break
+					}
+
+					if available < take {
+						take = available
+					}
+
+					lot.QtyReserved += take
+					if err := tx.Save(&lot).Error; err != nil {
+						return err
+					}
+
+					if allocatedQty == 0 {
+						line.BatchNumber = lot.BatchNumber
+					}
+
+					allocatedQty += take
+				}
+
+				if allocatedQty < requiredQty {
+					return fmt.Errorf("insufficient stock in source locator for SKU product ID: %s. Requested: %d, Available: %d", line.ProductID, requiredQty, allocatedQty)
+				}
 			}
 
 			// Save line item
@@ -241,7 +293,7 @@ func JournalizeInventoryMovement(movementID string) error {
 			return err
 		}
 
-		if movement.Status == "JOURNALED" || movement.Status == "COMPLETED" || movement.Status == "REJECTED" {
+		if movement.Status == models.MvtStatusJournaled || movement.Status == models.MvtStatusCompleted || movement.Status == models.MvtStatusRejected {
 			return errors.New("movement has already been finalized or closed")
 		}
 
@@ -254,7 +306,7 @@ func JournalizeInventoryMovement(movementID string) error {
 			actualQty := line.RequestedQuantity // Assume perfect operations for now
 			line.ActualQuantity = actualQty
 
-			if movement.MovementType == "INBOUND" {
+			if movement.MovementType == models.MvtTypeInbound {
 				// Generate a FIFO batch number for the inbound lot
 				batchNo, err := GetNextSequence(tx, "storages")
 				if err != nil {
@@ -284,7 +336,7 @@ func JournalizeInventoryMovement(movementID string) error {
 				if err != nil {
 					return err
 				}
-			} else if movement.MovementType == "OUTBOUND" {
+			} else if movement.MovementType == models.MvtTypeOutbound {
 				// Deduct stock from the reserved storage lots
 				remainingDeduct := actualQty
 				
@@ -324,7 +376,7 @@ func JournalizeInventoryMovement(movementID string) error {
 
 					remainingDeduct -= deduct
 				}
-			} else if movement.MovementType == "RTV" {
+			} else if movement.MovementType == models.MvtTypeRTV {
 				if line.IsFromHold {
 					if line.FromLocatorID == "" || line.BatchNumber == "" {
 						return errors.New("locator and batch number are required to return from QC Hold")
@@ -454,6 +506,81 @@ func JournalizeInventoryMovement(movementID string) error {
 						}
 					}
 				}
+			} else if movement.MovementType == models.MvtTypeTransfer {
+				if line.FromLocatorID == "" || line.ToLocatorID == "" {
+					return errors.New("both source and destination locators are required for transfers")
+				}
+
+				remainingDeduct := actualQty
+
+				var lots []models.Storage
+				err := tx.Where("product_id = ? AND locator_id = ? AND qty_reserved > 0", line.ProductID, line.FromLocatorID).
+					Order("received_at ASC").
+					Find(&lots).Error
+
+				if err != nil {
+					return err
+				}
+
+				for _, lot := range lots {
+					if remainingDeduct <= 0 {
+						break
+					}
+
+					deduct := remainingDeduct
+					if lot.QtyReserved < deduct {
+						deduct = lot.QtyReserved
+					}
+
+					lot.QtyOnHand -= deduct
+					lot.QtyReserved -= deduct
+					lot.UpdatedAt = time.Now()
+
+					if err := tx.Save(&lot).Error; err != nil {
+						return err
+					}
+
+					var targetLot models.Storage
+					err = tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, line.ToLocatorID, lot.BatchNumber).
+						First(&targetLot).Error
+
+					if err == nil {
+						targetLot.QtyOnHand += deduct
+						targetLot.UpdatedAt = time.Now()
+						if err := tx.Save(&targetLot).Error; err != nil {
+							return err
+						}
+					} else if errors.Is(err, gorm.ErrRecordNotFound) {
+						targetLot = models.Storage{
+							ID:          uuid.New().String(),
+							ProductID:   line.ProductID,
+							LocatorID:   line.ToLocatorID,
+							BatchNumber: lot.BatchNumber,
+							ReceivedAt:  lot.ReceivedAt,
+							QtyOnHand:   deduct,
+							QtyReserved: 0,
+							QtyOnHold:   0,
+							UpdatedAt:   time.Now(),
+						}
+						if err := tx.Create(&targetLot).Error; err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "TRANSFER", movement.DocumentNo, -deduct, lot.QtyOnHand, models.AccInventoryAsset, models.AccInventoryAsset, movement.CreatedBy)
+					if err != nil {
+						return err
+					}
+
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, targetLot.LocatorID, targetLot.BatchNumber, "TRANSFER", movement.DocumentNo, deduct, targetLot.QtyOnHand, models.AccInventoryAsset, models.AccInventoryAsset, movement.CreatedBy)
+					if err != nil {
+						return err
+					}
+
+					remainingDeduct -= deduct
+				}
 			}
 
 			// Update line's actual quantity and batch details
@@ -463,7 +590,7 @@ func JournalizeInventoryMovement(movementID string) error {
 		}
 
 		// Update movement status to JOURNALED
-		movement.Status = "JOURNALED"
+		movement.Status = models.MvtStatusJournaled
 		movement.UpdatedAt = time.Now()
 		return tx.Save(&movement).Error
 	})
@@ -477,23 +604,30 @@ func RejectInventoryMovement(movementID string, reason string) error {
 			return err
 		}
 
-		if movement.Status == "JOURNALED" || movement.Status == "COMPLETED" || movement.Status == "REJECTED" {
+		if movement.Status == models.MvtStatusJournaled || movement.Status == models.MvtStatusCompleted || movement.Status == models.MvtStatusRejected {
 			return errors.New("movement has already been finalized or closed")
 		}
 
-		if movement.MovementType == "OUTBOUND" || movement.MovementType == "RTV" {
+		if models.HasReservation(movement.MovementType) {
 			// Release allocations
 			for i := range movement.Lines {
 				line := &movement.Lines[i]
-				if movement.MovementType == "RTV" && line.IsFromHold {
+				if movement.MovementType == models.MvtTypeRTV && line.IsFromHold {
 					continue // No reservation was made for QC Hold returns
 				}
 				releasedQty := line.RequestedQuantity
 
 				var lots []models.Storage
-				err := tx.Where("product_id = ? AND qty_reserved > 0", line.ProductID).
-					Order("received_at DESC"). // Release from newest first
-					Find(&lots).Error
+				var err error
+				if movement.MovementType == models.MvtTypeTransfer {
+					err = tx.Where("product_id = ? AND locator_id = ? AND qty_reserved > 0", line.ProductID, line.FromLocatorID).
+						Order("received_at DESC").
+						Find(&lots).Error
+				} else {
+					err = tx.Where("product_id = ? AND qty_reserved > 0", line.ProductID).
+						Order("received_at DESC"). // Release from newest first
+						Find(&lots).Error
+				}
 
 				if err != nil {
 					return err
@@ -522,7 +656,7 @@ func RejectInventoryMovement(movementID string, reason string) error {
 		}
 
 		// Set status to REJECTED
-		movement.Status = "REJECTED"
+		movement.Status = models.MvtStatusRejected
 		movement.RejectionReason = reason
 		movement.UpdatedAt = time.Now()
 		return tx.Save(&movement).Error
@@ -538,13 +672,13 @@ func UpdateMovementStatus(movementID string, status string) error {
 		}
 
 		// Pre-journal validation
-		if status == "COMPLETED" {
+		if status == models.MvtStatusCompleted {
 			if movement.IsCrossDock {
-				if movement.Status != "OUTBOUND" {
+				if movement.Status != models.MvtStatusOutbound {
 					return errors.New("cannot complete cross-dock movement before it is outbound dispatched")
 				}
 			} else {
-				if movement.Status != "JOURNALED" {
+				if movement.Status != models.MvtStatusJournaled {
 					return errors.New("cannot complete movement before it is journaled")
 				}
 			}
