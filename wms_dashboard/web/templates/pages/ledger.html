@@ -1,0 +1,154 @@
+{{ define "content" }}
+<div class="p-6 lg:p-8 space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-100 tracking-tight">Inventory Ledger</h1>
+            <p class="text-sm text-slate-400 mt-1">Immutable audit trail of all physical stock movements.</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-slate-900/50 p-5 rounded-xl border border-slate-800 backdrop-blur-sm">
+        <form hx-get="/wms/ledger" hx-target="#ledger-table-container" class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Search</label>
+                <div class="relative flex items-center">
+                    <input type="text" name="search" placeholder="Doc No, Batch..." value="{{ .Filter.Search }}"
+                           class="w-full px-4 py-2 bg-slate-950/50 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">SKU</label>
+                <input type="text" name="sku" placeholder="Product SKU" value="{{ .Filter.ProductSKU }}"
+                       class="w-full px-4 py-2 bg-slate-950/50 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Start Date</label>
+                <input type="date" name="start_date" value="{{ .Filter.StartDate }}"
+                       class="w-full px-4 py-2 bg-slate-950/50 border border-slate-700 rounded-lg text-sm text-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all [color-scheme:dark]">
+            </div>
+            <div class="flex gap-3">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">End Date</label>
+                    <input type="date" name="end_date" value="{{ .Filter.EndDate }}"
+                           class="w-full px-4 py-2 bg-slate-950/50 border border-slate-700 rounded-lg text-sm text-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all [color-scheme:dark]">
+                </div>
+                <button type="submit" class="mb-[1px] px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold shadow-lg shadow-indigo-500/20 transition-all h-[38px] flex items-center justify-center">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Container -->
+    <div id="ledger-table-container">
+        {{ template "ledger_table" . }}
+    </div>
+</div>
+<script>
+    // Re-initialize lucide icons if loaded directly
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+{{ end }}
+
+{{ define "ledger_table" }}
+<div class="bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300 whitespace-nowrap">
+            <thead class="bg-slate-800/50 text-slate-400 font-medium border-b border-slate-700/50">
+                <tr>
+                    <th class="px-6 py-4">Transaction Date</th>
+                    <th class="px-6 py-4">Type</th>
+                    <th class="px-6 py-4">Document / Batch</th>
+                    <th class="px-6 py-4">Product</th>
+                    <th class="px-6 py-4 text-right">Debit / Credit</th>
+                    <th class="px-6 py-4 text-right">Balance</th>
+                    <th class="px-6 py-4">Accounts</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/50">
+                {{ if not .Ledgers }}
+                <tr>
+                    <td colspan="7" class="px-6 py-16 text-center text-slate-500">
+                        <i data-lucide="file-text" class="w-10 h-10 mx-auto mb-4 text-slate-600"></i>
+                        <p class="text-base font-medium text-slate-400">No ledger entries found</p>
+                        <p class="text-sm mt-1">Try adjusting your filters to see more results.</p>
+                    </td>
+                </tr>
+                {{ else }}
+                    {{ range .Ledgers }}
+                    <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="px-6 py-4 text-slate-200 font-medium">{{ .TransactionDate.Format "2006-01-02 15:04:05" }}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold tracking-wide bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                {{ .TransactionType }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-slate-200">{{ .DocumentNo }}</div>
+                            <div class="text-xs text-slate-500 mt-0.5">Batch: <span class="text-slate-400">{{ .BatchNumber }}</span></div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-slate-200">{{ if .Product.ID }}{{ .Product.Name }}{{ else }}{{ .ProductID }}{{ end }}</div>
+                            <div class="text-xs text-slate-500 mt-0.5">Loc: <span class="text-slate-400">{{ if .Locator.ID }}{{ .Locator.Code }}{{ else }}{{ .LocatorID }}{{ end }}</span></div>
+                        </td>
+                        <td class="px-6 py-4 text-right font-semibold">
+                            {{ if gt .QtyChange 0 }}
+                                <span class="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">+{{ .QtyChange }}</span>
+                            {{ else if lt .QtyChange 0 }}
+                                <span class="text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">{{ .QtyChange }}</span>
+                            {{ else }}
+                                <span class="text-slate-500 px-2 py-0.5">0</span>
+                            {{ end }}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-100">
+                            {{ .BatchBalance }}
+                        </td>
+                        <td class="px-6 py-4 text-xs text-slate-400">
+                            {{ if .Account }}
+                            <div class="flex items-center gap-1.5"><span class="text-emerald-400/80 font-mono">DR</span> <span class="text-slate-300">{{ .Account.AccountNo }}</span> <span class="text-slate-500 truncate max-w-[120px]" title="{{ .Account.AccountName }}">({{ .Account.AccountName }})</span></div>
+                            {{ end }}
+                            {{ if .ContraAccount }}
+                            <div class="flex items-center gap-1.5 mt-1"><span class="text-rose-400/80 font-mono">CR</span> <span class="text-slate-300">{{ .ContraAccount.AccountNo }}</span> <span class="text-slate-500 truncate max-w-[120px]" title="{{ .ContraAccount.AccountName }}">({{ .ContraAccount.AccountName }})</span></div>
+                            {{ end }}
+                        </td>
+                    </tr>
+                    {{ end }}
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+    
+    {{ if gt .TotalPages 1 }}
+    <div class="px-6 py-4 border-t border-slate-800 bg-slate-900/30 flex items-center justify-between">
+        <p class="text-sm text-slate-400">
+            Page <span class="font-medium text-slate-200">{{ .CurrentPage }}</span> of <span class="font-medium text-slate-200">{{ .TotalPages }}</span>
+        </p>
+        <div class="flex gap-2">
+            {{ if gt .CurrentPage 1 }}
+            <button hx-get="/wms/ledger?page={{ .PrevPage }}&search={{ .Filter.Search }}&sku={{ .Filter.ProductSKU }}&start_date={{ .Filter.StartDate }}&end_date={{ .Filter.EndDate }}" 
+                    hx-target="#ledger-table-container"
+                    class="px-4 py-2 text-sm font-medium border border-slate-700 bg-slate-800/50 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white transition-colors">
+                Previous
+            </button>
+            {{ end }}
+            {{ if lt .CurrentPage .TotalPages }}
+            <button hx-get="/wms/ledger?page={{ .NextPage }}&search={{ .Filter.Search }}&sku={{ .Filter.ProductSKU }}&start_date={{ .Filter.StartDate }}&end_date={{ .Filter.EndDate }}" 
+                    hx-target="#ledger-table-container"
+                    class="px-4 py-2 text-sm font-medium border border-slate-700 bg-slate-800/50 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white transition-colors">
+                Next
+            </button>
+            {{ end }}
+        </div>
+    </div>
+    {{ end }}
+</div>
+<script>
+    // Re-initialize lucide icons on HTMX partial swap
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+{{ end }}

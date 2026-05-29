@@ -50,3 +50,19 @@ func RequireAdmin() fiber.Handler {
 		return c.Next()
 	}
 }
+
+// RequireSystemAdmin verifies that the logged-in user is a System Administrator
+func RequireSystemAdmin() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role := c.Locals("user_role")
+		if role != "System Admin" {
+			if isHtmlRequest(c) {
+				return renderWarningToast(c, "Access Denied: System Admin role required to view the ledger.")
+			}
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "Forbidden: System Admin role required",
+			})
+		}
+		return c.Next()
+	}
+}

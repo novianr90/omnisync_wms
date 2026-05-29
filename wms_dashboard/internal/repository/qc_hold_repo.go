@@ -53,7 +53,13 @@ func CreateQCHold(storageID string, qty int, reason, notes, createdBy string) er
 			CreatedBy:  createdBy,
 			CreatedAt:  time.Now(),
 		}
-		return tx.Create(&hold).Error
+		if err := tx.Create(&hold).Error; err != nil {
+			return err
+		}
+
+		// 5. Insert Ledger (HOLD event)
+		err = InsertInventoryLedger(tx, time.Now(), storage.ProductID, storage.LocatorID, storage.BatchNumber, "HOLD", hold.DocumentNo, 0, storage.QtyOnHand, "", "", createdBy)
+		return err
 	})
 }
 
@@ -91,7 +97,13 @@ func ReleaseQCHold(holdID string, releasedBy string) error {
 		hold.Status = "RELEASED"
 		hold.ReleasedBy = releasedBy
 		hold.ReleasedAt = &now
-		return tx.Save(&hold).Error
+		if err := tx.Save(&hold).Error; err != nil {
+			return err
+		}
+
+		// 4. Insert Ledger (RELEASE event)
+		err := InsertInventoryLedger(tx, time.Now(), storage.ProductID, storage.LocatorID, storage.BatchNumber, "RELEASE", hold.DocumentNo, 0, storage.QtyOnHand, "", "", releasedBy)
+		return err
 	})
 }
 

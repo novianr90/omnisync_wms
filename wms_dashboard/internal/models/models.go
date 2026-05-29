@@ -231,3 +231,44 @@ type SequenceGenerator struct {
 
 func (SequenceGenerator) TableName() string { return "sequence_generators" }
 
+// Account represents an Accounting Chart of Accounts
+type Account struct {
+	AccountNo   string    `gorm:"type:varchar(50);primaryKey" json:"account_no"`
+	AccountName string    `gorm:"type:varchar(100);not null" json:"account_name"`
+	AccountType string    `gorm:"type:varchar(50);not null" json:"account_type"` // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+const (
+	AccInventoryAsset      = "11000" // Raw Materials & General Inventory
+	AccFinishedGoods       = "11010"
+	AccWIP                 = "11020" // Work In Progress (Kitting)
+	AccAccountsPayable     = "21000" // A/P (GRNI)
+	AccCOGS                = "51000" // Cost of Goods Sold
+	AccInventoryAdjustment = "51010" // Inventory Adjustment Expense
+)
+
+// InventoryLedger tracks atomic stock mutations for audit and valuation
+type InventoryLedger struct {
+	ID              string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+	TransactionDate time.Time `gorm:"not null;index" json:"transaction_date"`
+	ProductID       string    `gorm:"type:varchar(36);not null;index" json:"product_id"`
+	LocatorID       string    `gorm:"type:varchar(36);not null;index" json:"locator_id"`
+	BatchNumber     string    `gorm:"type:varchar(100);not null;index" json:"batch_number"`
+	TransactionType string    `gorm:"type:varchar(50);not null;index" json:"transaction_type"` // INBOUND, OUTBOUND, TRANSFER, RTV, KITTING, ADJUSTMENT, HOLD, RELEASE
+	DocumentNo      string    `gorm:"type:varchar(50);not null;index" json:"document_no"`
+	QtyChange       int       `gorm:"type:int;not null" json:"qty_change"`
+	BatchBalance    int       `gorm:"type:int;not null" json:"batch_balance"`
+	AccountNo       *string   `gorm:"type:varchar(50);index" json:"account_no,omitempty"`               // Reference to Account for Inventory Valuation
+	ContraAccountNo *string   `gorm:"type:varchar(50);index" json:"contra_account_no,omitempty"`        // Reference to balancing Account (COGS, Adjustment, etc)
+	CreatedBy       string    `gorm:"type:varchar(36);not null" json:"created_by"`
+
+	// Preloads
+	Product       Product  `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+	Locator       Locator  `gorm:"foreignKey:LocatorID" json:"locator,omitempty"`
+	Account       *Account `gorm:"foreignKey:AccountNo;references:AccountNo" json:"account,omitempty"`
+	ContraAccount *Account `gorm:"foreignKey:ContraAccountNo;references:AccountNo" json:"contra_account,omitempty"`
+}
+
+// TableName overrides GORM's default naming
+func (InventoryLedger) TableName() string { return "inventory_ledgers" }
