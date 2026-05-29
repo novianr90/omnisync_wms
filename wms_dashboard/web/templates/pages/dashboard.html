@@ -1,4 +1,5 @@
 {{define "content"}}
+<div class="p-6">
 <!-- Top Level Stat Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
     <!-- Stat 1: Total SKUs -->
@@ -275,7 +276,7 @@
                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
                 </div>
 
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1.5" id="locator-select-container">
                     <label for="inbound-locator" class="text-xs font-semibold text-slate-300">Target Shelf Locator</label>
                     <select id="inbound-locator" name="locator_id" required
                             class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
@@ -284,6 +285,27 @@
                         <option value="{{.ID}}">{{.Code}}</option>
                         {{end}}
                     </select>
+                </div>
+            </div>
+
+            <!-- Cross Docking Toggle -->
+            <div class="flex items-center justify-between bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs font-semibold text-slate-200">Cross-Docking (Direct Transit)</span>
+                    <span class="text-[10px] text-slate-400">Bypass standard shelf and route directly to staging transit area.</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer select-none">
+                    <input type="checkbox" id="inbound-crossdock" name="is_cross_dock" class="sr-only peer" onchange="toggleCrossDockFields(this)">
+                    <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600 peer-checked:after:bg-white peer-checked:after:border-transparent"></div>
+                </label>
+            </div>
+
+            <!-- Cross-Dock Warning Banner -->
+            <div id="crossdock-warning" class="hidden flex items-start gap-2.5 bg-indigo-950/30 border border-indigo-800/40 p-3 rounded-lg text-[11px] text-indigo-300">
+                <i data-lucide="info" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+                <div>
+                    <span class="font-semibold block text-indigo-200">Cross-Dock Staging Active</span>
+                    This inbound movement will bypass normal storage shelving and be routed directly to locator <strong class="text-indigo-200">loc-crossdock-01</strong> in <strong class="text-indigo-200">ZONE-CROSSDOCK</strong>.
                 </div>
             </div>
 
@@ -391,6 +413,23 @@
             modal.classList.remove('hidden');
         } else {
             modal.classList.add('hidden');
+        }
+    }
+
+    // Toggle fields for Cross-Docking
+    function toggleCrossDockFields(checkbox) {
+        const locatorContainer = document.getElementById('locator-select-container');
+        const locatorSelect = document.getElementById('inbound-locator');
+        const warning = document.getElementById('crossdock-warning');
+        if (checkbox.checked) {
+            locatorContainer.classList.add('opacity-40', 'pointer-events-none');
+            locatorSelect.removeAttribute('required');
+            locatorSelect.value = ""; // Clear selected standard locator
+            warning.classList.remove('hidden');
+        } else {
+            locatorContainer.classList.remove('opacity-40', 'pointer-events-none');
+            locatorSelect.setAttribute('required', 'required');
+            warning.classList.add('hidden');
         }
     }
 </script>

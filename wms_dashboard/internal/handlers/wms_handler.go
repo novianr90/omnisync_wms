@@ -322,9 +322,12 @@ func CreateMovement(c *fiber.Ctx) error {
 	// Document Number Generation
 	docNo := fmt.Sprintf("MOV-%s-%d", moveType[:3], time.Now().UnixNano()%100000)
 
+	isCrossDock := c.FormValue("is_cross_dock") == "on" || c.FormValue("is_cross_dock") == "true"
+
 	movement := models.InventoryMovement{
 		DocumentNo:   docNo,
 		MovementType: moveType,
+		IsCrossDock:  isCrossDock,
 		Status:       "OPEN",
 		CreatedBy:    userID,
 		Remarks:      remarks,

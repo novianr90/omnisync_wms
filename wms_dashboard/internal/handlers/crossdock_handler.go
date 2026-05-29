@@ -10,7 +10,7 @@ func ServeCrossDock(c *fiber.Ctx) error {
 	var movements []models.InventoryMovement
 	
 	// Fetch inbound movements that are flagged for cross-docking and are not yet completed
-	err := database.DB.Preload("Lines").
+	err := database.DB.Preload("Lines.Product").
 		Where("is_cross_dock = ? AND movement_type = ? AND status != ?", true, "INBOUND", "COMPLETED").
 		Order("created_at DESC").
 		Find(&movements).Error
