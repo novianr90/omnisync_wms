@@ -81,6 +81,7 @@ func main() {
 
 	// --- INVENTORY LEDGER ---
 	app.Get("/wms/ledger", middleware.RequireSystemAdmin(), handlers.ServeLedger)
+	app.Get("/wms/crossdock", handlers.ServeCrossDock)
 
 	// --- MASTER MAINTENANCE CRUD ENDPOINTS ---
 	// View lists (Operator & Admin)

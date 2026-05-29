@@ -98,6 +98,10 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 			line.ID = uuid.New().String()
 			line.MovementID = movement.ID
 
+			if movement.IsCrossDock && movement.MovementType == "INBOUND" {
+				line.ToLocatorID = "loc-crossdock-01"
+			}
+
 			if movement.MovementType == "OUTBOUND" {
 				// FIFO stock allocation
 				requiredQty := line.RequestedQuantity
