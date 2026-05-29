@@ -34,7 +34,32 @@ func renderWarningToast(c *fiber.Ctx, msg string) error {
 
 func hasPermission(c *fiber.Ctx, required string) bool {
 	permsVal := c.Locals("user_permissions")
-	if permsVal == nil {
+	
+	isEmpty := true
+	if permsVal != nil {
+		switch slice := permsVal.(type) {
+		case []string:
+			if len(slice) > 0 {
+				isEmpty = false
+				for _, p := range slice {
+					if p == required {
+						return true
+					}
+				}
+			}
+		case []interface{}:
+			if len(slice) > 0 {
+				isEmpty = false
+				for _, item := range slice {
+					if s, ok := item.(string); ok && s == required {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	if isEmpty {
 		role, ok := c.Locals("user_role").(string)
 		if !ok {
 			return false
@@ -44,22 +69,6 @@ func hasPermission(c *fiber.Ctx, required string) bool {
 		}
 		if role == "Admin WMS" && (required == "modify_masters" || required == "manage_system") {
 			return true
-		}
-		return false
-	}
-
-	switch slice := permsVal.(type) {
-	case []string:
-		for _, p := range slice {
-			if p == required {
-				return true
-			}
-		}
-	case []interface{}:
-		for _, item := range slice {
-			if s, ok := item.(string); ok && s == required {
-				return true
-			}
 		}
 	}
 	return false
