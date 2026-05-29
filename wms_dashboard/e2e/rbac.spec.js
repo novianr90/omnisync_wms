@@ -19,8 +19,8 @@ test.describe('Dynamic RBAC access control', () => {
         
         await page.locator('#new-role-modal button[type="submit"]').click();
         
-        // Wait for system role toast/HTMX refresh
-        await page.waitForTimeout(500);
+        // Wait for system role success toast to ensure DB write completed
+        await expect(page.locator('.notyf__message')).toContainText('Role created successfully');
 
         // 3. Navigate to User Account Registry and assign "Specialist" role to a new user
         await page.goto('http://localhost:9901/wms/system/users');
@@ -32,7 +32,8 @@ test.describe('Dynamic RBAC access control', () => {
         await page.selectOption('#new-user-modal select[name="role"]', 'Specialist');
         await page.locator('#new-user-modal button[type="submit"]').click();
 
-        await page.waitForTimeout(500);
+        // Wait for user creation success toast to ensure DB write completed
+        await expect(page.locator('.notyf__message')).toContainText('User created successfully');
 
         // 4. Log out System Admin
         await page.goto('http://localhost:9901/logout');
