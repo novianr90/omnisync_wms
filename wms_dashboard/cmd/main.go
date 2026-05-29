@@ -82,6 +82,12 @@ func main() {
 	app.Get("/wms/rtv/storages", handlers.ServeRTVStoragesByProduct)
 	app.Post("/wms/rtv/new", handlers.CreateRTV)
 
+	// Inventory Transfers
+	app.Get("/wms/transfers", handlers.ServeTransfers)
+	app.Get("/wms/transfers/source-storages", handlers.ServeTransferSourceStorages)
+	app.Get("/wms/transfers/destinations", handlers.ServeTransferDestinations)
+	app.Post("/wms/transfers/new", handlers.CreateTransfer)
+
 	// --- INVENTORY LEDGER ---
 	app.Get("/wms/ledger", middleware.RequireSystemAdmin(), handlers.ServeLedger)
 	app.Get("/wms/crossdock", handlers.ServeCrossDock)

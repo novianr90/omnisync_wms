@@ -78,7 +78,13 @@ func FetchInventoryCatalog(search string) ([]ProductInventory, error) {
 // CreateInventoryMovement handles creating movement headers and lines, allocating stock for OUTBOUND FIFO
 func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.InventoryMovementLine) error {
 	return database.DB.Transaction(func(tx *gorm.DB) error {
-		docNo, err := GetNextSequence(tx, "inventory_movements")
+		var docNo string
+		var err error
+		if movement.MovementType == "TRANSFER" {
+			docNo, err = GetNextSequence(tx, "inventory_transfers")
+		} else {
+			docNo, err = GetNextSequence(tx, "inventory_movements")
+		}
 		if err != nil {
 			return err
 		}
@@ -220,6 +226,52 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 							return fmt.Errorf("insufficient stock for SKU product ID: %s. Requested: %d, Available: %d", line.ProductID, requiredQty, allocatedQty)
 						}
 					}
+				}
+			} else if movement.MovementType == "TRANSFER" {
+				if line.FromLocatorID == "" || line.ToLocatorID == "" {
+					return errors.New("both source and destination locators are required for transfers")
+				}
+				if line.FromLocatorID == line.ToLocatorID {
+					return errors.New("source and destination locators must be different")
+				}
+
+				requiredQty := line.RequestedQuantity
+				allocatedQty := 0
+
+				var lots []models.Storage
+				err := tx.Where("product_id = ? AND locator_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", line.ProductID, line.FromLocatorID).
+					Order("received_at ASC").
+					Find(&lots).Error
+
+				if err != nil {
+					return err
+				}
+
+				for _, lot := range lots {
+					available := lot.QtyOnHand - lot.QtyReserved - lot.QtyOnHold
+					take := requiredQty - allocatedQty
+					if take <= 0 {
+						break
+					}
+
+					if available < take {
+						take = available
+					}
+
+					lot.QtyReserved += take
+					if err := tx.Save(&lot).Error; err != nil {
+						return err
+					}
+
+					if allocatedQty == 0 {
+						line.BatchNumber = lot.BatchNumber
+					}
+
+					allocatedQty += take
+				}
+
+				if allocatedQty < requiredQty {
+					return fmt.Errorf("insufficient stock in source locator for SKU product ID: %s. Requested: %d, Available: %d", line.ProductID, requiredQty, allocatedQty)
 				}
 			}
 
@@ -454,6 +506,81 @@ func JournalizeInventoryMovement(movementID string) error {
 						}
 					}
 				}
+			} else if movement.MovementType == "TRANSFER" {
+				if line.FromLocatorID == "" || line.ToLocatorID == "" {
+					return errors.New("both source and destination locators are required for transfers")
+				}
+
+				remainingDeduct := actualQty
+
+				var lots []models.Storage
+				err := tx.Where("product_id = ? AND locator_id = ? AND qty_reserved > 0", line.ProductID, line.FromLocatorID).
+					Order("received_at ASC").
+					Find(&lots).Error
+
+				if err != nil {
+					return err
+				}
+
+				for _, lot := range lots {
+					if remainingDeduct <= 0 {
+						break
+					}
+
+					deduct := remainingDeduct
+					if lot.QtyReserved < deduct {
+						deduct = lot.QtyReserved
+					}
+
+					lot.QtyOnHand -= deduct
+					lot.QtyReserved -= deduct
+					lot.UpdatedAt = time.Now()
+
+					if err := tx.Save(&lot).Error; err != nil {
+						return err
+					}
+
+					var targetLot models.Storage
+					err = tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, line.ToLocatorID, lot.BatchNumber).
+						First(&targetLot).Error
+
+					if err == nil {
+						targetLot.QtyOnHand += deduct
+						targetLot.UpdatedAt = time.Now()
+						if err := tx.Save(&targetLot).Error; err != nil {
+							return err
+						}
+					} else if errors.Is(err, gorm.ErrRecordNotFound) {
+						targetLot = models.Storage{
+							ID:          uuid.New().String(),
+							ProductID:   line.ProductID,
+							LocatorID:   line.ToLocatorID,
+							BatchNumber: lot.BatchNumber,
+							ReceivedAt:  lot.ReceivedAt,
+							QtyOnHand:   deduct,
+							QtyReserved: 0,
+							QtyOnHold:   0,
+							UpdatedAt:   time.Now(),
+						}
+						if err := tx.Create(&targetLot).Error; err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "TRANSFER", movement.DocumentNo, -deduct, lot.QtyOnHand, models.AccInventoryAsset, models.AccInventoryAsset, movement.CreatedBy)
+					if err != nil {
+						return err
+					}
+
+					err = InsertInventoryLedger(tx, time.Now(), line.ProductID, targetLot.LocatorID, targetLot.BatchNumber, "TRANSFER", movement.DocumentNo, deduct, targetLot.QtyOnHand, models.AccInventoryAsset, models.AccInventoryAsset, movement.CreatedBy)
+					if err != nil {
+						return err
+					}
+
+					remainingDeduct -= deduct
+				}
 			}
 
 			// Update line's actual quantity and batch details
@@ -481,7 +608,7 @@ func RejectInventoryMovement(movementID string, reason string) error {
 			return errors.New("movement has already been finalized or closed")
 		}
 
-		if movement.MovementType == "OUTBOUND" || movement.MovementType == "RTV" {
+		if movement.MovementType == "OUTBOUND" || movement.MovementType == "RTV" || movement.MovementType == "TRANSFER" {
 			// Release allocations
 			for i := range movement.Lines {
 				line := &movement.Lines[i]
@@ -491,9 +618,16 @@ func RejectInventoryMovement(movementID string, reason string) error {
 				releasedQty := line.RequestedQuantity
 
 				var lots []models.Storage
-				err := tx.Where("product_id = ? AND qty_reserved > 0", line.ProductID).
-					Order("received_at DESC"). // Release from newest first
-					Find(&lots).Error
+				var err error
+				if movement.MovementType == "TRANSFER" {
+					err = tx.Where("product_id = ? AND locator_id = ? AND qty_reserved > 0", line.ProductID, line.FromLocatorID).
+						Order("received_at DESC").
+						Find(&lots).Error
+				} else {
+					err = tx.Where("product_id = ? AND qty_reserved > 0", line.ProductID).
+						Order("received_at DESC"). // Release from newest first
+						Find(&lots).Error
+				}
 
 				if err != nil {
 					return err

@@ -50,6 +50,7 @@ func setupTestDB(t *testing.T) {
 		{ID: "seq-kit", UsageTable: "inventory_kittings", Prefix: "KIT", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
 		{ID: "seq-qch", UsageTable: "qc_holds", Prefix: "QCH", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
 		{ID: "seq-stor", UsageTable: "storages", Prefix: "BAT", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 6},
+		{ID: "seq-trf", UsageTable: "inventory_transfers", Prefix: "TRF", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
 	})
 
 	database.DB = db
