@@ -434,3 +434,45 @@ func RejectMovement(c *fiber.Ctx) error {
 	setReloadToast(c, "Movement successfully rejected.", true)
 	return c.SendStatus(fiber.StatusOK)
 }
+
+// POST /wms/movements/:id/crossdock/inbound
+func ConfirmCrossDockInbound(c *fiber.Ctx) error {
+	id := c.Params("id")
+	err := repository.ProcessCrossDockInbound(id)
+	if err != nil {
+		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
+			"Success": false,
+			"Message": err.Error(),
+		})
+	}
+	setReloadToast(c, "Cross-dock inbound receipt confirmed.", true)
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// POST /wms/movements/:id/crossdock/shipping
+func ConfirmCrossDockShipping(c *fiber.Ctx) error {
+	id := c.Params("id")
+	err := repository.ProcessCrossDockShipping(id)
+	if err != nil {
+		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
+			"Success": false,
+			"Message": err.Error(),
+		})
+	}
+	setReloadToast(c, "Cross-dock loading initiated.", true)
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// POST /wms/movements/:id/crossdock/outbound
+func ConfirmCrossDockOutbound(c *fiber.Ctx) error {
+	id := c.Params("id")
+	err := repository.ProcessCrossDockOutbound(id)
+	if err != nil {
+		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
+			"Success": false,
+			"Message": err.Error(),
+		})
+	}
+	setReloadToast(c, "Cross-dock outbound dispatch confirmed.", true)
+	return c.SendStatus(fiber.StatusOK)
+}

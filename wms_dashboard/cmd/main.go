@@ -54,6 +54,9 @@ func main() {
 	app.Post("/wms/movements/:id/journal", handlers.JournalMovement)
 	app.Post("/wms/movements/:id/complete", handlers.CompleteMovement)
 	app.Post("/wms/movements/:id/reject", handlers.RejectMovement)
+	app.Post("/wms/movements/:id/crossdock/inbound", handlers.ConfirmCrossDockInbound)
+	app.Post("/wms/movements/:id/crossdock/shipping", handlers.ConfirmCrossDockShipping)
+	app.Post("/wms/movements/:id/crossdock/outbound", handlers.ConfirmCrossDockOutbound)
 
 	// Adjustments
 	app.Get("/wms/adjustments", handlers.ServeAdjustments)

@@ -229,3 +229,124 @@ func TestInventoryMovementFIFOAndReservations(t *testing.T) {
 		t.Errorf("expected reservation to be released back to 0, got %d", tempLot.QtyReserved)
 	}
 }
+
+func TestCrossDockLifecycle(t *testing.T) {
+	setupTestDB(t)
+
+	prod := &models.Product{
+		SKU:  "CD-PROD",
+		Name: "Cross Dock Product",
+	}
+	_ = CreateProduct(prod)
+
+	wh := &models.Warehouse{
+		Code: "wh-main-0001",
+		Name: "Main WH",
+	}
+	database.DB.Create(wh)
+
+	// Ensure transit locator exists
+	transitLoc := &models.Locator{
+		ID:          "loc-crossdock-01",
+		WarehouseID: wh.Code,
+		Code:        "CD-1-01-1",
+		Zone:        "ZONE-CROSSDOCK",
+		Aisle:       "CD-1",
+		Shelf:       "01",
+		Level:       "1",
+		IsActive:    true,
+	}
+	database.DB.Create(transitLoc)
+
+	// 1. Create Cross-Dock Inbound Movement
+	move := &models.InventoryMovement{
+		MovementType: "INBOUND",
+		IsCrossDock:  true,
+		Status:       "OPEN",
+		CreatedBy:    "user-1",
+	}
+	lines := []models.InventoryMovementLine{
+		{
+			ProductID:         prod.ID,
+			RequestedQuantity: 20,
+		},
+	}
+
+	err := CreateInventoryMovement(move, lines)
+	if err != nil {
+		t.Fatalf("failed to create cross dock movement: %v", err)
+	}
+
+	// 2. Claim task
+	err = UpdateMovementStatus(move.ID, "IN_PROGRESS")
+	if err != nil {
+		t.Fatalf("failed to claim task: %v", err)
+	}
+
+	// 3. Process Inbound
+	err = ProcessCrossDockInbound(move.ID)
+	if err != nil {
+		t.Fatalf("failed to process cross-dock inbound: %v", err)
+	}
+
+	// Verify status is INBOUND
+	var checkMove models.InventoryMovement
+	database.DB.Preload("Lines").First(&checkMove, "id = ?", move.ID)
+	if checkMove.Status != "INBOUND" {
+		t.Errorf("expected status INBOUND, got %s", checkMove.Status)
+	}
+
+	// Verify storage created in transit locator
+	var storage models.Storage
+	err = database.DB.First(&storage, "locator_id = ? AND product_id = ?", "loc-crossdock-01", prod.ID).Error
+	if err != nil {
+		t.Fatalf("failed to find transit storage record: %v", err)
+	}
+	if storage.QtyOnHand != 20 {
+		t.Errorf("expected qty 20 on staging, got %d", storage.QtyOnHand)
+	}
+
+	// Verify batch number populated on line
+	if checkMove.Lines[0].BatchNumber == "" {
+		t.Errorf("expected batch number to be populated on line")
+	}
+
+	// 4. Process Shipping (Initiate loading)
+	err = ProcessCrossDockShipping(move.ID)
+	if err != nil {
+		t.Fatalf("failed to process cross-dock shipping: %v", err)
+	}
+
+	database.DB.First(&checkMove, "id = ?", move.ID)
+	if checkMove.Status != "SHIPPING" {
+		t.Errorf("expected status SHIPPING, got %s", checkMove.Status)
+	}
+
+	// 5. Process Outbound (Dispatch)
+	err = ProcessCrossDockOutbound(move.ID)
+	if err != nil {
+		t.Fatalf("failed to process cross-dock outbound: %v", err)
+	}
+
+	database.DB.First(&checkMove, "id = ?", move.ID)
+	if checkMove.Status != "OUTBOUND" {
+		t.Errorf("expected status OUTBOUND, got %s", checkMove.Status)
+	}
+
+	// Verify storage depleted
+	database.DB.First(&storage, "locator_id = ? AND product_id = ?", "loc-crossdock-01", prod.ID)
+	if storage.QtyOnHand != 0 {
+		t.Errorf("expected staging storage depleted to 0, got %d", storage.QtyOnHand)
+	}
+
+	// 6. Complete
+	err = UpdateMovementStatus(move.ID, "COMPLETED")
+	if err != nil {
+		t.Fatalf("failed to complete cross-dock movement: %v", err)
+	}
+
+	database.DB.First(&checkMove, "id = ?", move.ID)
+	if checkMove.Status != "COMPLETED" {
+		t.Errorf("expected status COMPLETED, got %s", checkMove.Status)
+	}
+}

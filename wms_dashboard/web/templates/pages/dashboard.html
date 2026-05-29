@@ -149,6 +149,12 @@
                                 <span class="bg-slate-900 text-slate-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-bold">OPEN</span>
                                 {{else if eq .Status "IN_PROGRESS"}}
                                 <span class="bg-amber-950/40 text-amber-400 border border-amber-900/40 px-2 py-0.5 rounded text-[9px] font-bold animate-pulse">IN PROGRESS</span>
+                                {{else if eq .Status "INBOUND"}}
+                                <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[9px] font-bold">INBOUND</span>
+                                {{else if eq .Status "SHIPPING"}}
+                                <span class="bg-orange-950/40 text-orange-400 border border-orange-900/40 px-2 py-0.5 rounded text-[9px] font-bold animate-pulse">SHIPPING</span>
+                                {{else if eq .Status "OUTBOUND"}}
+                                <span class="bg-purple-950/40 text-purple-400 border border-purple-900/40 px-2 py-0.5 rounded text-[9px] font-bold">OUTBOUND</span>
                                 {{else if eq .Status "JOURNALED"}}
                                 <span class="bg-blue-950/40 text-blue-400 border border-blue-900/40 px-2 py-0.5 rounded text-[9px] font-bold">JOURNALED</span>
                                 {{else if eq .Status "COMPLETED"}}
@@ -207,19 +213,54 @@
                                     <i data-lucide="x" class="w-3.5 h-3.5"></i>
                                 </button>
                             {{else if eq .Status "IN_PROGRESS"}}
-                                <!-- Journalize stock changes button -->
-                                <button hx-post="/wms/movements/{{.ID}}/journal" 
-                                        class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                    <span>Journalize Stock</span>
+                                {{if .IsCrossDock}}
+                                    <!-- Confirm Cross-Dock Inbound Receipt -->
+                                    <button hx-post="/wms/movements/{{.ID}}/crossdock/inbound" 
+                                            class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                        <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
+                                        <span>Confirm Inbound</span>
+                                    </button>
+                                    <button hx-post="/wms/movements/{{.ID}}/reject"
+                                            class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
+                                            title="Reject Movement">
+                                        <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                {{else}}
+                                    <!-- Journalize stock changes button -->
+                                    <button hx-post="/wms/movements/{{.ID}}/journal" 
+                                            class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                        <span>Journalize Stock</span>
+                                    </button>
+                                    <button hx-post="/wms/movements/{{.ID}}/reject"
+                                            class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
+                                            title="Reject Movement">
+                                        <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                {{end}}
+                            {{else if eq .Status "INBOUND"}}
+                                <!-- Initiate Shipping / Loading -->
+                                <button hx-post="/wms/movements/{{.ID}}/crossdock/shipping" 
+                                        class="w-full py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i data-lucide="truck" class="w-3.5 h-3.5"></i>
+                                    <span>Initiate Loading</span>
                                 </button>
-                                <button hx-post="/wms/movements/{{.ID}}/reject"
-                                        class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
-                                        title="Reject Movement">
-                                    <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                            {{else if eq .Status "SHIPPING"}}
+                                <!-- Confirm Outbound Dispatch -->
+                                <button hx-post="/wms/movements/{{.ID}}/crossdock/outbound" 
+                                        class="w-full py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                                    <span>Confirm Dispatch</span>
                                 </button>
                             {{else if eq .Status "JOURNALED"}}
                                 <!-- Complete document button -->
+                                <button hx-post="/wms/movements/{{.ID}}/complete" 
+                                        class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i data-lucide="archive" class="w-3.5 h-3.5 text-indigo-200"></i>
+                                    <span>Complete Ticket</span>
+                                </button>
+                            {{else if eq .Status "OUTBOUND"}}
+                                <!-- Complete document button for cross dock -->
                                 <button hx-post="/wms/movements/{{.ID}}/complete" 
                                         class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
                                     <i data-lucide="archive" class="w-3.5 h-3.5 text-indigo-200"></i>
