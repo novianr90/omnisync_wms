@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS inventory_ledgers (
     transaction_type VARCHAR(50) NOT NULL,
     document_no VARCHAR(50) NOT NULL,
     qty_change INTEGER NOT NULL,
-    batch_balance INTEGER NOT NULL,
     account_no VARCHAR(50),
     contra_account_no VARCHAR(50),
     created_by VARCHAR(36) NOT NULL,
