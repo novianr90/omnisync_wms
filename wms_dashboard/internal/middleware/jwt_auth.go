@@ -22,11 +22,12 @@ func init() {
 }
 
 type Claims struct {
-	UserID    string `json:"sub"`
-	Email     string `json:"email"`
-	Role      string `json:"role"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	UserID      string   `json:"sub"`
+	Email       string   `json:"email"`
+	Role        string   `json:"role"`
+	FirstName   string   `json:"first_name"`
+	LastName    string   `json:"last_name"`
+	Permissions []string `json:"permissions"`
 	jwt.RegisteredClaims
 }
 
@@ -82,6 +83,7 @@ func JWTAuth() fiber.Handler {
 		c.Locals("user_email", claims.Email)
 		c.Locals("user_role", claims.Role)
 		c.Locals("user_name", claims.FirstName+" "+claims.LastName)
+		c.Locals("user_permissions", claims.Permissions)
 
 		return c.Next()
 	}

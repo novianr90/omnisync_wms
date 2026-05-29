@@ -5,16 +5,18 @@ import (
 	"auth_services/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type RoleRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Permissions []string `json:"permissions"`
 }
 
 func GetRoles(c *fiber.Ctx) error {
 	var roles []models.Role
-	if err := database.DB.Find(&roles).Error; err != nil {
+	if err := database.DB.Preload("Permissions").Find(&roles).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch roles",
 		})
@@ -52,9 +54,32 @@ func CreateRole(c *fiber.Ctx) error {
 		Description: req.Description,
 	}
 
-	if err := database.DB.Create(&newRole).Error; err != nil {
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&newRole).Error; err != nil {
+			return err
+		}
+		for _, perm := range req.Permissions {
+			rolePerm := models.RolePermission{
+				RoleID:     newRole.ID,
+				Permission: perm,
+			}
+			if err := tx.Create(&rolePerm).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create role",
+		})
+	}
+
+	// Fetch with preloaded permissions
+	if err := database.DB.Preload("Permissions").Where("id = ?", newRole.ID).First(&newRole).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch created role",
 		})
 	}
 
@@ -80,9 +105,35 @@ func UpdateRole(c *fiber.Ctx) error {
 	role.Name = req.Name
 	role.Description = req.Description
 
-	if err := database.DB.Save(&role).Error; err != nil {
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(&role).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("role_id = ?", id).Delete(&models.RolePermission{}).Error; err != nil {
+			return err
+		}
+		for _, perm := range req.Permissions {
+			rolePerm := models.RolePermission{
+				RoleID:     id,
+				Permission: perm,
+			}
+			if err := tx.Create(&rolePerm).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update role",
+		})
+	}
+
+	// Preload to return updated role
+	if err := database.DB.Preload("Permissions").Where("id = ?", id).First(&role).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch updated role",
 		})
 	}
 

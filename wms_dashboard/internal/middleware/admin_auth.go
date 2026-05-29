@@ -32,36 +32,73 @@ func renderWarningToast(c *fiber.Ctx, msg string) error {
 	return c.Send(buf.Bytes())
 }
 
-// RequireAdmin verifies that the logged-in user is an administrator
+func hasPermission(c *fiber.Ctx, required string) bool {
+	permsVal := c.Locals("user_permissions")
+	if permsVal == nil {
+		role, ok := c.Locals("user_role").(string)
+		if !ok {
+			return false
+		}
+		if role == "System Admin" {
+			return true
+		}
+		if role == "Admin WMS" && (required == "modify_masters" || required == "manage_system") {
+			return true
+		}
+		return false
+	}
+
+	switch slice := permsVal.(type) {
+	case []string:
+		for _, p := range slice {
+			if p == required {
+				return true
+			}
+		}
+	case []interface{}:
+		for _, item := range slice {
+			if s, ok := item.(string); ok && s == required {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// RequireAdmin verifies that the logged-in user has permission to modify master data
 func RequireAdmin() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role := c.Locals("user_role")
-		if role != "System Admin" && role != "Admin WMS" {
-			// For HTMX AJAX requests expecting HTML swaps, return a beautiful notification toast
-			if isHtmlRequest(c) {
-				return renderWarningToast(c, "Access Denied: Admin role required to modify master data.")
+		if !hasPermission(c, "modify_masters") {
+			if c.Get("HX-Request") == "true" {
+				return renderWarningToast(c, "Access Denied: You do not have permission to modify master data.")
 			}
-			
-			// Standard API fallback
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Forbidden: Admin role required",
-			})
+			return c.Status(fiber.StatusForbidden).SendString("<h1>Access Denied</h1><p>You do not have permission to modify master data.</p>")
 		}
 		return c.Next()
 	}
 }
 
-// RequireSystemAdmin verifies that the logged-in user is a System Administrator
+// RequireSystemAdmin verifies that the logged-in user has permission to view the ledger
 func RequireSystemAdmin() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		role := c.Locals("user_role")
-		if role != "System Admin" {
-			if isHtmlRequest(c) {
-				return renderWarningToast(c, "Access Denied: System Admin role required to view the ledger.")
+		if !hasPermission(c, "view_ledger") {
+			if c.Get("HX-Request") == "true" {
+				return renderWarningToast(c, "Access Denied: You do not have permission to view the ledger.")
 			}
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Forbidden: System Admin role required",
-			})
+			return c.Status(fiber.StatusForbidden).SendString("<h1>Access Denied</h1><p>You do not have permission to view the ledger.</p>")
+		}
+		return c.Next()
+	}
+}
+
+// RequireSystemManage verifies that the logged-in user has permission to manage system roles/users
+func RequireSystemManage() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if !hasPermission(c, "manage_system") {
+			if c.Get("HX-Request") == "true" {
+				return renderWarningToast(c, "Access Denied: You do not have permission to manage the system.")
+			}
+			return c.Status(fiber.StatusForbidden).SendString("<h1>Access Denied</h1><p>You do not have permission to manage the system.</p>")
 		}
 		return c.Next()
 	}

@@ -131,16 +131,18 @@ func main() {
 	app.Post("/wms/masters/conversions", adminOnly, handlers.CreateConversion)
 	app.Delete("/wms/masters/conversions/:id", adminOnly, handlers.DeleteConversion)
 
-	// --- SYSTEM ADMINISTRATION ENDPOINTS (ADMIN ONLY) ---
-	app.Get("/wms/system/users", adminOnly, handlers.ServeUsersMaster)
-	app.Get("/wms/system/users/rows", adminOnly, handlers.GetUsersRows)
-	app.Post("/wms/system/users", adminOnly, handlers.CreateUser)
-	app.Put("/wms/system/users/:id/status", adminOnly, handlers.UpdateUserStatus)
+	// --- SYSTEM ADMINISTRATION ENDPOINTS (SYSTEM MANAGE ONLY) ---
+	systemManageOnly := middleware.RequireSystemManage()
+	app.Get("/wms/system/users", systemManageOnly, handlers.ServeUsersMaster)
+	app.Get("/wms/system/users/rows", systemManageOnly, handlers.GetUsersRows)
+	app.Post("/wms/system/users", systemManageOnly, handlers.CreateUser)
+	app.Put("/wms/system/users/:id/status", systemManageOnly, handlers.UpdateUserStatus)
 
-	app.Get("/wms/system/roles", adminOnly, handlers.ServeRolesMaster)
-	app.Get("/wms/system/roles/rows", adminOnly, handlers.GetRolesRows)
-	app.Post("/wms/system/roles", adminOnly, handlers.CreateRole)
-	app.Delete("/wms/system/roles/:id", adminOnly, handlers.DeleteRole)
+	app.Get("/wms/system/roles", systemManageOnly, handlers.ServeRolesMaster)
+	app.Get("/wms/system/roles/rows", systemManageOnly, handlers.GetRolesRows)
+	app.Post("/wms/system/roles", systemManageOnly, handlers.CreateRole)
+	app.Put("/wms/system/roles/:id", systemManageOnly, handlers.UpdateRole)
+	app.Delete("/wms/system/roles/:id", systemManageOnly, handlers.DeleteRole)
 
 	// --- MOBILE APP REST API ENDPOINTS ---
 	api := app.Group("/api/v1")

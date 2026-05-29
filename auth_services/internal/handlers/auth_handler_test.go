@@ -25,6 +25,7 @@ func setupAuthTestDB(t *testing.T) {
 	err = db.AutoMigrate(
 		&models.Role{},
 		&models.User{},
+		&models.RolePermission{},
 	)
 	if err != nil {
 		t.Fatalf("failed to migrate auth test db: %v", err)
@@ -188,5 +189,67 @@ func TestAdminMiddleware(t *testing.T) {
 	respNone, _ := app.Test(reqNone)
 	if respNone.StatusCode != http.StatusUnauthorized {
 		t.Errorf("expected unauthorized if missing token (401), got %d", respNone.StatusCode)
+	}
+}
+
+func TestDynamicRBAC(t *testing.T) {
+	setupAuthTestDB(t)
+
+	// Seed Role & permissions
+	roleSpecialist := models.Role{
+		ID:          uuid.New().String(),
+		Name:        "Specialist",
+		Description: "Role with custom permission",
+	}
+	if err := database.DB.Create(&roleSpecialist).Error; err != nil {
+		t.Fatalf("failed to seed role: %v", err)
+	}
+
+	rolePerm := models.RolePermission{
+		RoleID:     roleSpecialist.ID,
+		Permission: "manage_system",
+	}
+	if err := database.DB.Create(&rolePerm).Error; err != nil {
+		t.Fatalf("failed to seed permission: %v", err)
+	}
+
+	user := models.User{
+		ID:        uuid.New().String(),
+		Email:     "specialist@omnisync.com",
+		FirstName: "Jane",
+		LastName:  "Specialist",
+		RoleID:    roleSpecialist.ID,
+		Role:      roleSpecialist,
+	}
+
+	// 1. Generate JWT with dynamic permissions
+	tokenString, err := generateToken(user)
+	if err != nil {
+		t.Fatalf("unexpected error during token generation: %v", err)
+	}
+
+	claims := &Claims{}
+	_, err = jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil {
+		t.Fatalf("failed to parse token: %v", err)
+	}
+
+	if len(claims.Permissions) != 1 || claims.Permissions[0] != "manage_system" {
+		t.Errorf("expected permissions ['manage_system'], got %+v", claims.Permissions)
+	}
+
+	// 2. Test AdminMiddleware with specialist (has manage_system permission)
+	app := fiber.New()
+	app.Get("/protected-rbac", AdminMiddleware, func(c *fiber.Ctx) error {
+		return c.SendString("RBAC Success")
+	})
+
+	req := httptest.NewRequest("GET", "/protected-rbac", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenString)
+	resp, _ := app.Test(req)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected specialist with manage_system to access, got %d", resp.StatusCode)
 	}
 }
