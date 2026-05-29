@@ -1,5 +1,5 @@
 {{ define "content" }}
-<div class="space-y-6">
+<div class="p-6 lg:p-8 space-y-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-100 tracking-tight">Inventory Ledger</h1>
@@ -12,8 +12,8 @@
         <form hx-get="/wms/ledger" hx-target="#ledger-table-container" class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
             <div>
                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Search</label>
-                <div class="relative">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                <div class="relative flex items-center">
+                    <i data-lucide="search" class="absolute left-3 w-4 h-4 text-slate-500 pointer-events-none"></i>
                     <input type="text" name="search" placeholder="Doc No, Batch..." value="{{ .Filter.Search }}"
                            class="w-full pl-9 pr-4 py-2 bg-slate-950/50 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
                 </div>
