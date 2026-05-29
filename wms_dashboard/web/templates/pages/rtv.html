@@ -14,7 +14,7 @@
         </div>
         <!-- Trigger Create Return Modal -->
         <button onclick="document.getElementById('modal-create-rtv').classList.remove('hidden')"
-            class="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-lg transition-all duration-300 cursor-pointer shadow-lg shadow-cyan-500/20 active:scale-95 shrink-0">
+            class="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all duration-300 cursor-pointer shadow-lg shadow-indigo-500/20 active:scale-95 shrink-0">
             <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
             <span>Create Return Ticket</span>
         </button>
@@ -60,7 +60,7 @@
     </div>
 
     <!-- RTV Tickets Table Panel -->
-    <div class="glass-panel rounded-2xl border border-slate-800/80 shadow-xl overflow-hidden">
+    <div class="bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-sm overflow-hidden shadow-lg">
         <div class="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/20">
             <div class="flex items-center gap-2.5">
                 <i data-lucide="list" class="w-4.5 h-4.5 text-cyan-500"></i>
@@ -72,25 +72,25 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                    <tr class="border-b border-slate-800 bg-slate-950/60 font-semibold tracking-wider text-slate-400 uppercase select-none">
+            <table class="w-full text-left border-collapse text-sm text-slate-300 whitespace-nowrap">
+                <thead class="bg-slate-800/50 text-slate-400 font-medium border-b border-slate-700/50 uppercase tracking-wider text-[10px] select-none">
+                    <tr>
                         <th class="px-6 py-4">Document No</th>
-                        <th class="px-6 py-4">SKU & Product Name</th>
-                        <th class="px-6 py-4">Source Locator</th>
-                        <th class="px-6 py-4">Batch Number</th>
+                        <th class="px-6 py-4 min-w-[200px]">SKU & Product Name</th>
+                        <th class="px-6 py-4 min-w-[180px]">Source Locator</th>
+                        <th class="px-6 py-4 min-w-[120px]">Batch Number</th>
                         <th class="px-6 py-4 text-right">Return Qty</th>
                         <th class="px-6 py-4 text-center">Source Status</th>
                         <th class="px-6 py-4 text-center">Status</th>
                         <th class="px-6 py-4">Date Updated</th>
-                        <th class="px-6 py-4">Remarks</th>
+                        <th class="px-6 py-4 min-w-[150px]">Remarks</th>
                         <th class="px-6 py-4 text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-800/40">
+                <tbody class="divide-y divide-slate-800/50">
                     {{if .Movements}}
                     {{range .Movements}}
-                    <tr class="hover:bg-slate-900/30 text-slate-300 font-medium transition duration-150">
+                    <tr class="hover:bg-slate-800/20 text-slate-300 font-medium transition-colors">
                         <!-- Doc No -->
                         <td class="px-6 py-4 font-mono text-cyan-400 tracking-tight font-bold whitespace-nowrap">
                             {{.DocumentNo}}
@@ -100,20 +100,20 @@
                         <td class="px-6 py-4">
                             {{range .Lines}}
                             <div class="flex flex-col gap-0.5">
-                                <span class="font-bold text-slate-100 tracking-wide uppercase font-outfit">{{.Product.SKU}}</span>
+                                <span class="font-bold text-slate-100 tracking-wide uppercase font-outfit text-xs">{{.Product.SKU}}</span>
                                 <span class="text-slate-400 font-normal text-[11px] truncate max-w-[200px]" title="{{.Product.Name}}">{{.Product.Name}}</span>
                             </div>
                             {{end}}
                         </td>
 
                         <!-- Locator -->
-                        <td class="px-6 py-4 text-left">
+                        <td class="px-6 py-4 text-left whitespace-nowrap">
                             {{range .Lines}}
                             {{if .FromLocator}}
                             <div class="flex items-start gap-1.5 justify-start text-left">
                                 <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400 opacity-85 mt-0.5 shrink-0"></i>
                                 <div class="flex flex-col gap-0.5 text-left">
-                                    <span class="font-bold text-slate-200 font-mono text-[11px] tracking-wide">{{.FromLocator.Code}}</span>
+                                    <span class="font-bold text-slate-200 font-mono text-[11px] tracking-wide whitespace-nowrap">{{.FromLocator.Code}}</span>
                                     <span class="text-slate-500 text-[10px] font-normal">{{.FromLocator.Warehouse.Name}}</span>
                                 </div>
                             </div>
@@ -202,7 +202,7 @@
                                 {{end}}
 
                                 {{if or (eq .Status "COMPLETED") (eq .Status "REJECTED")}}
-                                <span class="text-slate-600 font-bold">-</span>
+                                <span class="text-slate-650 font-bold">-</span>
                                 {{end}}
                             </div>
                         </td>
