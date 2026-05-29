@@ -101,6 +101,7 @@ type APICreateMovementRequest struct {
 	Quantity     int    `json:"quantity"`
 	UoMID        string `json:"uom_id"`        // Optional transaction unit of measure
 	Remarks      string `json:"remarks"`
+	IsCrossDock  bool   `json:"is_cross_dock"` // Optional cross-dock flag
 }
 
 // APICreateMovement - Create movement via JSON API
@@ -171,6 +172,7 @@ func APICreateMovement(c *fiber.Ctx) error {
 	movement := models.InventoryMovement{
 		DocumentNo:   docNo,
 		MovementType: req.MovementType,
+		IsCrossDock:  req.IsCrossDock,
 		Status:       "OPEN",
 		CreatedBy:    userID.(string),
 		Remarks:      remarks,

@@ -322,9 +322,12 @@ func CreateMovement(c *fiber.Ctx) error {
 	// Document Number Generation
 	docNo := fmt.Sprintf("MOV-%s-%d", moveType[:3], time.Now().UnixNano()%100000)
 
+	isCrossDock := c.FormValue("is_cross_dock") == "on" || c.FormValue("is_cross_dock") == "true"
+
 	movement := models.InventoryMovement{
 		DocumentNo:   docNo,
 		MovementType: moveType,
+		IsCrossDock:  isCrossDock,
 		Status:       "OPEN",
 		CreatedBy:    userID,
 		Remarks:      remarks,
@@ -429,5 +432,47 @@ func RejectMovement(c *fiber.Ctx) error {
 	}
 
 	setReloadToast(c, "Movement successfully rejected.", true)
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// POST /wms/movements/:id/crossdock/inbound
+func ConfirmCrossDockInbound(c *fiber.Ctx) error {
+	id := c.Params("id")
+	err := repository.ProcessCrossDockInbound(id)
+	if err != nil {
+		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
+			"Success": false,
+			"Message": err.Error(),
+		})
+	}
+	setReloadToast(c, "Cross-dock inbound receipt confirmed.", true)
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// POST /wms/movements/:id/crossdock/shipping
+func ConfirmCrossDockShipping(c *fiber.Ctx) error {
+	id := c.Params("id")
+	err := repository.ProcessCrossDockShipping(id)
+	if err != nil {
+		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
+			"Success": false,
+			"Message": err.Error(),
+		})
+	}
+	setReloadToast(c, "Cross-dock loading initiated.", true)
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// POST /wms/movements/:id/crossdock/outbound
+func ConfirmCrossDockOutbound(c *fiber.Ctx) error {
+	id := c.Params("id")
+	err := repository.ProcessCrossDockOutbound(id)
+	if err != nil {
+		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
+			"Success": false,
+			"Message": err.Error(),
+		})
+	}
+	setReloadToast(c, "Cross-dock outbound dispatch confirmed.", true)
 	return c.SendStatus(fiber.StatusOK)
 }

@@ -1,4 +1,5 @@
 {{define "content"}}
+<div class="p-6">
 <!-- Top Level Stat Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
     <!-- Stat 1: Total SKUs -->
@@ -137,7 +138,9 @@
                             <!-- Badges -->
                             <div class="flex gap-1.5 items-center">
                                 <!-- Type badge -->
-                                {{if eq .MovementType "INBOUND"}}
+                                {{if .IsCrossDock}}
+                                <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[9px] font-bold">CROSS-DOCK</span>
+                                {{else if eq .MovementType "INBOUND"}}
                                 <span class="bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 px-2 py-0.5 rounded text-[9px] font-bold">INBOUND</span>
                                 {{else}}
                                 <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[9px] font-bold">OUTBOUND</span>
@@ -148,6 +151,12 @@
                                 <span class="bg-slate-900 text-slate-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-bold">OPEN</span>
                                 {{else if eq .Status "IN_PROGRESS"}}
                                 <span class="bg-amber-950/40 text-amber-400 border border-amber-900/40 px-2 py-0.5 rounded text-[9px] font-bold animate-pulse">IN PROGRESS</span>
+                                {{else if eq .Status "INBOUND"}}
+                                <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[9px] font-bold">INBOUND</span>
+                                {{else if eq .Status "SHIPPING"}}
+                                <span class="bg-orange-950/40 text-orange-400 border border-orange-900/40 px-2 py-0.5 rounded text-[9px] font-bold animate-pulse">SHIPPING</span>
+                                {{else if eq .Status "OUTBOUND"}}
+                                <span class="bg-purple-950/40 text-purple-400 border border-purple-900/40 px-2 py-0.5 rounded text-[9px] font-bold">OUTBOUND</span>
                                 {{else if eq .Status "JOURNALED"}}
                                 <span class="bg-blue-950/40 text-blue-400 border border-blue-900/40 px-2 py-0.5 rounded text-[9px] font-bold">JOURNALED</span>
                                 {{else if eq .Status "COMPLETED"}}
@@ -206,19 +215,54 @@
                                     <i data-lucide="x" class="w-3.5 h-3.5"></i>
                                 </button>
                             {{else if eq .Status "IN_PROGRESS"}}
-                                <!-- Journalize stock changes button -->
-                                <button hx-post="/wms/movements/{{.ID}}/journal" 
-                                        class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                    <span>Journalize Stock</span>
+                                {{if .IsCrossDock}}
+                                    <!-- Confirm Cross-Dock Inbound Receipt -->
+                                    <button hx-post="/wms/movements/{{.ID}}/crossdock/inbound" 
+                                            class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                        <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
+                                        <span>Confirm Inbound</span>
+                                    </button>
+                                    <button hx-post="/wms/movements/{{.ID}}/reject"
+                                            class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
+                                            title="Reject Movement">
+                                        <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                {{else}}
+                                    <!-- Journalize stock changes button -->
+                                    <button hx-post="/wms/movements/{{.ID}}/journal" 
+                                            class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                        <span>Journalize Stock</span>
+                                    </button>
+                                    <button hx-post="/wms/movements/{{.ID}}/reject"
+                                            class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
+                                            title="Reject Movement">
+                                        <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                {{end}}
+                            {{else if eq .Status "INBOUND"}}
+                                <!-- Initiate Shipping / Loading -->
+                                <button hx-post="/wms/movements/{{.ID}}/crossdock/shipping" 
+                                        class="w-full py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i data-lucide="truck" class="w-3.5 h-3.5"></i>
+                                    <span>Initiate Loading</span>
                                 </button>
-                                <button hx-post="/wms/movements/{{.ID}}/reject"
-                                        class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
-                                        title="Reject Movement">
-                                    <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                            {{else if eq .Status "SHIPPING"}}
+                                <!-- Confirm Outbound Dispatch -->
+                                <button hx-post="/wms/movements/{{.ID}}/crossdock/outbound" 
+                                        class="w-full py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                                    <span>Confirm Dispatch</span>
                                 </button>
                             {{else if eq .Status "JOURNALED"}}
                                 <!-- Complete document button -->
+                                <button hx-post="/wms/movements/{{.ID}}/complete" 
+                                        class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i data-lucide="archive" class="w-3.5 h-3.5 text-indigo-200"></i>
+                                    <span>Complete Ticket</span>
+                                </button>
+                            {{else if eq .Status "OUTBOUND"}}
+                                <!-- Complete document button for cross dock -->
                                 <button hx-post="/wms/movements/{{.ID}}/complete" 
                                         class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
                                     <i data-lucide="archive" class="w-3.5 h-3.5 text-indigo-200"></i>
@@ -268,6 +312,25 @@
                 </select>
             </div>
 
+            <!-- Cross Docking Toggle -->
+            <div class="flex items-center gap-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+                <input type="checkbox" id="inbound-crossdock" name="is_cross_dock" onchange="toggleCrossDockFields(this)"
+                       class="w-4 h-4 rounded border-slate-800 bg-slate-950 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-950 cursor-pointer">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs font-semibold text-slate-200">Cross-Docking (Direct Transit)</span>
+                    <span class="text-[10px] text-slate-400">Bypass standard shelf and route directly to staging transit area.</span>
+                </div>
+            </div>
+
+            <!-- Cross-Dock Warning Banner -->
+            <div id="crossdock-warning" class="hidden flex items-start gap-2.5 bg-indigo-950/30 border border-indigo-800/40 p-3 rounded-lg text-[11px] text-indigo-300">
+                <i data-lucide="info" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+                <div>
+                    <span class="font-semibold block text-indigo-200">Cross-Dock Staging Active</span>
+                    This inbound movement will bypass normal storage shelving and be routed directly to locator <strong class="text-indigo-200">loc-crossdock-01</strong> in <strong class="text-indigo-200">ZONE-CROSSDOCK</strong>.
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1.5">
                     <label for="inbound-qty" class="text-xs font-semibold text-slate-300">Quantity (Units)</label>
@@ -275,7 +338,7 @@
                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
                 </div>
 
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1.5" id="locator-select-container">
                     <label for="inbound-locator" class="text-xs font-semibold text-slate-300">Target Shelf Locator</label>
                     <select id="inbound-locator" name="locator_id" required
                             class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
@@ -391,6 +454,23 @@
             modal.classList.remove('hidden');
         } else {
             modal.classList.add('hidden');
+        }
+    }
+
+    // Toggle fields for Cross-Docking
+    function toggleCrossDockFields(checkbox) {
+        const locatorContainer = document.getElementById('locator-select-container');
+        const locatorSelect = document.getElementById('inbound-locator');
+        const warning = document.getElementById('crossdock-warning');
+        if (checkbox.checked) {
+            locatorContainer.classList.add('opacity-40', 'pointer-events-none');
+            locatorSelect.removeAttribute('required');
+            locatorSelect.value = ""; // Clear selected standard locator
+            warning.classList.remove('hidden');
+        } else {
+            locatorContainer.classList.remove('opacity-40', 'pointer-events-none');
+            locatorSelect.setAttribute('required', 'required');
+            warning.classList.add('hidden');
         }
     }
 </script>

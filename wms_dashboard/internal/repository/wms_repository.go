@@ -98,6 +98,10 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 			line.ID = uuid.New().String()
 			line.MovementID = movement.ID
 
+			if movement.IsCrossDock && movement.MovementType == "INBOUND" {
+				line.ToLocatorID = "loc-crossdock-01"
+			}
+
 			if movement.MovementType == "OUTBOUND" {
 				// FIFO stock allocation
 				requiredQty := line.RequestedQuantity
@@ -239,6 +243,10 @@ func JournalizeInventoryMovement(movementID string) error {
 
 		if movement.Status == "JOURNALED" || movement.Status == "COMPLETED" || movement.Status == "REJECTED" {
 			return errors.New("movement has already been finalized or closed")
+		}
+
+		if movement.IsCrossDock {
+			return errors.New("cannot journal cross-dock movement directly; use cross-dock operational workflow")
 		}
 
 		for i := range movement.Lines {
@@ -530,11 +538,152 @@ func UpdateMovementStatus(movementID string, status string) error {
 		}
 
 		// Pre-journal validation
-		if status == "COMPLETED" && movement.Status != "JOURNALED" {
-			return errors.New("cannot complete movement before it is journaled")
+		if status == "COMPLETED" {
+			if movement.IsCrossDock {
+				if movement.Status != "OUTBOUND" {
+					return errors.New("cannot complete cross-dock movement before it is outbound dispatched")
+				}
+			} else {
+				if movement.Status != "JOURNALED" {
+					return errors.New("cannot complete movement before it is journaled")
+				}
+			}
 		}
 
 		movement.Status = status
+		movement.UpdatedAt = time.Now()
+		return tx.Save(&movement).Error
+	})
+}
+
+// ProcessCrossDockInbound handles the inbound stage of cross docking
+func ProcessCrossDockInbound(movementID string) error {
+	return database.DB.Transaction(func(tx *gorm.DB) error {
+		var movement models.InventoryMovement
+		if err := tx.Preload("Lines").First(&movement, "id = ?", movementID).Error; err != nil {
+			return err
+		}
+
+		if !movement.IsCrossDock {
+			return errors.New("movement is not marked for cross-docking")
+		}
+		if movement.Status != "IN_PROGRESS" {
+			return fmt.Errorf("invalid status transition: cannot move to INBOUND from %s", movement.Status)
+		}
+
+		for i := range movement.Lines {
+			line := &movement.Lines[i]
+			actualQty := line.RequestedQuantity
+			line.ActualQuantity = actualQty
+
+			// Generate a FIFO batch number for the transit lot
+			batchNo, err := GetNextSequence(tx, "storages")
+			if err != nil {
+				return err
+			}
+			line.BatchNumber = batchNo
+
+			// Create new storage balance record in the cross-dock staging area
+			storage := models.Storage{
+				ID:          uuid.New().String(),
+				ProductID:   line.ProductID,
+				LocatorID:   "loc-crossdock-01",
+				BatchNumber: batchNo,
+				ReceivedAt:  time.Now(),
+				QtyOnHand:   actualQty,
+				QtyReserved: 0,
+				QtyOnHold:   0,
+				UpdatedAt:   time.Now(),
+			}
+
+			if err := tx.Create(&storage).Error; err != nil {
+				return err
+			}
+
+			// Update the line item with the generated batch number
+			if err := tx.Save(line).Error; err != nil {
+				return err
+			}
+
+			// Insert Ledger (INBOUND: Debit Inventory 11000, Credit AP 21000)
+			err = InsertInventoryLedger(tx, time.Now(), line.ProductID, "loc-crossdock-01", batchNo, "INBOUND", movement.DocumentNo, actualQty, storage.QtyOnHand, models.AccInventoryAsset, models.AccAccountsPayable, movement.CreatedBy)
+			if err != nil {
+				return err
+			}
+		}
+
+		movement.Status = "INBOUND"
+		movement.UpdatedAt = time.Now()
+		return tx.Save(&movement).Error
+	})
+}
+
+// ProcessCrossDockShipping handles initiating loading for cross docking
+func ProcessCrossDockShipping(movementID string) error {
+	return database.DB.Transaction(func(tx *gorm.DB) error {
+		var movement models.InventoryMovement
+		if err := tx.First(&movement, "id = ?", movementID).Error; err != nil {
+			return err
+		}
+
+		if !movement.IsCrossDock {
+			return errors.New("movement is not marked for cross-docking")
+		}
+		if movement.Status != "INBOUND" {
+			return fmt.Errorf("invalid status transition: cannot move to SHIPPING from %s", movement.Status)
+		}
+
+		movement.Status = "SHIPPING"
+		movement.UpdatedAt = time.Now()
+		return tx.Save(&movement).Error
+	})
+}
+
+// ProcessCrossDockOutbound handles dispatching/releasing cross-docked goods
+func ProcessCrossDockOutbound(movementID string) error {
+	return database.DB.Transaction(func(tx *gorm.DB) error {
+		var movement models.InventoryMovement
+		if err := tx.Preload("Lines").First(&movement, "id = ?", movementID).Error; err != nil {
+			return err
+		}
+
+		if !movement.IsCrossDock {
+			return errors.New("movement is not marked for cross-docking")
+		}
+		if movement.Status != "SHIPPING" {
+			return fmt.Errorf("invalid status transition: cannot move to OUTBOUND from %s", movement.Status)
+		}
+
+		for i := range movement.Lines {
+			line := &movement.Lines[i]
+			actualQty := line.RequestedQuantity
+
+			// Find the staging balance record
+			var lot models.Storage
+			err := tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, "loc-crossdock-01", line.BatchNumber).First(&lot).Error
+			if err != nil {
+				return fmt.Errorf("cross-dock transit stock not found for batch %s: %w", line.BatchNumber, err)
+			}
+
+			if lot.QtyOnHand < actualQty {
+				return fmt.Errorf("insufficient cross-dock transit stock: need %d, on hand %d", actualQty, lot.QtyOnHand)
+			}
+
+			// Deduct transit stock
+			lot.QtyOnHand -= actualQty
+			lot.UpdatedAt = time.Now()
+			if err := tx.Save(&lot).Error; err != nil {
+				return err
+			}
+
+			// Insert Ledger (OUTBOUND: Debit COGS 51000, Credit Inventory 11000)
+			err = InsertInventoryLedger(tx, time.Now(), line.ProductID, lot.LocatorID, lot.BatchNumber, "OUTBOUND", movement.DocumentNo, -actualQty, lot.QtyOnHand, models.AccCOGS, models.AccInventoryAsset, movement.CreatedBy)
+			if err != nil {
+				return err
+			}
+		}
+
+		movement.Status = "OUTBOUND"
 		movement.UpdatedAt = time.Now()
 		return tx.Save(&movement).Error
 	})
