@@ -19,8 +19,8 @@ func ServeCrossDock(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Error fetching cross dock activities")
 	}
 
-	return c.Render("pages/crossdock", fiber.Map{
+	return renderPage(c, "crossdock.html", fiber.Map{
 		"Title": "Cross Docking Dashboard",
 		"ActiveTransactions": movements,
-	}, "layouts/base")
+	})
 }
