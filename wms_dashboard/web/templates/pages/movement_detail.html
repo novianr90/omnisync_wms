@@ -1,0 +1,328 @@
+{{define "content"}}
+<div class="p-6 flex flex-col gap-6 max-w-5xl mx-auto">
+    <!-- Top Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="/wms/movements" hx-get="/wms/movements" hx-target="#main-workspace" hx-push-url="true"
+               class="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white rounded-lg active:scale-95 transition cursor-pointer">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </a>
+            <div>
+                <div class="flex items-center gap-2 text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
+                    <span>Movements</span>
+                    <i data-lucide="chevron-right" class="w-3 h-3 text-slate-600"></i>
+                    <span class="text-indigo-400">Document Detail</span>
+                </div>
+                <h3 class="font-bold text-xl text-slate-100 font-outfit">{{.Movement.DocumentNo}}</h3>
+            </div>
+        </div>
+
+        <!-- Header Badges -->
+        <div class="flex gap-2 items-center">
+            {{if .Movement.IsCrossDock}}
+            <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-3 py-1 rounded text-xs font-bold">CROSS-DOCK</span>
+            {{else if eq .Movement.MovementType "INBOUND"}}
+            <span class="bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 px-3 py-1 rounded text-xs font-bold">INBOUND</span>
+            {{else if eq .Movement.MovementType "RTV"}}
+            <span class="bg-rose-950/40 text-rose-400 border border-rose-900/40 px-3 py-1 rounded text-xs font-bold">RTV</span>
+            {{else}}
+            <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-3 py-1 rounded text-xs font-bold">OUTBOUND</span>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Timeline & Details Container -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left 2 Cols: Details & Items -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+            <!-- Metadata Card -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col gap-4">
+                <h4 class="font-bold text-base text-slate-200">Document Information</h4>
+                
+                <div class="grid grid-cols-2 gap-4 text-xs">
+                    <div class="flex flex-col gap-0.5">
+                        <span class="text-slate-500">Date Created</span>
+                        <span class="text-slate-300 font-medium">{{.Movement.CreatedAt.Format "Jan 02, 2006 15:04"}}</span>
+                    </div>
+                    <div class="flex flex-col gap-0.5">
+                        <span class="text-slate-500">Last Updated</span>
+                        <span class="text-slate-300 font-medium">{{.Movement.UpdatedAt.Format "Jan 02, 2006 15:04"}}</span>
+                    </div>
+                    <div class="flex flex-col gap-0.5 col-span-2">
+                        <span class="text-slate-500">Assigned Operator</span>
+                        <span class="text-slate-300 font-medium flex items-center gap-1.5">
+                            <i data-lucide="user" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            {{if .Movement.AssignedOperatorID}}
+                            <span>ID: {{.Movement.AssignedOperatorID}}</span>
+                            {{else}}
+                            <span class="italic text-slate-500">Unassigned</span>
+                            {{end}}
+                        </span>
+                    </div>
+                </div>
+
+                {{if .Movement.Remarks}}
+                <div class="border-t border-slate-800/60 pt-4 flex flex-col gap-1 text-xs">
+                    <span class="text-slate-500">Remarks</span>
+                    <p class="text-slate-300 whitespace-pre-line bg-slate-950/40 p-3 rounded border border-slate-900/60 leading-relaxed font-mono">
+                        {{.Movement.Remarks}}
+                    </p>
+                </div>
+                {{end}}
+
+                {{if .Movement.RejectionReason}}
+                <div class="border-t border-slate-800/60 pt-4 flex flex-col gap-1 text-xs">
+                    <span class="text-slate-500 text-rose-400 font-semibold">Rejection Reason</span>
+                    <p class="text-rose-400 bg-rose-950/20 p-3 rounded border border-rose-900/40 leading-relaxed">
+                        {{.Movement.RejectionReason}}
+                    </p>
+                </div>
+                {{end}}
+            </div>
+
+            <!-- Items Table -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col gap-4">
+                <h4 class="font-bold text-base text-slate-200">Line Items List</h4>
+                
+                <div class="overflow-x-auto border border-slate-800/60 rounded-xl bg-slate-950/20">
+                    <table class="w-full border-collapse text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-800 bg-slate-950/40 font-semibold tracking-wider text-slate-400 uppercase">
+                                <th class="px-4 py-3">Product Name / SKU</th>
+                                <th class="px-4 py-3 text-right">Requested Qty</th>
+                                <th class="px-4 py-3 text-right">Processed Qty</th>
+                                <th class="px-4 py-3">Locator Routing</th>
+                                <th class="px-4 py-3">Batch Number</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+                            {{range .Movement.Lines}}
+                            <tr class="hover:bg-slate-900/10 transition-colors">
+                                <td class="px-4 py-3">
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-slate-200">{{.Product.Name}}</span>
+                                        <span class="text-[10px] text-slate-500 font-mono mt-0.5">{{.Product.SKU}}</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-right font-semibold text-slate-300">
+                                    {{.RequestedQuantity}} {{.Product.UoM.Code}}
+                                </td>
+                                <td class="px-4 py-3 text-right font-semibold text-emerald-400">
+                                    {{.ActualQuantity}} {{.Product.UoM.Code}}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-1 text-slate-400 font-mono text-[10px]">
+                                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400"></i>
+                                        {{if eq $.Movement.MovementType "INBOUND"}}
+                                        <span>Target: <span class="text-slate-200 font-bold">{{.ToLocator.Code}}</span></span>
+                                        {{else}}
+                                        <span>Source: <span class="text-slate-200 font-bold">{{if .FromLocator}}{{.FromLocator.Code}}{{else}}AUTO (FIFO){{end}}</span></span>
+                                        {{end}}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 font-mono text-[10px] text-slate-500">
+                                    {{if .BatchNumber}}{{.BatchNumber}}{{else}}-{{end}}
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right 1 Col: Status Progress Board & Actions -->
+        <div class="flex flex-col gap-6">
+            <!-- Timeline Tracker -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col gap-5">
+                <h4 class="font-bold text-base text-slate-200">Lifecycle Status</h4>
+                
+                <!-- Status Timeline Tracker -->
+                <div class="flex flex-col gap-4 relative pl-6 border-l border-slate-800/80">
+                    <!-- Step 1: Open -->
+                    <div class="relative">
+                        <span class="absolute -left-[30px] top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
+                                     {{if or (eq .Movement.Status "OPEN") (eq .Movement.Status "IN_PROGRESS") (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}!bg-emerald-500/20 !border-emerald-500{{end}}">
+                            <span class="w-1.5 h-1.5 rounded-full {{if or (eq .Movement.Status "OPEN") (eq .Movement.Status "IN_PROGRESS") (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}bg-emerald-400{{else}}bg-slate-800{{end}}"></span>
+                        </span>
+                        <div class="flex flex-col text-xs">
+                            <span class="font-semibold text-slate-300">Document Open / Drafted</span>
+                            <span class="text-[10px] text-slate-500">Movement document successfully created.</span>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Processing (IN_PROGRESS / cross-dock steps) -->
+                    <div class="relative">
+                        <span class="absolute -left-[30px] top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
+                                     {{if or (eq .Movement.Status "IN_PROGRESS") (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}!bg-emerald-500/20 !border-emerald-500{{end}}">
+                            <span class="w-1.5 h-1.5 rounded-full {{if or (eq .Movement.Status "IN_PROGRESS") (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}bg-emerald-400{{else}}bg-slate-800{{end}}"></span>
+                        </span>
+                        <div class="flex flex-col text-xs">
+                            <span class="font-semibold text-slate-300">Claimed & In Progress</span>
+                            <span class="text-[10px] text-slate-500">Assigned operator is handling items.</span>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Journaled (or specific crossdock status) -->
+                    <div class="relative font-mono">
+                        <span class="absolute -left-[30px] top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
+                                     {{if or (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}!bg-emerald-500/20 !border-emerald-500{{end}}">
+                            <span class="w-1.5 h-1.5 rounded-full {{if or (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}bg-emerald-400{{else}}bg-slate-800{{end}}"></span>
+                        </span>
+                        <div class="flex flex-col text-xs font-sans">
+                            <span class="font-semibold text-slate-300">Stock Journaled</span>
+                            <span class="text-[10px] text-slate-500">Physical stock quantities committed in inventory lot.</span>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Finalized -->
+                    <div class="relative">
+                        <span class="absolute -left-[30px] top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
+                                     {{if eq .Movement.Status "COMPLETED"}}!bg-emerald-500/20 !border-emerald-500{{else if eq .Movement.Status "REJECTED"}}!bg-rose-500/20 !border-rose-500{{end}}">
+                            <span class="w-1.5 h-1.5 rounded-full {{if eq .Movement.Status "COMPLETED"}}bg-emerald-400{{else if eq .Movement.Status "REJECTED"}}bg-rose-500{{else}}bg-slate-800{{end}}"></span>
+                        </span>
+                        <div class="flex flex-col text-xs">
+                            <span class="font-semibold {{if eq .Movement.Status "REJECTED"}}text-rose-400{{else}}text-slate-300{{end}}">
+                                {{if eq .Movement.Status "REJECTED"}}Document Rejected{{else}}Completed & Archived{{end}}
+                            </span>
+                            <span class="text-[10px] text-slate-500">Movement is finalized and locked.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Panel -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col gap-4">
+                <h4 class="font-bold text-base text-slate-200">Execution Actions</h4>
+
+                <div class="flex flex-col gap-3">
+                    {{if eq .Movement.Status "OPEN"}}
+                        <!-- Claim Button -->
+                        <button hx-post="/wms/movements/{{.Movement.ID}}/claim" hx-swap="none"
+                                class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                            <i data-lucide="user-check" class="w-4 h-4"></i>
+                            <span>Claim Task</span>
+                        </button>
+                        
+                        <!-- Reject Prompt Button -->
+                        <button onclick="openRejectModal()"
+                                class="w-full py-2 bg-slate-900 hover:bg-rose-950/20 border border-slate-800 hover:border-rose-900/40 text-slate-400 hover:text-rose-400 font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            <span>Cancel Document</span>
+                        </button>
+
+                    {{else if eq .Movement.Status "IN_PROGRESS"}}
+                        {{if .Movement.IsCrossDock}}
+                            <!-- Cross-dock inbound confirmation -->
+                            <button hx-post="/wms/movements/{{.Movement.ID}}/crossdock/inbound" hx-swap="none"
+                                    class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                                <i data-lucide="check-square" class="w-4 h-4"></i>
+                                <span>Confirm Inbound Receipt</span>
+                            </button>
+                        {{else}}
+                            <!-- Standard stock journaling -->
+                            <button hx-post="/wms/movements/{{.Movement.ID}}/journal" hx-swap="none"
+                                    class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                <span>Journalize Stock</span>
+                            </button>
+                        {{end}}
+                        
+                        <!-- Reject Button -->
+                        <button onclick="openRejectModal()"
+                                class="w-full py-2 bg-slate-900 hover:bg-rose-950/20 border border-slate-800 hover:border-rose-900/40 text-slate-400 hover:text-rose-400 font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                            <i data-lucide="ban" class="w-4 h-4"></i>
+                            <span>Reject & Cancel</span>
+                        </button>
+
+                    {{else if eq .Movement.Status "INBOUND"}}
+                        <!-- Cross-dock Load -->
+                        <button hx-post="/wms/movements/{{.Movement.ID}}/crossdock/shipping" hx-swap="none"
+                                class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                            <i data-lucide="truck" class="w-4 h-4"></i>
+                            <span>Initiate Loading</span>
+                        </button>
+
+                    {{else if eq .Movement.Status "SHIPPING"}}
+                        <!-- Cross-dock Dispatch -->
+                        <button hx-post="/wms/movements/{{.Movement.ID}}/crossdock/outbound" hx-swap="none"
+                                class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                            <i data-lucide="navigation" class="w-4 h-4"></i>
+                            <span>Confirm Dispatch</span>
+                        </button>
+
+                    {{else if eq .Movement.Status "JOURNALED"}}
+                        <!-- Complete Ticket -->
+                        <button hx-post="/wms/movements/{{.Movement.ID}}/complete" hx-swap="none"
+                                class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                            <i data-lucide="archive" class="w-4 h-4"></i>
+                            <span>Complete Document</span>
+                        </button>
+
+                    {{else if eq .Movement.Status "OUTBOUND"}}
+                        <!-- Complete Ticket for cross dock -->
+                        <button hx-post="/wms/movements/{{.Movement.ID}}/complete" hx-swap="none"
+                                class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-2">
+                            <i data-lucide="archive" class="w-4 h-4"></i>
+                            <span>Complete Document</span>
+                        </button>
+
+                    {{else}}
+                        <!-- Final state -->
+                        <div class="w-full text-center py-3 text-xs text-slate-500 font-semibold bg-slate-950/40 rounded-lg border border-slate-900 border-dashed">
+                            <i data-lucide="check" class="w-4 h-4 inline-block align-middle mr-1.5 text-slate-600"></i>
+                            <span>Document Locked & Closed</span>
+                        </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Rejection Reason Dialog Modal -->
+<div id="reject-modal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md glass-panel p-6 rounded-2xl border border-slate-800 shadow-2xl relative flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>
+                <span>Cancel Movement Ticket</span>
+            </h4>
+            <button onclick="closeRejectModal()" class="p-1 rounded-lg text-slate-500 hover:bg-slate-900 transition">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form hx-post="/wms/movements/{{.Movement.ID}}/reject" hx-swap="none" onsubmit="closeRejectModal()" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1.5">
+                <label for="rejection_reason" class="text-xs font-semibold text-slate-300">Rejection Reason</label>
+                <textarea id="rejection_reason" name="rejection_reason" rows="3" required placeholder="Describe the reason for rejection / cancellation..."
+                          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-rose-500 transition"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeRejectModal()"
+                        class="px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold active:scale-95 transition">
+                    Go Back
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold active:scale-95 transition">
+                    Confirm Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openRejectModal() {
+        document.getElementById('reject-modal').classList.remove('hidden');
+    }
+    
+    function closeRejectModal() {
+        document.getElementById('reject-modal').classList.add('hidden');
+    }
+</script>
+{{end}}

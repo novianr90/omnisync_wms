@@ -112,3 +112,17 @@ func RequireSystemManage() fiber.Handler {
 		return c.Next()
 	}
 }
+
+// RequireManageMovements verifies that the logged-in user has permission to manage movements
+func RequireManageMovements() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if !hasPermission(c, "manage_movements") {
+			if c.Get("HX-Request") == "true" {
+				return renderWarningToast(c, "Access Denied: You do not have permission to manage movements.")
+			}
+			return c.Status(fiber.StatusForbidden).SendString("<h1>Access Denied</h1><p>You do not have permission to manage movements.</p>")
+		}
+		return c.Next()
+	}
+}
+

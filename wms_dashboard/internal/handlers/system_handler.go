@@ -81,7 +81,7 @@ func ServeUsersMaster(c *fiber.Ctx) error {
 	})
 }
 
-var AllPermissions = []string{"view_ledger", "modify_masters", "manage_system"}
+var AllPermissions = []string{"view_ledger", "modify_masters", "manage_system", "manage_movements"}
 
 func ServeRolesMaster(c *fiber.Ctx) error {
 	resp, err := doAuthRequest(c, "GET", "/roles", nil)

@@ -1,0 +1,349 @@
+{{define "content"}}
+<div class="p-6 flex flex-col gap-6 max-w-5xl mx-auto">
+    <div class="flex items-center gap-3">
+        <a href="/wms/movements" hx-get="/wms/movements" hx-target="#main-workspace" hx-push-url="true"
+           class="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white rounded-lg active:scale-95 transition cursor-pointer">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </a>
+        <div>
+            <div class="flex items-center gap-2 text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
+                <span>Movements</span>
+                <i data-lucide="chevron-right" class="w-3 h-3 text-slate-600"></i>
+                <span class="text-indigo-400">Register New Document</span>
+            </div>
+            <h3 class="font-bold text-xl text-slate-100 font-outfit">Create Movement Order</h3>
+        </div>
+    </div>
+
+    <form id="new-movement-form" onsubmit="submitMovementForm(event)" class="flex flex-col gap-6">
+        <!-- Header Info Card -->
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/80 shadow-xl grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Movement Type</label>
+                <select id="movement-type-select" onchange="onMovementTypeChange(this)" required
+                        class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                    <option value="INBOUND">INBOUND (Receipt)</option>
+                    <option value="OUTBOUND">OUTBOUND (Dispatch / FIFO)</option>
+                </select>
+            </div>
+
+            <div id="crossdock-toggle-container" class="flex items-center gap-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/80 md:col-span-2">
+                <input type="checkbox" id="is-cross-dock-checkbox" onchange="toggleCrossDockFields(this)"
+                       class="w-4 h-4 rounded border-slate-800 bg-slate-950 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-950 cursor-pointer">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs font-semibold text-slate-200">Cross-Docking (Direct Transit)</span>
+                    <span class="text-[10px] text-slate-400">Bypass standard shelf storage and route directly to cross-docking zone (loc-crossdock-01).</span>
+                </div>
+            </div>
+
+            <!-- Cross-Dock Warning Banner -->
+            <div id="crossdock-warning-banner" class="hidden md:col-span-3 flex items-start gap-2.5 bg-indigo-950/30 border border-indigo-800/40 p-3 rounded-lg text-[11px] text-indigo-300">
+                <i data-lucide="info" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+                <div>
+                    <span class="font-semibold block text-indigo-200">Cross-Dock Staging Active</span>
+                    All line items in this movement will bypass normal storage and be routed to <strong class="text-indigo-200">loc-crossdock-01</strong>.
+                </div>
+            </div>
+
+            <div class="md:col-span-3 flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Remarks / Supplier Notes / Customer Reference</label>
+                <textarea id="movement-remarks" rows="2" placeholder="Enter transaction reference details, vendor name, or shipping instructions..."
+                          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs placeholder:text-slate-700 focus:outline-none focus:border-indigo-500 transition"></textarea>
+            </div>
+        </div>
+
+        <!-- Line Items Card -->
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-sm text-slate-100">Document Line Items</h4>
+                    <p class="text-[10px] text-slate-400">Add products, quantities, and locator routing for this transaction</p>
+                </div>
+                <button type="button" onclick="addFormRow()"
+                        class="px-3 py-1.5 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-900/60 font-semibold text-xs rounded-lg active:scale-95 transition cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Add Item Line</span>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto border border-slate-800/60 rounded-xl bg-slate-950/20">
+                <table class="w-full border-collapse text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 bg-slate-950/40 font-semibold tracking-wider text-slate-400 uppercase">
+                            <th class="px-4 py-3">Product Catalog SKU</th>
+                            <th class="px-4 py-3 w-40">UoM</th>
+                            <th class="px-4 py-3 w-32">Quantity</th>
+                            <th class="px-4 py-3 w-44 locator-column-header">Target Shelf Locator</th>
+                            <th class="px-4 py-3 w-16 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lines-tbody" class="divide-y divide-slate-800/60">
+                        <!-- Dynamic Rows Injected Here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="submit"
+                    class="w-full py-2.5 mt-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs tracking-wide shadow-lg shadow-indigo-500/10 cursor-pointer transition">
+                Create Movement Document
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Raw Data for JavaScript Select Options -->
+<div id="raw-products-data" class="hidden">
+    {{range .Products}}
+    <option value="{{.ID}}" data-uom-id="{{.UoMID}}">{{.SKU}} - {{.Name}}</option>
+    {{end}}
+</div>
+
+<div id="raw-locators-data" class="hidden">
+    {{range .Locators}}
+    <option value="{{.ID}}">{{.Code}}</option>
+    {{end}}
+</div>
+
+<div id="raw-uoms-data" class="hidden">
+    {{range .UoMs}}
+    <option value="{{.ID}}">{{.Code}} - {{.Name}}</option>
+    {{end}}
+</div>
+
+<script>
+    // Initialize Lucide icons on dynamic insertions
+    function updateIcons() {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    // Add dynamic row to the table
+    function addFormRow() {
+        const tbody = document.getElementById('lines-tbody');
+        const productsHTML = document.getElementById('raw-products-data').innerHTML;
+        const locatorsHTML = document.getElementById('raw-locators-data').innerHTML;
+        const uomsHTML = document.getElementById('raw-uoms-data').innerHTML;
+
+        const row = document.createElement('tr');
+        row.className = 'line-row border-b border-slate-800/40 hover:bg-slate-900/10 transition-colors';
+        row.innerHTML = `
+            <td class="px-4 py-3">
+                <select name="product_id" required onchange="onProductChange(this)"
+                        class="product-select w-full px-2 py-1.5 rounded-md bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                    <option value="" disabled selected>-- Select Product --</option>
+                    ${productsHTML}
+                </select>
+            </td>
+            <td class="px-4 py-3">
+                <select name="uom_id"
+                        class="uom-select w-full px-2 py-1.5 rounded-md bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                    <option value="">-- Base Unit --</option>
+                    ${uomsHTML}
+                </select>
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" name="quantity" min="1" required placeholder="Quantity"
+                       class="quantity-input w-full px-2 py-1.5 rounded-md bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+            </td>
+            <td class="px-4 py-3 locator-select-cell">
+                <select name="locator_id" required class="locator-select w-full px-2 py-1.5 rounded-md bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 transition">
+                    <option value="" disabled selected>-- Select Shelf --</option>
+                    ${locatorsHTML}
+                </select>
+            </td>
+            <td class="px-4 py-3 text-center">
+                <button type="button" onclick="removeFormRow(this)"
+                        class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-95 transition cursor-pointer">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(row);
+        updateIcons();
+        adjustLocatorRequirements();
+    }
+
+    // Remove row from table
+    function removeFormRow(btn) {
+        btn.closest('tr').remove();
+    }
+
+    // Auto-fill unit of measure on product selection
+    function onProductChange(selectEl) {
+        const row = selectEl.closest('tr');
+        const selectedOption = selectEl.options[selectEl.selectedIndex];
+        const uomId = selectedOption.dataset.uomId;
+
+        const uomSelect = row.querySelector('.uom-select');
+        if (uomSelect && uomId) {
+            uomSelect.value = uomId;
+        }
+    }
+
+    // Handle form changes based on Movement Type
+    function onMovementTypeChange(selectEl) {
+        const type = selectEl.value;
+        const crossDockContainer = document.getElementById('crossdock-toggle-container');
+        const crossDockCheckbox = document.getElementById('is-cross-dock-checkbox');
+        const headerLabel = document.querySelector('.locator-column-header');
+
+        if (type === 'OUTBOUND') {
+            crossDockContainer.classList.add('opacity-40', 'pointer-events-none');
+            crossDockCheckbox.checked = false;
+            headerLabel.textContent = 'Source Zone (Optional)';
+        } else {
+            crossDockContainer.classList.remove('opacity-40', 'pointer-events-none');
+            headerLabel.textContent = 'Target Shelf Locator';
+        }
+        toggleCrossDockFields(crossDockCheckbox);
+        adjustLocatorRequirements();
+    }
+
+    // Toggle fields for Cross-Docking
+    function toggleCrossDockFields(checkbox) {
+        const warning = document.getElementById('crossdock-warning-banner');
+        if (checkbox.checked) {
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+        adjustLocatorRequirements();
+    }
+
+    // Dynamically adjust locator requirement validators
+    function adjustLocatorRequirements() {
+        const mvtType = document.getElementById('movement-type-select').value;
+        const isCrossDock = document.getElementById('is-cross-dock-checkbox').checked;
+        const rows = document.querySelectorAll('.line-row');
+
+        rows.forEach(row => {
+            const locatorSelect = row.querySelector('.locator-select');
+            const cell = row.querySelector('.locator-select-cell');
+
+            if (!locatorSelect) return;
+
+            if (mvtType === 'INBOUND') {
+                if (isCrossDock) {
+                    cell.classList.add('opacity-40', 'pointer-events-none');
+                    locatorSelect.removeAttribute('required');
+                    locatorSelect.value = "";
+                } else {
+                    cell.classList.remove('opacity-40', 'pointer-events-none');
+                    locatorSelect.setAttribute('required', 'required');
+                }
+            } else {
+                // Outbound is optional for automatic FIFO allocation
+                cell.classList.remove('opacity-40', 'pointer-events-none');
+                locatorSelect.removeAttribute('required');
+            }
+        });
+    }
+
+    // Submit form using standard JSON structure
+    async function submitMovementForm(event) {
+        event.preventDefault();
+
+        const mvtType = document.getElementById('movement-type-select').value;
+        const isCrossDock = document.getElementById('is-cross-dock-checkbox').checked;
+        const remarks = document.getElementById('movement-remarks').value;
+
+        const rows = document.querySelectorAll('.line-row');
+        if (rows.length === 0) {
+            if (window.notyf) {
+                window.notyf.error("At least one line item must be added.");
+            } else {
+                alert("At least one line item must be added.");
+            }
+            return;
+        }
+
+        const lines = [];
+        let valid = true;
+
+        rows.forEach((row, idx) => {
+            const productSelect = row.querySelector('.product-select');
+            const uomSelect = row.querySelector('.uom-select');
+            const qtyInput = row.querySelector('.quantity-input');
+            const locatorSelect = row.querySelector('.locator-select');
+
+            const productId = productSelect.value;
+            const uomId = uomSelect.value;
+            const quantity = parseInt(qtyInput.value);
+            const locatorId = locatorSelect.value;
+
+            if (!productId || isNaN(quantity) || quantity <= 0) {
+                valid = false;
+                if (window.notyf) {
+                    window.notyf.error(`Line ${idx+1}: Product and valid Quantity are required.`);
+                }
+                return;
+            }
+
+            if (mvtType === 'INBOUND' && !isCrossDock && !locatorId) {
+                valid = false;
+                if (window.notyf) {
+                    window.notyf.error(`Line ${idx+1}: Target shelf locator is required for Inbound.`);
+                }
+                return;
+            }
+
+            lines.push({
+                product_id: productId,
+                uom_id: uomId,
+                quantity: quantity,
+                locator_id: locatorId
+            });
+        });
+
+        if (!valid) return;
+
+        const payload = {
+            movement_type: mvtType,
+            is_cross_dock: isCrossDock,
+            remarks: remarks,
+            lines: lines
+        };
+
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Processing...";
+
+        try {
+            const response = await fetch('/wms/movements', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                window.location.href = data.redirect;
+            } else {
+                const errData = await response.json();
+                if (window.notyf) {
+                    window.notyf.error(errData.error || "Failed to register movement.");
+                } else {
+                    alert(errData.error || "Failed to register movement.");
+                }
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Create Movement Document";
+            }
+        } catch (err) {
+            console.error(err);
+            if (window.notyf) {
+                window.notyf.error("Connection error while submitting.");
+            }
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Create Movement Document";
+        }
+    }
+
+    // Add first row automatically on load
+    addFormRow();
+    updateIcons();
+</script>
+{{end}}
