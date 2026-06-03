@@ -21,10 +21,16 @@ type SystemUser struct {
 	} `json:"role"`
 }
 
+type SystemRolePermission struct {
+	RoleID     string `json:"role_id"`
+	Permission string `json:"permission"`
+}
+
 type SystemRole struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Permissions []SystemRolePermission `json:"permissions"`
 }
 
 func getAuthAPIUrl() string {
@@ -75,10 +81,12 @@ func ServeUsersMaster(c *fiber.Ctx) error {
 	})
 }
 
+var AllPermissions = []string{"view_ledger", "modify_masters", "manage_system"}
+
 func ServeRolesMaster(c *fiber.Ctx) error {
 	resp, err := doAuthRequest(c, "GET", "/roles", nil)
 	if err != nil || resp.StatusCode != 200 {
-		return renderPage(c, "roles_master.html", fiber.Map{"Roles": []SystemRole{}})
+		return renderPage(c, "roles_master.html", fiber.Map{"Roles": []SystemRole{}, "AllPermissions": AllPermissions})
 	}
 	defer resp.Body.Close()
 
@@ -88,7 +96,8 @@ func ServeRolesMaster(c *fiber.Ctx) error {
 	json.NewDecoder(resp.Body).Decode(&result)
 
 	return renderPage(c, "roles_master.html", fiber.Map{
-		"Roles": result.Roles,
+		"Roles":          result.Roles,
+		"AllPermissions": AllPermissions,
 	})
 }
 
@@ -170,9 +179,17 @@ func UpdateUserStatus(c *fiber.Ctx) error {
 }
 
 func CreateRole(c *fiber.Ctx) error {
-	reqBody, _ := json.Marshal(map[string]string{
+	var permissions []string
+	c.Context().PostArgs().VisitAll(func(key, val []byte) {
+		if string(key) == "permissions" || string(key) == "permissions[]" {
+			permissions = append(permissions, string(val))
+		}
+	})
+
+	reqBody, _ := json.Marshal(map[string]interface{}{
 		"name":        c.FormValue("name"),
 		"description": c.FormValue("description"),
+		"permissions": permissions,
 	})
 
 	resp, err := doAuthRequest(c, "POST", "/roles", reqBody)
@@ -182,6 +199,30 @@ func CreateRole(c *fiber.Ctx) error {
 
 	c.Set("HX-Trigger", "refreshRolesList")
 	return renderPartial(c, "partials/notification.html", "notification", fiber.Map{"Success": true, "Message": "Role created successfully"})
+}
+
+func UpdateRole(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var permissions []string
+	c.Context().PostArgs().VisitAll(func(key, val []byte) {
+		if string(key) == "permissions" || string(key) == "permissions[]" {
+			permissions = append(permissions, string(val))
+		}
+	})
+
+	reqBody, _ := json.Marshal(map[string]interface{}{
+		"name":        c.FormValue("name"),
+		"description": c.FormValue("description"),
+		"permissions": permissions,
+	})
+
+	resp, err := doAuthRequest(c, "PUT", fmt.Sprintf("/roles/%s", id), reqBody)
+	if err != nil || resp.StatusCode != 200 {
+		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{"Success": false, "Message": "Failed to update role"})
+	}
+
+	c.Set("HX-Trigger", "refreshRolesList")
+	return renderPartial(c, "partials/notification.html", "notification", fiber.Map{"Success": true, "Message": "Role updated successfully"})
 }
 
 func DeleteRole(c *fiber.Ctx) error {

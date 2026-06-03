@@ -118,7 +118,7 @@
                         <span>Units of Measure</span>
                     </a>
 
-                    {{if or (eq .UserRole "System Admin") (eq .UserRole "Admin WMS")}}
+                    {{if hasPermission .UserPermissions .UserRole "manage_system"}}
                     <!-- SYSTEM ADMINISTRATION GROUP HEADER -->
                     <div class="px-4 pt-4 pb-1.5 text-[9px] font-bold text-slate-500 tracking-widest uppercase">System Administration</div>
                     
@@ -132,7 +132,7 @@
                     </a>
                     {{end}}
 
-                    {{if eq .UserRole "System Admin"}}
+                    {{if hasPermission .UserPermissions .UserRole "view_ledger"}}
                     <a href="/wms/ledger" hx-get="/wms/ledger" hx-target="#main-workspace" hx-push-url="true" class="flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 transition duration-200 cursor-pointer pl-6">
                         <i data-lucide="book-open" class="w-3.5 h-3.5 text-emerald-400"></i>
                         <span>Inventory Ledger</span>

@@ -33,32 +33,53 @@ graph TD
 
 The **Master Data Maintenance Registry** manages the physical layouts, product catalog items, units of measure, and dynamic packaging conversions.
 
+### Dynamic Permissions System
+
+RBAC has been refactored from hardcoded role-name checks to a **dynamic, permission-based system** stored in the `role_permissions` database table and propagated via JWT claims.
+
+- **Permission granularity**: `view_ledger`, `modify_masters`, `manage_system`
+- **JWT propagation**: Permissions are serialized into the `permissions` claim at login and verified by middleware on every request
+- **Sidebar visibility**: Navigation menus use the `hasPermission` template function — users only see items their token grants
+- **Legacy fallback**: Empty/null permissions fall back to role-name checks (System Admin → all, Admin WMS → modify_masters + manage_system)
+
+### Default Seeded Permissions
+
+| Role | view_ledger | modify_masters | manage_system |
+| :--- | :---: | :---: | :---: |
+| System Admin | Yes | Yes | Yes |
+| Admin WMS | No | Yes | Yes |
+| Procurement | No | No | No |
+| POS | No | No | No |
+
 ### Seeded System Roles
-- **System Admin**: Full cross-system access, role/user administration, and master data mutate permissions.
-- **Admin WMS**: Administrator for warehouse operations and master data mutate permissions.
-- **Procurement**: Operator for incoming logistics, stock adjustments, and master data views.
-- **POS**: Point of Sale operator for outbound picks, stock inquiries, and master data views.
+- **System Admin**: Full cross-system access, role/user administration, and all permissions.
+- **Admin WMS**: Administrator for warehouse operations — has `modify_masters` and `manage_system`.
+- **Procurement**: Operator for incoming logistics and stock adjustments (no elevated permissions).
+- **POS**: Point of Sale operator for outbound picks and stock inquiries (no elevated permissions).
+
+Administrators can create custom roles with any combination of permissions via **System → System Roles** in the dashboard UI.
 
 ### Endpoint Matrix & Permissions
 
-| Component | Path Prefix | HTTP Methods | Allowed Roles | Description |
+| Component | Path Prefix | HTTP Methods | Required Permission | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **Products** | `/wms/masters/products` | `GET` (List & Forms) | All logged-in roles | View catalog list with Base UoM / open forms |
-| **Products** | `/wms/masters/products` | `POST`, `PUT`, `DELETE` | `System Admin`, `Admin WMS` | Create, update, or soft-delete products |
-| **Warehouses** | `/wms/masters/warehouses` | `GET` (List & Forms) | All logged-in roles | View facilities list / open forms |
-| **Warehouses** | `/wms/masters/warehouses` | `POST`, `PUT`, `DELETE` | `System Admin`, `Admin WMS` | Create, update, or soft-delete facilities |
-| **Locators** | `/wms/masters/locators` | `GET` (List & Forms) | All logged-in roles | View locator grid / open forms |
-| **Locators** | `/wms/masters/locators` | `POST`, `PUT`, `DELETE` | `System Admin`, `Admin WMS` | Create, update, or soft-delete shelf locators |
-| **Units of Measure** | `/wms/masters/uoms` | `GET` (List & Forms) | All logged-in roles | View UoM list and Conversions split panel / open forms |
-| **Units of Measure** | `/wms/masters/uoms` | `POST`, `PUT`, `DELETE` | `System Admin`, `Admin WMS` | Create, update, or soft-delete standard units |
-| **Conversions** | `/wms/masters/conversions` | `GET` (Form) | All logged-in roles | Open conversion modal with dynamic formula preview |
-| **Conversions** | `/wms/masters/conversions` | `POST`, `DELETE` | `System Admin`, `Admin WMS` | Create or delete conversion rules |
-| **System Roles** | `/wms/system/roles` | `GET`, `POST`, `DELETE` | `System Admin`, `Admin WMS` | Manage operational roles |
-| **System Users** | `/wms/system/users` | `GET`, `POST`, `PUT` | `System Admin`, `Admin WMS` | Manage users and their roles |
-| **Adjustments** | `/wms/adjustments` | `GET`, `POST` | All logged-in roles | View and create direct stock adjustments |
-| **Kitting** | `/wms/kitting` | `GET`, `POST` | All logged-in roles | Perform product assembly and kitting |
-| **QC Holds** | `/wms/qc-holds` | `GET`, `POST` | All logged-in roles | Freeze stock quantities under QC investigation |
-| **QC Holds** | `/wms/qc-holds/:id/release` | `POST` | All logged-in roles | Release frozen stock back to available inventory |
+| **Products** | `/wms/masters/products` | `GET` (List & Forms) | Any authenticated | View catalog list with Base UoM / open forms |
+| **Products** | `/wms/masters/products` | `POST`, `PUT`, `DELETE` | `modify_masters` | Create, update, or soft-delete products |
+| **Warehouses** | `/wms/masters/warehouses` | `GET` (List & Forms) | Any authenticated | View facilities list / open forms |
+| **Warehouses** | `/wms/masters/warehouses` | `POST`, `PUT`, `DELETE` | `modify_masters` | Create, update, or soft-delete facilities |
+| **Locators** | `/wms/masters/locators` | `GET` (List & Forms) | Any authenticated | View locator grid / open forms |
+| **Locators** | `/wms/masters/locators` | `POST`, `PUT`, `DELETE` | `modify_masters` | Create, update, or soft-delete shelf locators |
+| **Units of Measure** | `/wms/masters/uoms` | `GET` (List & Forms) | Any authenticated | View UoM list and Conversions split panel / open forms |
+| **Units of Measure** | `/wms/masters/uoms` | `POST`, `PUT`, `DELETE` | `modify_masters` | Create, update, or soft-delete standard units |
+| **Conversions** | `/wms/masters/conversions` | `GET` (Form) | Any authenticated | Open conversion modal with dynamic formula preview |
+| **Conversions** | `/wms/masters/conversions` | `POST`, `DELETE` | `modify_masters` | Create or delete conversion rules |
+| **System Roles** | `/wms/system/roles` | `GET`, `POST`, `PUT`, `DELETE` | `manage_system` | Manage operational roles and their permissions |
+| **System Users** | `/wms/system/users` | `GET`, `POST`, `PUT` | `manage_system` | Manage users and their role assignments |
+| **Inventory Ledger** | `/wms/ledger` | `GET` | `view_ledger` | View immutable audit trail of stock movements |
+| **Adjustments** | `/wms/adjustments` | `GET`, `POST` | Any authenticated | View and create direct stock adjustments |
+| **Kitting** | `/wms/kitting` | `GET`, `POST` | Any authenticated | Perform product assembly and kitting |
+| **QC Holds** | `/wms/qc-holds` | `GET`, `POST` | Any authenticated | Freeze stock quantities under QC investigation |
+| **QC Holds** | `/wms/qc-holds/:id/release` | `POST` | Any authenticated | Release frozen stock back to available inventory |
 
 ---
 
@@ -75,6 +96,7 @@ To prevent SQLite lockups and crash-prone schema synchronization in production, 
   4. Executes any pending migrations inside a **single ACID transaction** using raw SQL.
 - **Current Seed Scripts**:
   - `auth_services/migrations/0002_seed_roles.sql`: Seeds the operational system roles.
+  - `auth_services/migrations/0003_add_role_permissions.sql`: Creates the `role_permissions` table and seeds default permission assignments.
   - `wms_dashboard/migrations/0002_seed_wms_master.sql`: Seeds default physical layouts, base units, and conversions.
 
 ---
@@ -227,4 +249,3 @@ npx playwright test
 - **Frontend SPA Layer**: HTMX v1.9.10 (Asynchronous swaps & dynamic forms)
 - **Styling Core**: Tailwind CSS v4.0 + Custom Glassmorphism Theme (Outfit + Inter font faces)
 - **Iconsets**: Lucide Icons (asynchronously re-bound on HTMX swaps)
-

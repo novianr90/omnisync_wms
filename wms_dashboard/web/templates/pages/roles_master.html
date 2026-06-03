@@ -84,9 +84,71 @@
                           class="w-full px-3 py-2 bg-slate-950/50 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-fuchsia-500 transition-colors"></textarea>
             </div>
 
+            <div>
+                <label class="block text-xs font-semibold tracking-wide text-slate-400 mb-1.5 uppercase">Permissions</label>
+                <div class="flex flex-col gap-2 bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                    {{range .AllPermissions}}
+                    <label class="flex items-center gap-2 text-slate-300 hover:text-slate-100 cursor-pointer">
+                        <input type="checkbox" name="permissions" value="{{.}}"
+                               class="accent-fuchsia-500 rounded border-slate-800 bg-slate-950">
+                        <span class="text-xs">{{.}}</span>
+                    </label>
+                    {{end}}
+                </div>
+            </div>
+
             <div class="mt-4 flex gap-3 justify-end">
                 <button type="button" onclick="document.getElementById('new-role-modal').classList.add('hidden')" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">Cancel</button>
                 <button type="submit" class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-fuchsia-500/20 active:translate-y-[1px] transition">Create Role</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div id="edit-role-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div class="h-14 px-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+            <h3 class="font-bold text-slate-200 flex items-center gap-2">
+                <i data-lucide="edit-3" class="w-4 h-4 text-fuchsia-400"></i>
+                Edit System Role
+            </h3>
+            <button onclick="document.getElementById('edit-role-modal').classList.add('hidden')" class="text-slate-500 hover:text-slate-300">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        
+        <form id="edit-role-form" hx-put="" hx-target="#toast-container" hx-swap="beforeend" 
+              onsubmit="setTimeout(() => document.getElementById('edit-role-modal').classList.add('hidden'), 100)" class="p-6 flex flex-col gap-4">
+            
+            <div>
+                <label class="block text-xs font-semibold tracking-wide text-slate-400 mb-1.5 uppercase">Role Name</label>
+                <input type="text" id="edit-role-name" name="name" required placeholder="e.g. Area Manager"
+                       class="w-full px-3 py-2 bg-slate-950/50 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-fuchsia-500 transition-colors">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold tracking-wide text-slate-400 mb-1.5 uppercase">Description</label>
+                <textarea id="edit-role-desc" name="description" rows="3" placeholder="Describe the responsibilities..."
+                          class="w-full px-3 py-2 bg-slate-950/50 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-fuchsia-500 transition-colors"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold tracking-wide text-slate-400 mb-1.5 uppercase">Permissions</label>
+                <div class="flex flex-col gap-2 bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                    {{range .AllPermissions}}
+                    <label class="flex items-center gap-2 text-slate-300 hover:text-slate-100 cursor-pointer">
+                        <input type="checkbox" name="permissions" value="{{.}}" data-edit-perm="{{.}}"
+                               class="accent-fuchsia-500 rounded border-slate-800 bg-slate-950">
+                        <span class="text-xs">{{.}}</span>
+                    </label>
+                    {{end}}
+                </div>
+            </div>
+
+            <div class="mt-4 flex gap-3 justify-end">
+                <button type="button" onclick="document.getElementById('edit-role-modal').classList.add('hidden')" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-fuchsia-500/20 active:translate-y-[1px] transition">Save Changes</button>
             </div>
         </form>
     </div>
@@ -108,6 +170,30 @@
                 row.style.display = 'none';
             }
         });
+    }
+
+    function openEditRoleModal(id, name, desc, permsString) {
+        const form = document.getElementById('edit-role-form');
+        form.setAttribute('hx-put', '/wms/system/roles/' + id);
+        htmx.process(form);
+
+        document.getElementById('edit-role-name').value = name;
+        document.getElementById('edit-role-desc').value = desc;
+
+        // Uncheck all edit checkboxes
+        const checkboxes = document.querySelectorAll('[data-edit-perm]');
+        checkboxes.forEach(cb => cb.checked = false);
+
+        // Check active permissions
+        if (permsString) {
+            const activePerms = permsString.split(',');
+            activePerms.forEach(p => {
+                const cb = document.querySelector(`[data-edit-perm="${p}"]`);
+                if (cb) cb.checked = true;
+            });
+        }
+
+        document.getElementById('edit-role-modal').classList.remove('hidden');
     }
 </script>
 {{end}}

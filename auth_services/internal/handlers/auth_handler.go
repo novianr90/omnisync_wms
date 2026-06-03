@@ -39,11 +39,12 @@ type RegisterRequest struct {
 }
 
 type Claims struct {
-	UserID    string `json:"sub"`
-	Email     string `json:"email"`
-	Role      string `json:"role"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	UserID      string   `json:"sub"`
+	Email       string   `json:"email"`
+	Role        string   `json:"role"`
+	FirstName   string   `json:"first_name"`
+	LastName    string   `json:"last_name"`
+	Permissions []string `json:"permissions"`
 	jwt.RegisteredClaims
 }
 
@@ -62,12 +63,27 @@ func checkPasswordHash(password, hash string) bool {
 // Helper to generate JWT
 func generateToken(user models.User) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
+	
+	var perms []string
+	if len(user.Role.Permissions) == 0 && user.RoleID != "" && database.DB != nil {
+		var rolePerms []models.RolePermission
+		database.DB.Where("role_id = ?", user.RoleID).Find(&rolePerms)
+		for _, p := range rolePerms {
+			perms = append(perms, p.Permission)
+		}
+	} else {
+		for _, p := range user.Role.Permissions {
+			perms = append(perms, p.Permission)
+		}
+	}
+
 	claims := &Claims{
-		UserID:    user.ID,
-		Email:     user.Email,
-		Role:      user.Role.Name,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
+		UserID:      user.ID,
+		Email:       user.Email,
+		Role:        user.Role.Name,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Permissions: perms,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -160,7 +176,7 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	var user models.User
-	if err := database.DB.Preload("Role").Where("email = ?", req.Email).First(&user).Error; err != nil {
+	if err := database.DB.Preload("Role.Permissions").Where("email = ?", req.Email).First(&user).Error; err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid email or password",
 		})
@@ -291,9 +307,16 @@ func AdminMiddleware(c *fiber.Ctx) error {
 		})
 	}
 
-	if claims.Role != "System Admin" && claims.Role != "Admin WMS" {
+	hasManageSystem := false
+	for _, perm := range claims.Permissions {
+		if perm == "manage_system" {
+			hasManageSystem = true
+			break
+		}
+	}
+	if !hasManageSystem && claims.Role != "System Admin" && claims.Role != "Admin WMS" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Access denied. Admin role required.",
+			"error": "Access denied. Admin role or manage_system permission required.",
 		})
 	}
 
