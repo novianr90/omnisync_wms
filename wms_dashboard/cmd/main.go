@@ -89,6 +89,8 @@ func main() {
 	app.Post("/wms/transfers/new", handlers.CreateTransfer)
 
 	app.Get("/wms/ledger", middleware.RequireSystemAdmin(), handlers.ServeLedger)
+	app.Get("/wms/ledger/export/pdf", middleware.RequireSystemAdmin(), handlers.ExportLedgerPDF)
+	app.Get("/wms/ledger/export/excel", middleware.RequireSystemAdmin(), handlers.ExportLedgerExcel)
 	app.Get("/wms/crossdock", handlers.ServeCrossDock)
 	app.Get("/wms/in-progress", handlers.ServeInProgressDocs)
 
