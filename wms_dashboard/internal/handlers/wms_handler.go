@@ -27,6 +27,7 @@ func renderPage(c *fiber.Ctx, pageTemplate string, data fiber.Map) error {
 	data["Username"] = c.Locals("user_name")
 	data["UserRole"] = c.Locals("user_role")
 	data["UserEmail"] = c.Locals("user_email")
+	data["UserPermissions"] = c.Locals("user_permissions")
 
 	lp := filepath.Join("web", "templates", "layouts", "base.html")
 	fp := filepath.Join("web", "templates", "pages", pageTemplate)
@@ -35,12 +36,40 @@ func renderPage(c *fiber.Ctx, pageTemplate string, data fiber.Map) error {
 	var err error
 	var execTmpl string
 
+	funcMap := template.FuncMap{
+		"hasPermission": func(perms interface{}, role string, required string) bool {
+			if perms != nil {
+				switch slice := perms.(type) {
+				case []string:
+					for _, p := range slice {
+						if p == required {
+							return true
+						}
+					}
+				case []interface{}:
+					for _, item := range slice {
+						if s, ok := item.(string); ok && s == required {
+							return true
+						}
+					}
+				}
+			}
+			if role == "System Admin" {
+				return true
+			}
+			if role == "Admin WMS" && (required == "modify_masters" || required == "manage_system") {
+				return true
+			}
+			return false
+		},
+	}
+
 	if c.Get("HX-Request") == "true" {
-		tmpl = template.New(pageTemplate)
+		tmpl = template.New(pageTemplate).Funcs(funcMap)
 		tmpl, err = tmpl.ParseFiles(fp)
 		execTmpl = "content"
 	} else {
-		tmpl = template.New("base")
+		tmpl = template.New("base").Funcs(funcMap)
 		tmpl, err = tmpl.ParseFiles(lp, fp)
 		execTmpl = "base"
 	}
@@ -75,9 +104,38 @@ func renderPartial(c *fiber.Ctx, partialPath string, templateName string, data f
 	data["Username"] = c.Locals("user_name")
 	data["UserRole"] = c.Locals("user_role")
 	data["UserEmail"] = c.Locals("user_email")
+	data["UserPermissions"] = c.Locals("user_permissions")
+
+	partialFuncMap := template.FuncMap{
+		"hasPermission": func(perms interface{}, role string, required string) bool {
+			if perms != nil {
+				switch slice := perms.(type) {
+				case []string:
+					for _, p := range slice {
+						if p == required {
+							return true
+						}
+					}
+				case []interface{}:
+					for _, item := range slice {
+						if s, ok := item.(string); ok && s == required {
+							return true
+						}
+					}
+				}
+			}
+			if role == "System Admin" {
+				return true
+			}
+			if role == "Admin WMS" && (required == "modify_masters" || required == "manage_system") {
+				return true
+			}
+			return false
+		},
+	}
 
 	fp := filepath.Join("web", "templates", partialPath)
-	tmpl, err := template.ParseFiles(fp)
+	tmpl, err := template.New(templateName).Funcs(partialFuncMap).ParseFiles(fp)
 	if err != nil {
 		log.Printf("Partial parsing error: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error: " + err.Error())
