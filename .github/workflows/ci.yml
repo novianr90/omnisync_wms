@@ -93,6 +93,22 @@ jobs:
             BLOCKED=true
           fi
 
+          # Check for diff/patch files
+          DIFF_FILES=$(find . -name '*.diff' -o -name '*.patch' | head -20 || true)
+          if [ -n "$DIFF_FILES" ]; then
+            echo "::error::❌ Forbidden diff/patch files detected:"
+            echo "$DIFF_FILES"
+            BLOCKED=true
+          fi
+
+          # Check for pr_body.md metadata
+          PR_BODY_FILES=$(find . -name 'pr_body.md' | head -20 || true)
+          if [ -n "$PR_BODY_FILES" ]; then
+            echo "::error::❌ Forbidden pr_body.md metadata files detected:"
+            echo "$PR_BODY_FILES"
+            BLOCKED=true
+          fi
+
           if [ "$BLOCKED" = true ]; then
             echo ""
             echo "═══════════════════════════════════════════════════"
