@@ -37,28 +37,43 @@ func renderPage(c *fiber.Ctx, pageTemplate string, data fiber.Map) error {
 	var execTmpl string
 
 	funcMap := template.FuncMap{
-		"hasPermission": func(perms interface{}, role string, required string) bool {
+		"hasPermission": func(perms interface{}, role interface{}, required string) bool {
+			isEmpty := true
 			if perms != nil {
 				switch slice := perms.(type) {
 				case []string:
-					for _, p := range slice {
-						if p == required {
-							return true
+					if len(slice) > 0 {
+						isEmpty = false
+						for _, p := range slice {
+							if p == required {
+								return true
+							}
 						}
 					}
 				case []interface{}:
-					for _, item := range slice {
-						if s, ok := item.(string); ok && s == required {
-							return true
+					if len(slice) > 0 {
+						isEmpty = false
+						for _, item := range slice {
+							if s, ok := item.(string); ok && s == required {
+								return true
+							}
 						}
 					}
 				}
 			}
-			if role == "System Admin" {
-				return true
-			}
-			if role == "Admin WMS" && (required == "modify_masters" || required == "manage_system") {
-				return true
+			if isEmpty {
+				roleStr := ""
+				if role != nil {
+					if s, ok := role.(string); ok {
+						roleStr = s
+					}
+				}
+				if roleStr == "System Admin" {
+					return true
+				}
+				if roleStr == "Admin WMS" && (required == "modify_masters" || required == "manage_system") {
+					return true
+				}
 			}
 			return false
 		},
@@ -107,28 +122,43 @@ func renderPartial(c *fiber.Ctx, partialPath string, templateName string, data f
 	data["UserPermissions"] = c.Locals("user_permissions")
 
 	partialFuncMap := template.FuncMap{
-		"hasPermission": func(perms interface{}, role string, required string) bool {
+		"hasPermission": func(perms interface{}, role interface{}, required string) bool {
+			isEmpty := true
 			if perms != nil {
 				switch slice := perms.(type) {
 				case []string:
-					for _, p := range slice {
-						if p == required {
-							return true
+					if len(slice) > 0 {
+						isEmpty = false
+						for _, p := range slice {
+							if p == required {
+								return true
+							}
 						}
 					}
 				case []interface{}:
-					for _, item := range slice {
-						if s, ok := item.(string); ok && s == required {
-							return true
+					if len(slice) > 0 {
+						isEmpty = false
+						for _, item := range slice {
+							if s, ok := item.(string); ok && s == required {
+								return true
+							}
 						}
 					}
 				}
 			}
-			if role == "System Admin" {
-				return true
-			}
-			if role == "Admin WMS" && (required == "modify_masters" || required == "manage_system") {
-				return true
+			if isEmpty {
+				roleStr := ""
+				if role != nil {
+					if s, ok := role.(string); ok {
+						roleStr = s
+					}
+				}
+				if roleStr == "System Admin" {
+					return true
+				}
+				if roleStr == "Admin WMS" && (required == "modify_masters" || required == "manage_system") {
+					return true
+				}
 			}
 			return false
 		},

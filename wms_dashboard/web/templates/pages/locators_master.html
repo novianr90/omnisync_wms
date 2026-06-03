@@ -13,7 +13,7 @@
         </div>
         
         <!-- Add button shown if user is admin -->
-        {{if or (eq .UserRole "System Admin") (eq .UserRole "Admin WMS")}}
+        {{if hasPermission .UserPermissions .UserRole "modify_masters"}}
         <button hx-get="/wms/masters/locators/new" hx-target="#modal-container"
                 class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs rounded-lg active:translate-y-[1px] shadow-lg shadow-amber-500/10 cursor-pointer flex items-center gap-2 transition duration-200">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -55,7 +55,7 @@
                         <th class="px-6 py-4">Shelf</th>
                         <th class="px-6 py-4">Level</th>
                         <th class="px-6 py-4 text-center">Status</th>
-                        {{if or (eq .UserRole "System Admin") (eq .UserRole "Admin WMS")}}
+                        {{if hasPermission .UserPermissions .UserRole "modify_masters"}}
                         <th class="px-6 py-4 w-28 text-center">Actions</th>
                         {{end}}
                     </tr>

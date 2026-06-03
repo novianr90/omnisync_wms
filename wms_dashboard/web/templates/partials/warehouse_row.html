@@ -15,7 +15,7 @@
         </span>
         {{end}}
     </td>
-    {{if or (eq $.UserRole "System Admin") (eq $.UserRole "Admin WMS")}}
+    {{if hasPermission $.UserPermissions $.UserRole "modify_masters"}}
     <td class="px-6 py-4">
         <div class="flex items-center justify-center gap-2">
             <button hx-get="/wms/masters/warehouses/{{.ID}}/edit" hx-target="#modal-container"
@@ -35,7 +35,7 @@
 </tr>
 {{else}}
 <tr>
-    <td colspan="{{if or (eq .UserRole "System Admin") (eq .UserRole "Admin WMS")}}5{{else}}4{{end}}" class="px-6 py-12 text-center text-slate-500">
+    <td colspan="{{if hasPermission .UserPermissions .UserRole "modify_masters"}}5{{else}}4{{end}}" class="px-6 py-12 text-center text-slate-500">
         <div class="flex flex-col items-center justify-center gap-2">
             <i data-lucide="inbox" class="w-8 h-8 opacity-40"></i>
             <span class="text-xs">No warehouse hubs registered.</span>

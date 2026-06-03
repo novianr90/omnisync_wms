@@ -64,10 +64,6 @@ func TestServeProductsMaster(t *testing.T) {
 		Views: nil, // We use renderPage / renderPartial which parses manually
 	})
 
-	app.Get("/wms/masters/products", ServeProductsMaster)
-
-	// Test 1: Full HTML page load (HX-Request is empty/false)
-	req := httptest.NewRequest("GET", "/wms/masters/products", nil)
 	// Mock local values for user profile context required by renderPage
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user_name", "Test Admin")
@@ -75,6 +71,11 @@ func TestServeProductsMaster(t *testing.T) {
 		c.Locals("user_email", "admin@omnisync.com")
 		return c.Next()
 	})
+
+	app.Get("/wms/masters/products", ServeProductsMaster)
+
+	// Test 1: Full HTML page load (HX-Request is empty/false)
+	req := httptest.NewRequest("GET", "/wms/masters/products", nil)
 	
 	resp, err := app.Test(req)
 	if err != nil {
