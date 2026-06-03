@@ -42,7 +42,7 @@ jobs:
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             case "$file" in
-              *.md|LICENSE|.gitignore|*.txt|docs/*|.github/workflows/*) ;;
+              *.md|LICENSE|.gitignore|*.txt|docs/*|.github/workflows/*|*.diff|*.patch) ;;
               *) DOCS_ONLY=false; break ;;
             esac
           done <<< "$CHANGED"
