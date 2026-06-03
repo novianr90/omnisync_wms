@@ -273,3 +273,17 @@ type InventoryLedger struct {
 
 // TableName overrides GORM's default naming
 func (InventoryLedger) TableName() string { return "inventory_ledgers" }
+
+// InProgressDoc represents the consolidated in-progress transactions SQL View
+type InProgressDoc struct {
+	ID         string    `gorm:"column:id;primaryKey" json:"id"`
+	DocumentNo string    `gorm:"column:document_no" json:"document_no"`
+	DocType    string    `gorm:"column:doc_type" json:"doc_type"`
+	CreatedAt  time.Time `gorm:"column:created_at" json:"created_at"`
+	Status     string    `gorm:"column:status" json:"status"`
+	Link       string    `gorm:"column:link" json:"link"`
+}
+
+func (InProgressDoc) TableName() string {
+	return "in_progress_documents"
+}
