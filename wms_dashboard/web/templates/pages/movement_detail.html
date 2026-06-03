@@ -142,7 +142,7 @@
                 <div class="flex flex-col gap-4 relative pl-6 border-l border-slate-800/80">
                     <!-- Step 1: Open -->
                     <div class="relative">
-                        <span class="absolute -left-[30px] top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
+                        <span class="absolute -left-8 top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
                                      {{if or (eq .Movement.Status "OPEN") (eq .Movement.Status "IN_PROGRESS") (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}!bg-emerald-500/20 !border-emerald-500{{end}}">
                             <span class="w-1.5 h-1.5 rounded-full {{if or (eq .Movement.Status "OPEN") (eq .Movement.Status "IN_PROGRESS") (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}bg-emerald-400{{else}}bg-slate-800{{end}}"></span>
                         </span>
@@ -154,7 +154,7 @@
 
                     <!-- Step 2: Processing (IN_PROGRESS / cross-dock steps) -->
                     <div class="relative">
-                        <span class="absolute -left-[30px] top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
+                        <span class="absolute -left-8 top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
                                      {{if or (eq .Movement.Status "IN_PROGRESS") (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}!bg-emerald-500/20 !border-emerald-500{{end}}">
                             <span class="w-1.5 h-1.5 rounded-full {{if or (eq .Movement.Status "IN_PROGRESS") (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}bg-emerald-400{{else}}bg-slate-800{{end}}"></span>
                         </span>
@@ -166,7 +166,7 @@
 
                     <!-- Step 3: Journaled (or specific crossdock status) -->
                     <div class="relative font-mono">
-                        <span class="absolute -left-[30px] top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
+                        <span class="absolute -left-8 top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
                                      {{if or (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}!bg-emerald-500/20 !border-emerald-500{{end}}">
                             <span class="w-1.5 h-1.5 rounded-full {{if or (eq .Movement.Status "JOURNALED") (eq .Movement.Status "COMPLETED") (eq .Movement.Status "INBOUND") (eq .Movement.Status "SHIPPING") (eq .Movement.Status "OUTBOUND")}}bg-emerald-400{{else}}bg-slate-800{{end}}"></span>
                         </span>
@@ -178,7 +178,7 @@
 
                     <!-- Step 4: Finalized -->
                     <div class="relative">
-                        <span class="absolute -left-[30px] top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
+                        <span class="absolute -left-8 top-0.5 w-4 h-4 rounded-full border border-slate-800 bg-slate-950 flex items-center justify-center
                                      {{if eq .Movement.Status "COMPLETED"}}!bg-emerald-500/20 !border-emerald-500{{else if eq .Movement.Status "REJECTED"}}!bg-rose-500/20 !border-rose-500{{end}}">
                             <span class="w-1.5 h-1.5 rounded-full {{if eq .Movement.Status "COMPLETED"}}bg-emerald-400{{else if eq .Movement.Status "REJECTED"}}bg-rose-500{{else}}bg-slate-800{{end}}"></span>
                         </span>
