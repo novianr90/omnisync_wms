@@ -88,9 +88,9 @@ func main() {
 	app.Get("/wms/transfers/destinations", handlers.ServeTransferDestinations)
 	app.Post("/wms/transfers/new", handlers.CreateTransfer)
 
-	// --- INVENTORY LEDGER ---
 	app.Get("/wms/ledger", middleware.RequireSystemAdmin(), handlers.ServeLedger)
 	app.Get("/wms/crossdock", handlers.ServeCrossDock)
+	app.Get("/wms/in-progress", handlers.ServeInProgressDocs)
 
 	// --- MASTER MAINTENANCE CRUD ENDPOINTS ---
 	// View lists (Operator & Admin)
