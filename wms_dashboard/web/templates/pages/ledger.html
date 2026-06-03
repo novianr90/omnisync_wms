@@ -5,6 +5,19 @@
             <h1 class="text-2xl font-bold text-slate-100 tracking-tight">Inventory Ledger</h1>
             <p class="text-sm text-slate-400 mt-1">Immutable audit trail of all physical stock movements.</p>
         </div>
+        <!-- Export Buttons in Header -->
+        <div class="flex items-center gap-3">
+            <button onclick="triggerExport('pdf')" 
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 hover:border-slate-600 font-semibold text-xs rounded-lg active:translate-y-[1px] shadow-lg cursor-pointer flex items-center gap-2 transition duration-200">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-rose-400"></i>
+                <span>Export PDF</span>
+            </button>
+            <button onclick="triggerExport('excel')" 
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 hover:border-slate-600 font-semibold text-xs rounded-lg active:translate-y-[1px] shadow-lg cursor-pointer flex items-center gap-2 transition duration-200">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>Export Excel</span>
+            </button>
+        </div>
     </div>
 
     <!-- Filters -->
@@ -149,6 +162,15 @@
     // Re-initialize lucide icons on HTMX partial swap
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
+    }
+
+    function triggerExport(format) {
+        // Find the filter form
+        const form = document.querySelector('form[hx-target="#ledger-table-container"]');
+        if (!form) return;
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData).toString();
+        window.location.href = `/wms/ledger/export/${format}?${params}`;
     }
 </script>
 {{ end }}
