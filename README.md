@@ -51,7 +51,7 @@ omnisync_wms/
 - 🚚 **Inventory Movements** — Inbound, outbound, and transfer workflows with claim/journal/complete lifecycle
 - 🔢 **Dynamic Numbering Sequence Engine** — Traceable document/batch numbers using transactional row locks (SELECT FOR UPDATE) and auto fiscal-year rollover
 - 🛡️ **QC Hold (Stock Freeze)** — Quarantine specific stock quantities under QC investigation; frozen stock is excluded from all outbound movements and kitting
-- 🔒 **Dynamic Role-Based Access Control** — Granular permissions (`view_ledger`, `modify_masters`, `manage_system`) stored in DB, propagated via JWT, with an editable Role Registry UI
+- 🔒 **Dynamic Role-Based Access Control** — Granular permissions (`view_ledger`, `modify_masters`, `manage_system`, `manage_movements`) stored in DB, propagated via JWT, with an editable Role Registry UI
 - ⚡ **HTMX-Powered UI** — No page reloads, instant feedback via server-side HTML fragments
 - 🌑 **Glassmorphism Dark Theme** — Tailwind CSS v4 with custom design tokens
 - 🗺️ **Collapsible & Responsive Navigation** — Clean collapsible sidebar on desktop (state persistent via `localStorage` with FOUC prevention) and fluid drawer slide-over navigation on mobile views
