@@ -37,19 +37,19 @@ The **Master Data Maintenance Registry** manages the physical layouts, product c
 
 RBAC has been refactored from hardcoded role-name checks to a **dynamic, permission-based system** stored in the `role_permissions` database table and propagated via JWT claims.
 
-- **Permission granularity**: `view_ledger`, `modify_masters`, `manage_system`
+- **Permission granularity**: `view_ledger`, `modify_masters`, `manage_system`, `manage_movements`
 - **JWT propagation**: Permissions are serialized into the `permissions` claim at login and verified by middleware on every request
 - **Sidebar visibility**: Navigation menus use the `hasPermission` template function — users only see items their token grants
 - **Legacy fallback**: Empty/null permissions fall back to role-name checks (System Admin → all, Admin WMS → modify_masters + manage_system)
 
 ### Default Seeded Permissions
 
-| Role | view_ledger | modify_masters | manage_system |
-| :--- | :---: | :---: | :---: |
-| System Admin | Yes | Yes | Yes |
-| Admin WMS | No | Yes | Yes |
-| Procurement | No | No | No |
-| POS | No | No | No |
+| Role | view_ledger | modify_masters | manage_system | manage_movements |
+| :--- | :---: | :---: | :---: | :---: |
+| System Admin | Yes | Yes | Yes | Yes |
+| Admin WMS | No | Yes | Yes | Yes |
+| Procurement | No | No | No | No |
+| POS | No | No | No | No |
 
 ### Seeded System Roles
 - **System Admin**: Full cross-system access, role/user administration, and all permissions.
@@ -75,6 +75,7 @@ Administrators can create custom roles with any combination of permissions via *
 | **Conversions** | `/wms/masters/conversions` | `POST`, `DELETE` | `modify_masters` | Create or delete conversion rules |
 | **System Roles** | `/wms/system/roles` | `GET`, `POST`, `PUT`, `DELETE` | `manage_system` | Manage operational roles and their permissions |
 | **System Users** | `/wms/system/users` | `GET`, `POST`, `PUT` | `manage_system` | Manage users and their role assignments |
+| **Movements** | `/wms/movements` | `GET` (List & Forms), `POST` (Progress steps) | `manage_movements` | View, claim, progress, journal, or complete Inbound/Outbound/Cross-Dock/Transfer movements |
 | **Inventory Ledger** | `/wms/ledger` | `GET` | `view_ledger` | View immutable audit trail of stock movements |
 | **Adjustments** | `/wms/adjustments` | `GET`, `POST` | Any authenticated | View and create direct stock adjustments |
 | **Kitting** | `/wms/kitting` | `GET`, `POST` | Any authenticated | Perform product assembly and kitting |
