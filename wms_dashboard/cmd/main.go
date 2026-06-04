@@ -49,14 +49,21 @@ func main() {
 
 	// WMS Core AJAX Fragments (HTMX)
 	app.Get("/wms/inventory", handlers.GetInventoryList)
-	app.Post("/wms/movements/new", handlers.CreateMovement)
-	app.Post("/wms/movements/:id/claim", handlers.ClaimMovement)
-	app.Post("/wms/movements/:id/journal", handlers.JournalMovement)
-	app.Post("/wms/movements/:id/complete", handlers.CompleteMovement)
-	app.Post("/wms/movements/:id/reject", handlers.RejectMovement)
-	app.Post("/wms/movements/:id/crossdock/inbound", handlers.ConfirmCrossDockInbound)
-	app.Post("/wms/movements/:id/crossdock/shipping", handlers.ConfirmCrossDockShipping)
-	app.Post("/wms/movements/:id/crossdock/outbound", handlers.ConfirmCrossDockOutbound)
+
+	// Movements (Guarded by manage_movements permission)
+	movementGroup := app.Group("/wms/movements", middleware.RequireManageMovements())
+	movementGroup.Get("/", handlers.ServeMovementsPage)
+	movementGroup.Get("/new", handlers.ServeNewMovementPage)
+	movementGroup.Post("/", handlers.CreateMovement)
+	movementGroup.Get("/:id", handlers.ServeMovementDetailPage)
+	movementGroup.Post("/:id/claim", handlers.ClaimMovement)
+	movementGroup.Post("/:id/journal", handlers.JournalMovement)
+	movementGroup.Post("/:id/complete", handlers.CompleteMovement)
+	movementGroup.Post("/:id/reject", handlers.RejectMovement)
+	movementGroup.Post("/:id/crossdock/inbound", handlers.ConfirmCrossDockInbound)
+	movementGroup.Post("/:id/crossdock/shipping", handlers.ConfirmCrossDockShipping)
+	movementGroup.Post("/:id/crossdock/outbound", handlers.ConfirmCrossDockOutbound)
+
 
 	// Adjustments
 	app.Get("/wms/adjustments", handlers.ServeAdjustments)

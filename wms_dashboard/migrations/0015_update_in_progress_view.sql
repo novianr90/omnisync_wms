@@ -1,5 +1,7 @@
 -- Up
-CREATE VIEW IF NOT EXISTS in_progress_documents AS
+DROP VIEW IF EXISTS in_progress_documents;
+
+CREATE VIEW in_progress_documents AS
 SELECT 
     id, 
     document_no, 
@@ -45,6 +47,3 @@ SELECT
     '/wms/kitting' AS link 
 FROM inventory_kittings 
 WHERE status = 'OPEN';
-
--- Down
--- DROP VIEW IF EXISTS in_progress_documents;

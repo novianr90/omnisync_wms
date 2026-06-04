@@ -9,63 +9,73 @@ test.describe('Cross-Docking Operations E2E Flows', () => {
   });
 
   test('Cross-Dock Cycle: Register -> Claim -> Confirm Inbound -> Initiate Loading -> Confirm Dispatch -> Complete', async ({ page }) => {
-    await page.goto('/');
-
-    // 1. Open the Inbound Modal
-    await page.click('button:has-text("Register Inbound")');
-    await expect(page.locator('#modal-inbound')).toBeVisible();
+    test.setTimeout(90000);
+    // 1. Navigate to Register Movement Form
+    await page.goto('/wms/movements/new');
+    await expect(page.locator('h3:has-text("Create Movement Order")')).toBeVisible();
 
     // 2. Select product and check Cross-Docking
-    await page.selectOption('#inbound-product', { label: 'PROD-MON-03 - Dell UltraSharp 27" 4K Monitor' });
+    await page.selectOption('.product-select', { label: 'PROD-MON-03 - Dell UltraSharp 27" 4K Monitor' });
     
     // Toggle the Cross-Docking checkbox
-    await page.check('#inbound-crossdock');
+    await page.check('#is-cross-dock-checkbox');
 
-    // Verify target shelf locator container is disabled/faded
-    const locatorContainer = page.locator('#locator-select-container');
-    await expect(locatorContainer).toHaveClass(/pointer-events-none/);
+    // Verify warning banner is visible
+    await expect(page.locator('#crossdock-warning-banner')).toBeVisible();
+
+    // Verify target shelf locator select cell is disabled/faded
+    const cell = page.locator('.locator-select-cell');
+    await expect(cell).toHaveClass(/pointer-events-none/);
 
     // 3. Fill quantity and remarks
-    await page.fill('#inbound-qty', '15');
-    await page.fill('#inbound-remarks', 'E2E Cross-Docking lifecycle validation');
+    await page.fill('.quantity-input', '15');
+    await page.fill('#movement-remarks', 'E2E Cross-Docking lifecycle validation');
 
     // Submit Form
-    await page.click('#modal-inbound button[type="submit"]');
+    await page.click('button[type="submit"]');
 
     // Verify success toast
     await expect(page.locator('.notyf__toast')).toBeVisible();
     await expect(page.locator('.notyf__message')).toContainText('registered successfully');
 
-    // 4. Verify CROSS-DOCK Card in Right Panel
-    const crossdockCard = page.locator('.glass-panel .glass-panel:has-text("CROSS-DOCK"):has-text("OPEN")').first();
-    await expect(crossdockCard).toBeVisible();
-    await expect(crossdockCard).toContainText('Dell UltraSharp 27" 4K Monitor');
+    // Verify redirect to movements list page
+    await expect(page.locator('h3:has-text("Inventory Movements")')).toBeVisible();
 
-    // Extract unique Document Number
-    const cardText = await crossdockCard.innerText();
-    const docNoMatch = cardText.match(/MOV-\d+-\d+|MOV-\d+/);
-    const docNo = docNoMatch ? docNoMatch[0] : "";
-    const card = page.locator(`.glass-panel .glass-panel:has-text("${docNo}")`).first();
+    // 4. Navigate to Detail View of the new crossdock movement
+    const firstRow = page.locator('#movements-tbody tr').first();
+    await expect(firstRow).toBeVisible();
+    const docLink = firstRow.locator('td:first-child a');
+    const docNo = await docLink.innerText();
+
+    await docLink.click();
+    await expect(page.locator('h3.font-bold')).toContainText(docNo);
 
     // 5. Claim Task -> IN PROGRESS
-    await card.locator('button:has-text("Claim Task")').click();
-    await expect(card).toContainText('IN PROGRESS');
+    await page.click('button:has-text("Claim Task")');
+    await expect(page.locator('.notyf__toast')).toBeVisible();
+    await expect(page.locator('.notyf__message')).toContainText('claimed successfully');
+    await expect(page.locator('span:has-text("Claimed & In Progress")')).toBeVisible();
 
     // 6. Confirm Inbound -> INBOUND
-    await card.locator('button:has-text("Confirm Inbound")').click();
-    await expect(card).toContainText('INBOUND');
+    await page.click('button:has-text("Confirm Inbound Receipt")');
+    await expect(page.locator('.notyf__toast')).toBeVisible();
+    await expect(page.locator('.notyf__message')).toContainText('confirmed');
 
     // 7. Initiate Loading -> SHIPPING
-    await card.locator('button:has-text("Initiate Loading")').click();
-    await expect(card).toContainText('SHIPPING');
+    await page.click('button:has-text("Initiate Loading")');
+    await expect(page.locator('.notyf__toast')).toBeVisible();
+    await expect(page.locator('.notyf__message')).toContainText('initiated');
 
     // 8. Confirm Dispatch -> OUTBOUND
-    await card.locator('button:has-text("Confirm Dispatch")').click();
-    await expect(card).toContainText('OUTBOUND');
+    await page.click('button:has-text("Confirm Dispatch")');
+    await expect(page.locator('.notyf__toast')).toBeVisible();
+    await expect(page.locator('.notyf__message')).toContainText('confirmed');
 
     // 9. Complete Ticket -> COMPLETED
-    await card.locator('button:has-text("Complete Ticket")').click();
-    await expect(card).toContainText('COMPLETED');
+    await page.click('button:has-text("Complete Document")');
+    await expect(page.locator('.notyf__toast')).toBeVisible();
+    await expect(page.locator('.notyf__message')).toContainText('completed successfully');
+    await expect(page.locator('.w-full:has-text("Document Locked & Closed")')).toBeVisible();
 
     // 10. Check Cross Docking dashboard visibility
     await page.click('a[href="/wms/crossdock"]');

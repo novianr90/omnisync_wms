@@ -15,7 +15,7 @@ func TestFetchInProgressDocs(t *testing.T) {
 	// Create view manually in sqlite test database
 	viewSql := `
 CREATE VIEW IF NOT EXISTS in_progress_documents AS
-SELECT id, document_no, 'Movement (' || movement_type || ')' AS doc_type, created_at, status, '/' AS link FROM inventory_movements WHERE status NOT IN ('COMPLETED', 'REJECTED')
+SELECT id, document_no, 'Movement (' || movement_type || ')' AS doc_type, created_at, status, '/wms/movements/' || id AS link FROM inventory_movements WHERE status NOT IN ('COMPLETED', 'REJECTED')
 UNION ALL
 SELECT id, document_no, 'QC Hold' AS doc_type, created_at, status, '/wms/qc-holds' AS link FROM qc_holds WHERE status = 'ACTIVE'
 UNION ALL

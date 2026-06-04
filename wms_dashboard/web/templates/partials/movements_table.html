@@ -1,0 +1,61 @@
+{{define "movements_table"}}
+{{range .Movements}}
+<tr class="hover:bg-slate-900/20 border-b border-slate-800/40 transition-colors">
+    <td class="px-6 py-4 font-bold text-slate-200">
+        <a href="/wms/movements/{{.ID}}" hx-get="/wms/movements/{{.ID}}" hx-target="#main-workspace" hx-push-url="true" class="hover:text-indigo-400 cursor-pointer font-outfit transition">
+            {{.DocumentNo}}
+        </a>
+    </td>
+    <td class="px-6 py-4 text-slate-400">
+        {{.CreatedAt.Format "2006-01-02 15:04"}}
+    </td>
+    <td class="px-6 py-4">
+        <div class="flex items-center gap-2">
+            {{if .IsCrossDock}}
+            <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[10px] font-bold">CROSS-DOCK</span>
+            {{else if eq .MovementType "INBOUND"}}
+            <span class="bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 px-2 py-0.5 rounded text-[10px] font-bold">INBOUND</span>
+            {{else if eq .MovementType "RTV"}}
+            <span class="bg-rose-950/40 text-rose-400 border border-rose-900/40 px-2 py-0.5 rounded text-[10px] font-bold">RTV</span>
+            {{else}}
+            <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[10px] font-bold">OUTBOUND</span>
+            {{end}}
+        </div>
+    </td>
+    <td class="px-6 py-4 text-slate-300 font-medium">
+        {{len .Lines}} Items
+    </td>
+    <td class="px-6 py-4">
+        {{if eq .Status "OPEN"}}
+        <span class="bg-slate-900 text-slate-400 border border-slate-800 px-2 py-0.5 rounded text-[10px] font-bold">OPEN</span>
+        {{else if eq .Status "IN_PROGRESS"}}
+        <span class="bg-amber-950/40 text-amber-400 border border-amber-900/40 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">IN PROGRESS</span>
+        {{else if eq .Status "JOURNALED"}}
+        <span class="bg-blue-950/40 text-blue-400 border border-blue-900/40 px-2 py-0.5 rounded text-[10px] font-bold">JOURNALED</span>
+        {{else if eq .Status "COMPLETED"}}
+        <span class="bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 px-2 py-0.5 rounded text-[10px] font-bold">COMPLETED</span>
+        {{else if eq .Status "REJECTED"}}
+        <span class="bg-rose-950/40 text-rose-400 border border-rose-900/40 px-2 py-0.5 rounded text-[10px] font-bold">REJECTED</span>
+        {{else}}
+        <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] font-bold">{{.Status}}</span>
+        {{end}}
+    </td>
+    <td class="px-6 py-4 text-center">
+        <a href="/wms/movements/{{.ID}}" hx-get="/wms/movements/{{.ID}}" hx-target="#main-workspace" hx-push-url="true"
+           class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold rounded active:translate-y-[0.5px] transition cursor-pointer">
+            <i data-lucide="eye" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span>View Details</span>
+        </a>
+    </td>
+</tr>
+{{else}}
+<tr>
+    <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+        <div class="flex flex-col items-center gap-2">
+            <i data-lucide="inbox" class="w-8 h-8 opacity-40"></i>
+            <span class="text-xs">No movements found matching the criteria</span>
+        </div>
+    </td>
+</tr>
+{{end}}
+{{end}}

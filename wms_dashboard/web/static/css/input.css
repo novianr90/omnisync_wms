@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "../../templates/**/*.html";
+
 
 :root {
   --bg-space: #060913;

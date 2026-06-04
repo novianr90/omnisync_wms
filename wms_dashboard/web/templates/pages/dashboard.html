@@ -64,16 +64,11 @@
                 </div>
                 <!-- Action Buttons -->
                 <div class="flex items-center gap-3">
-                    <button onclick="toggleModal('modal-inbound')" 
-                            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg active:translate-y-[1px] shadow-lg shadow-emerald-500/10 cursor-pointer flex items-center gap-2 transition duration-200">
-                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                        <span>Register Inbound</span>
-                    </button>
-                    <button onclick="toggleModal('modal-outbound')" 
-                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg active:translate-y-[1px] shadow-lg shadow-indigo-500/10 cursor-pointer flex items-center gap-2 transition duration-200">
-                        <i data-lucide="minus" class="w-3.5 h-3.5"></i>
-                        <span>Dispatch Outbound</span>
-                    </button>
+                    <a href="/wms/movements" hx-get="/wms/movements" hx-target="#main-workspace" hx-push-url="true"
+                       class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg active:translate-y-[1px] shadow-lg shadow-indigo-500/10 cursor-pointer flex items-center gap-2 transition duration-200">
+                        <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
+                        <span>Manage Movements</span>
+                    </a>
                 </div>
             </div>
 
@@ -110,368 +105,42 @@
         </div>
     </div>
 
-    <!-- Right Panel: Inventory Movement Tickets (1 col wide) -->
+    <!-- Right Panel: Inventory Movement Tickets Summary (1 col wide) -->
     <div class="flex flex-col gap-6">
-        <div class="glass-panel p-6 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col gap-5 h-full">
-            <div>
-                <h3 class="font-bold text-lg text-slate-100">Movements Board</h3>
-                <p class="text-xs text-slate-400">Track and advance active warehouse transactions through lifecycles</p>
-            </div>
-
-            <!-- Movement Card List -->
-            <div class="flex-1 flex flex-col gap-4 overflow-y-auto max-h-[600px] pr-1">
-                {{if not .Movements}}
-                <div class="h-32 border border-dashed border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-500 gap-2">
-                    <i data-lucide="inbox" class="w-8 h-8 opacity-40"></i>
-                    <span class="text-xs">No active movement tickets</span>
-                </div>
-                {{else}}
-                    {{range $mov := .Movements}}
-                    <div class="glass-panel p-4 rounded-xl border border-slate-800 relative overflow-hidden flex flex-col gap-3 shrink-0">
-                        <!-- Top header -->
-                        <div class="flex items-center justify-between border-b border-slate-800/50 pb-2.5">
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-bold text-slate-400 tracking-wider font-outfit">{{.DocumentNo}}</span>
-                                <span class="text-[9px] text-slate-500 mt-0.5">Created {{.CreatedAt.Format "Jan 02, 15:04"}}</span>
-                            </div>
-
-                            <!-- Badges -->
-                            <div class="flex gap-1.5 items-center">
-                                <!-- Type badge -->
-                                {{if .IsCrossDock}}
-                                <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[9px] font-bold">CROSS-DOCK</span>
-                                {{else if eq .MovementType "INBOUND"}}
-                                <span class="bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 px-2 py-0.5 rounded text-[9px] font-bold">INBOUND</span>
-                                {{else}}
-                                <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[9px] font-bold">OUTBOUND</span>
-                                {{end}}
-
-                                <!-- Status badge -->
-                                {{if eq .Status "OPEN"}}
-                                <span class="bg-slate-900 text-slate-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-bold">OPEN</span>
-                                {{else if eq .Status "IN_PROGRESS"}}
-                                <span class="bg-amber-950/40 text-amber-400 border border-amber-900/40 px-2 py-0.5 rounded text-[9px] font-bold animate-pulse">IN PROGRESS</span>
-                                {{else if eq .Status "INBOUND"}}
-                                <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/40 px-2 py-0.5 rounded text-[9px] font-bold">INBOUND</span>
-                                {{else if eq .Status "SHIPPING"}}
-                                <span class="bg-orange-950/40 text-orange-400 border border-orange-900/40 px-2 py-0.5 rounded text-[9px] font-bold animate-pulse">SHIPPING</span>
-                                {{else if eq .Status "OUTBOUND"}}
-                                <span class="bg-purple-950/40 text-purple-400 border border-purple-900/40 px-2 py-0.5 rounded text-[9px] font-bold">OUTBOUND</span>
-                                {{else if eq .Status "JOURNALED"}}
-                                <span class="bg-blue-950/40 text-blue-400 border border-blue-900/40 px-2 py-0.5 rounded text-[9px] font-bold">JOURNALED</span>
-                                {{else if eq .Status "COMPLETED"}}
-                                <span class="bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 px-2 py-0.5 rounded text-[9px] font-bold">COMPLETED</span>
-                                {{else if eq .Status "REJECTED"}}
-                                <span class="bg-rose-950/40 text-rose-400 border border-rose-900/40 px-2 py-0.5 rounded text-[9px] font-bold">REJECTED</span>
-                                {{end}}
-                            </div>
-                        </div>
-
-                        <!-- Ticket details -->
-                        <div class="flex flex-col gap-1.5 text-xs">
-                            {{range .Lines}}
-                            <div class="flex items-center justify-between text-slate-300">
-                                <span class="font-medium text-slate-100">{{.Product.Name}}</span>
-                                <span class="font-semibold text-slate-400">× {{.RequestedQuantity}}</span>
-                            </div>
-                            <!-- Routing shelf info -->
-                            <div class="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1">
-                                <i data-lucide="map-pin" class="w-3 h-3 text-indigo-500"></i>
-                                {{if eq $mov.MovementType "INBOUND"}}
-                                <span>Put to: <span class="text-slate-200 font-semibold">{{.ToLocator.Code}}</span></span>
-                                {{else}}
-                                <span>Pick: <span class="text-slate-200 font-semibold">{{.FromLocator.Code}}</span> <span class="text-slate-500">({{.BatchNumber}})</span></span>
-                                {{end}}
-                            </div>
-                            {{end}}
-                        </div>
-
-                        <!-- Remarks if any -->
-                        {{if .Remarks}}
-                        <p class="text-[10px] text-slate-500 italic bg-slate-950/40 p-2 rounded border border-slate-900">
-                            "{{.Remarks}}"
-                        </p>
-                        {{end}}
-
-                        <!-- Rejection reason if rejected -->
-                        {{if .RejectionReason}}
-                        <p class="text-[10px] text-rose-400 bg-rose-950/20 p-2 rounded border border-rose-900/50">
-                            <span class="font-bold">Reason:</span> {{.RejectionReason}}
-                        </p>
-                        {{end}}
-
-                        <!-- Interactive Action Buttons -->
-                        <div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-900">
-                            {{if eq .Status "OPEN"}}
-                                <!-- Claim movement button -->
-                                <button hx-post="/wms/movements/{{.ID}}/claim" 
-                                        class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-400"></i>
-                                    <span>Claim Task</span>
-                                </button>
-                                <button hx-post="/wms/movements/{{.ID}}/reject"
-                                        class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
-                                        title="Cancel Movement">
-                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                                </button>
-                            {{else if eq .Status "IN_PROGRESS"}}
-                                {{if .IsCrossDock}}
-                                    <!-- Confirm Cross-Dock Inbound Receipt -->
-                                    <button hx-post="/wms/movements/{{.ID}}/crossdock/inbound" 
-                                            class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                        <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
-                                        <span>Confirm Inbound</span>
-                                    </button>
-                                    <button hx-post="/wms/movements/{{.ID}}/reject"
-                                            class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
-                                            title="Reject Movement">
-                                        <i data-lucide="ban" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                {{else}}
-                                    <!-- Journalize stock changes button -->
-                                    <button hx-post="/wms/movements/{{.ID}}/journal" 
-                                            class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                        <span>Journalize Stock</span>
-                                    </button>
-                                    <button hx-post="/wms/movements/{{.ID}}/reject"
-                                            class="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded active:scale-[0.98] transition cursor-pointer" 
-                                            title="Reject Movement">
-                                        <i data-lucide="ban" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                {{end}}
-                            {{else if eq .Status "INBOUND"}}
-                                <!-- Initiate Shipping / Loading -->
-                                <button hx-post="/wms/movements/{{.ID}}/crossdock/shipping" 
-                                        class="w-full py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i data-lucide="truck" class="w-3.5 h-3.5"></i>
-                                    <span>Initiate Loading</span>
-                                </button>
-                            {{else if eq .Status "SHIPPING"}}
-                                <!-- Confirm Outbound Dispatch -->
-                                <button hx-post="/wms/movements/{{.ID}}/crossdock/outbound" 
-                                        class="w-full py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
-                                    <span>Confirm Dispatch</span>
-                                </button>
-                            {{else if eq .Status "JOURNALED"}}
-                                <!-- Complete document button -->
-                                <button hx-post="/wms/movements/{{.ID}}/complete" 
-                                        class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i data-lucide="archive" class="w-3.5 h-3.5 text-indigo-200"></i>
-                                    <span>Complete Ticket</span>
-                                </button>
-                            {{else if eq .Status "OUTBOUND"}}
-                                <!-- Complete document button for cross dock -->
-                                <button hx-post="/wms/movements/{{.ID}}/complete" 
-                                        class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i data-lucide="archive" class="w-3.5 h-3.5 text-indigo-200"></i>
-                                    <span>Complete Ticket</span>
-                                </button>
-                            {{else}}
-                                <!-- Final states -->
-                                <div class="w-full text-center py-1 text-[10px] text-slate-600 font-semibold bg-slate-950/10 rounded">
-                                    Document finalized
-                                </div>
-                            {{end}}
-                        </div>
-                    </div>
-                    {{end}}
-                {{end}}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ================= MODAL DRAWERS ================= -->
-
-<!-- 1. Modal: Register Inbound Receipt -->
-<div id="modal-inbound" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-slate-800 shadow-2xl relative">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-5">
-            <h4 class="font-bold text-base text-slate-100 flex items-center gap-2">
-                <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-500"></i>
-                <span>Create Inbound Receipt</span>
-            </h4>
-            <button onclick="toggleModal('modal-inbound')" class="p-1 rounded-lg text-slate-500 hover:bg-slate-900 transition">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
-        </div>
-
-        <form hx-post="/wms/movements/new" hx-target="#toast-container" hx-swap="beforeend" class="flex flex-col gap-4">
-            <input type="hidden" name="movement_type" value="INBOUND">
-
-            <div class="flex flex-col gap-1.5">
-                <label for="inbound-product" class="text-xs font-semibold text-slate-300">Select Product Catalog</label>
-                <select id="inbound-product" name="product_id" required
-                        class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
-                    <option value="" disabled selected>-- Select Product --</option>
-                    {{range .Products}}
-                    <option value="{{.ID}}">{{.SKU}} - {{.Name}}</option>
-                    {{end}}
-                </select>
-            </div>
-
-            <!-- Cross Docking Toggle -->
-            <div class="flex items-center gap-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
-                <input type="checkbox" id="inbound-crossdock" name="is_cross_dock" onchange="toggleCrossDockFields(this)"
-                       class="w-4 h-4 rounded border-slate-800 bg-slate-950 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-950 cursor-pointer">
-                <div class="flex flex-col gap-0.5">
-                    <span class="text-xs font-semibold text-slate-200">Cross-Docking (Direct Transit)</span>
-                    <span class="text-[10px] text-slate-400">Bypass standard shelf and route directly to staging transit area.</span>
-                </div>
-            </div>
-
-            <!-- Cross-Dock Warning Banner -->
-            <div id="crossdock-warning" class="hidden flex items-start gap-2.5 bg-indigo-950/30 border border-indigo-800/40 p-3 rounded-lg text-[11px] text-indigo-300">
-                <i data-lucide="info" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col justify-between gap-5 h-full">
+            <div class="flex flex-col gap-4">
                 <div>
-                    <span class="font-semibold block text-indigo-200">Cross-Dock Staging Active</span>
-                    This inbound movement will bypass normal storage shelving and be routed directly to locator <strong class="text-indigo-200">loc-crossdock-01</strong> in <strong class="text-indigo-200">ZONE-CROSSDOCK</strong>.
+                    <h3 class="font-bold text-lg text-slate-100">Movements Summary</h3>
+                    <p class="text-xs text-slate-400">Track and advance active warehouse transactions through lifecycles</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-2">
+                    <div class="p-4 bg-slate-950/40 rounded-xl border border-slate-900 flex flex-col gap-1">
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Tickets</span>
+                        <span class="text-2xl font-extrabold text-white font-outfit">{{len .Movements}}</span>
+                    </div>
+                    <a href="/wms/movements" hx-get="/wms/movements" hx-target="#main-workspace" hx-push-url="true"
+                       class="p-4 bg-indigo-950/20 hover:bg-indigo-950/40 rounded-xl border border-indigo-900/30 flex flex-col gap-1 cursor-pointer transition duration-200">
+                        <span class="text-[9px] text-indigo-400 font-bold uppercase tracking-wider">Status Board</span>
+                        <span class="text-[10px] text-slate-300 font-medium mt-2 flex items-center gap-1">
+                            <span>Manage page</span>
+                            <i data-lucide="arrow-right" class="w-3 h-3 text-indigo-400"></i>
+                        </span>
+                    </a>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-800/60 bg-slate-950/25 text-xs text-slate-400 leading-relaxed mt-2 flex items-start gap-2.5">
+                    <i data-lucide="info" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+                    <span>Inbound receipts, outbound picks, and transfers have been moved to a dedicated, secure management page supporting multi-item orders.</span>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col gap-1.5">
-                    <label for="inbound-qty" class="text-xs font-semibold text-slate-300">Quantity (Units)</label>
-                    <input type="number" id="inbound-qty" name="quantity" min="1" required placeholder="100"
-                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
-                </div>
-
-                <div class="flex flex-col gap-1.5" id="locator-select-container">
-                    <label for="inbound-locator" class="text-xs font-semibold text-slate-300">Target Shelf Locator</label>
-                    <select id="inbound-locator" name="locator_id" required
-                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
-                        <option value="" disabled selected>-- Select Shelf --</option>
-                        {{range .Locators}}
-                        <option value="{{.ID}}">{{.Code}}</option>
-                        {{end}}
-                    </select>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label for="inbound-uom" class="text-xs font-semibold text-slate-300">Transaction Unit of Measure (UoM)</label>
-                <select id="inbound-uom" name="uom_id"
-                        class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
-                    <option value="" selected>-- Default Product Base Unit --</option>
-                    {{range .UoMs}}
-                    <option value="{{.ID}}">{{.Code}} - {{.Name}}</option>
-                    {{end}}
-                </select>
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label for="inbound-remarks" class="text-xs font-semibold text-slate-300">Remarks / Supplier Notes</label>
-                <textarea id="inbound-remarks" name="remarks" rows="2" placeholder="e.g. Received shipment from vendor Keychron Co."
-                          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs placeholder:text-slate-700 focus:outline-none focus:border-indigo-500"></textarea>
-            </div>
-
-            <button type="submit" 
-                    class="w-full py-2.5 mt-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wide shadow-lg shadow-emerald-500/10 cursor-pointer transition">
-                Generate Inbound Order
-            </button>
-        </form>
-    </div>
-</div>
-
-<!-- 2. Modal: Dispatch Outbound Shipment -->
-<div id="modal-outbound" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-slate-800 shadow-2xl relative">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-5">
-            <h4 class="font-bold text-base text-slate-100 flex items-center gap-2">
-                <i data-lucide="arrow-up-right" class="w-4 h-4 text-indigo-500"></i>
-                <span>Dispatch Outbound Shipment</span>
-            </h4>
-            <button onclick="toggleModal('modal-outbound')" class="p-1 rounded-lg text-slate-500 hover:bg-slate-900 transition">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
+            <a href="/wms/movements" hx-get="/wms/movements" hx-target="#main-workspace" hx-push-url="true"
+               class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-center text-xs rounded-lg shadow-lg shadow-indigo-500/10 cursor-pointer transition flex items-center justify-center gap-2">
+                <i data-lucide="layout-list" class="w-4 h-4"></i>
+                <span>Open Movements Registry</span>
+            </a>
         </div>
-
-        <form hx-post="/wms/movements/new" hx-target="#toast-container" hx-swap="beforeend" class="flex flex-col gap-4">
-            <input type="hidden" name="movement_type" value="OUTBOUND">
-
-            <div class="flex flex-col gap-1.5">
-                <label for="outbound-product" class="text-xs font-semibold text-slate-300">Select Product Catalog</label>
-                <select id="outbound-product" name="product_id" required
-                        class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
-                    <option value="" disabled selected>-- Select Product --</option>
-                    {{range .Products}}
-                    <option value="{{.ID}}">{{.SKU}} - {{.Name}}</option>
-                    {{end}}
-                </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col gap-1.5">
-                    <label for="outbound-qty" class="text-xs font-semibold text-slate-300">Quantity to Dispatch (Units)</label>
-                    <input type="number" id="outbound-qty" name="quantity" min="1" required placeholder="50"
-                           class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                    <label for="outbound-locator" class="text-xs font-semibold text-slate-300">Default Zone (Optional)</label>
-                    <select id="outbound-locator" name="locator_id"
-                            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
-                        <option value="" selected>-- Auto FIFO Allocations --</option>
-                        {{range .Locators}}
-                        <option value="{{.ID}}">{{.Code}}</option>
-                        {{end}}
-                    </select>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label for="outbound-uom" class="text-xs font-semibold text-slate-300">Transaction Unit of Measure (UoM)</label>
-                <select id="outbound-uom" name="uom_id"
-                        class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
-                    <option value="" selected>-- Default Product Base Unit --</option>
-                    {{range .UoMs}}
-                    <option value="{{.ID}}">{{.Code}} - {{.Name}}</option>
-                    {{end}}
-                </select>
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label for="outbound-remarks" class="text-xs font-semibold text-slate-300">Remarks / Customer Address</label>
-                <textarea id="outbound-remarks" name="remarks" rows="2" placeholder="e.g. Ship to San Francisco office block C."
-                          class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs placeholder:text-slate-700 focus:outline-none focus:border-indigo-500"></textarea>
-            </div>
-
-            <button type="submit" 
-                    class="w-full py-2.5 mt-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs tracking-wide shadow-lg shadow-indigo-500/10 cursor-pointer transition">
-                Generate Outbound (FIFO Allocated)
-            </button>
-        </form>
     </div>
 </div>
-
-<script>
-    // Modal toggle script
-    function toggleModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal.classList.contains('hidden')) {
-            modal.classList.remove('hidden');
-        } else {
-            modal.classList.add('hidden');
-        }
-    }
-
-    // Toggle fields for Cross-Docking
-    function toggleCrossDockFields(checkbox) {
-        const locatorContainer = document.getElementById('locator-select-container');
-        const locatorSelect = document.getElementById('inbound-locator');
-        const warning = document.getElementById('crossdock-warning');
-        if (checkbox.checked) {
-            locatorContainer.classList.add('opacity-40', 'pointer-events-none');
-            locatorSelect.removeAttribute('required');
-            locatorSelect.value = ""; // Clear selected standard locator
-            warning.classList.remove('hidden');
-        } else {
-            locatorContainer.classList.remove('opacity-40', 'pointer-events-none');
-            locatorSelect.setAttribute('required', 'required');
-            warning.classList.add('hidden');
-        }
-    }
-</script>
 {{end}}

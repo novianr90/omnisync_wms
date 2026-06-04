@@ -348,103 +348,229 @@ func GetInventoryList(c *fiber.Ctx) error {
 	})
 }
 
-// POST /wms/movements/new - Handles Inbound/Outbound ticket creations
+// POST /wms/movements - Handles multi-line Inbound/Outbound ticket creation (JSON input)
 func CreateMovement(c *fiber.Ctx) error {
-	moveType := c.FormValue("movement_type")
-	productID := c.FormValue("product_id")
-	quantity := c.FormValue("quantity")
-	locatorID := c.FormValue("locator_id") // FromLocator for Outbound, ToLocator for Inbound
-	remarks := c.FormValue("remarks")
-	transUoMID := c.FormValue("uom_id")
+	var req struct {
+		MovementType string `json:"movement_type"`
+		IsCrossDock  bool   `json:"is_cross_dock"`
+		Remarks      string `json:"remarks"`
+		Lines        []struct {
+			ProductID string `json:"product_id"`
+			Quantity  int    `json:"quantity"`
+			UoMID     string `json:"uom_id"`
+			LocatorID string `json:"locator_id"`
+		} `json:"lines"`
+	}
 
-	var qty int
-	_, _ = fmt.Sscanf(quantity, "%d", &qty)
-
-	if productID == "" || qty <= 0 {
-		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
-			"Success": false,
-			"Message": "Please select a product and enter a valid quantity.",
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
 		})
 	}
 
-	// Fetch product to verify base UoM
-	var product models.Product
-	if err := database.DB.Preload("UoM").First(&product, "id = ?", productID).Error; err != nil {
-		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
-			"Success": false,
-			"Message": "Product not found.",
+	if len(req.Lines) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "At least one item line must be provided.",
 		})
-	}
-
-	originalQty := qty
-	// If a custom transaction UoM is selected, apply conversion
-	if transUoMID != "" && transUoMID != product.UoMID {
-		var transUoM models.UoM
-		_ = database.DB.First(&transUoM, "id = ?", transUoMID).Error
-
-		var conv models.UoMConversion
-		// Try product-specific conversion first
-		err := database.DB.First(&conv, "product_id = ? AND from_uom_id = ? AND to_uom_id = ?", productID, transUoMID, product.UoMID).Error
-		if err != nil {
-			// Try global conversion next
-			err = database.DB.First(&conv, "(product_id = '' OR product_id IS NULL) AND from_uom_id = ? AND to_uom_id = ?", transUoMID, product.UoMID).Error
-		}
-
-		if err != nil {
-			return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
-				"Success": false,
-				"Message": fmt.Sprintf("No conversion formula registered to convert %s to product base unit %s.", transUoM.Code, product.UoM.Code),
-			})
-		}
-
-		// Apply multiplier factor
-		convertedQty := float64(qty) * conv.MultiplyFactor
-		qty = int(convertedQty)
-
-		remarks = fmt.Sprintf("%s (Converted from %d %s to %d %s using rule: 1 %s = %.2f %s)", 
-			remarks, originalQty, transUoM.Code, qty, product.UoM.Code, transUoM.Code, conv.MultiplyFactor, product.UoM.Code)
 	}
 
 	userID := c.Locals("user_id").(string)
 
-	// Document Number Generation
-	docNo := fmt.Sprintf("MOV-%s-%d", moveType[:3], time.Now().UnixNano()%100000)
-
-	isCrossDock := c.FormValue("is_cross_dock") == "on" || c.FormValue("is_cross_dock") == "true"
-
+	// Base document setup
+	docNo := fmt.Sprintf("MOV-%s-%d", req.MovementType[:3], time.Now().UnixNano()%100000)
 	movement := models.InventoryMovement{
 		DocumentNo:   docNo,
-		MovementType: moveType,
-		IsCrossDock:  isCrossDock,
+		MovementType: req.MovementType,
+		IsCrossDock:  req.IsCrossDock,
 		Status:       "OPEN",
 		CreatedBy:    userID,
-		Remarks:      remarks,
+		Remarks:      req.Remarks,
 	}
 
-	line := models.InventoryMovementLine{
-		ProductID:         productID,
-		RequestedQuantity: qty,
+	var movementLines []models.InventoryMovementLine
+
+	for idx, l := range req.Lines {
+		if l.ProductID == "" || l.Quantity <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": fmt.Sprintf("Line %d: Please select a product and enter a valid quantity.", idx+1),
+			})
+		}
+
+		// Fetch product to verify base UoM
+		var product models.Product
+		if err := database.DB.Preload("UoM").First(&product, "id = ?", l.ProductID).Error; err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": fmt.Sprintf("Line %d: Product not found.", idx+1),
+			})
+		}
+
+		qty := l.Quantity
+		remarksLine := ""
+		// Apply UoM conversion if necessary
+		if l.UoMID != "" && l.UoMID != product.UoMID {
+			var transUoM models.UoM
+			_ = database.DB.First(&transUoM, "id = ?", l.UoMID).Error
+
+			var conv models.UoMConversion
+			err := database.DB.First(&conv, "product_id = ? AND from_uom_id = ? AND to_uom_id = ?", l.ProductID, l.UoMID, product.UoMID).Error
+			if err != nil {
+				err = database.DB.First(&conv, "(product_id = '' OR product_id IS NULL) AND from_uom_id = ? AND to_uom_id = ?", l.UoMID, product.UoMID).Error
+			}
+
+			if err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": fmt.Sprintf("Line %d: No conversion formula registered to convert %s to product base unit %s.", idx+1, transUoM.Code, product.UoM.Code),
+				})
+			}
+
+			convertedQty := float64(qty) * conv.MultiplyFactor
+			qty = int(convertedQty)
+
+			remarksLine = fmt.Sprintf("Line %d: %d %s converted to %d %s", idx+1, l.Quantity, transUoM.Code, qty, product.UoM.Code)
+		}
+
+		line := models.InventoryMovementLine{
+			ProductID:         l.ProductID,
+			RequestedQuantity: qty,
+		}
+
+		if req.MovementType == "INBOUND" {
+			if !req.IsCrossDock && l.LocatorID == "" {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": fmt.Sprintf("Line %d: Target shelf locator is required for Inbound movements.", idx+1),
+				})
+			}
+			line.ToLocatorID = l.LocatorID
+		} else {
+			// For OUTBOUND, locator is optional for auto FIFO, but user can specify source locator zone
+			line.FromLocatorID = l.LocatorID
+		}
+
+		movementLines = append(movementLines, line)
+
+		if remarksLine != "" {
+			if movement.Remarks != "" {
+				movement.Remarks += "\n" + remarksLine
+			} else {
+				movement.Remarks = remarksLine
+			}
+		}
 	}
 
-	if moveType == "INBOUND" {
-		line.ToLocatorID = locatorID
-	} else {
-		line.FromLocatorID = locatorID
-	}
-
-	// Trigger repo creation
-	err := repository.CreateInventoryMovement(&movement, []models.InventoryMovementLine{line})
+	// Trigger repository creation (this does FIFO allocation and hold checks inside transaction)
+	err := repository.CreateInventoryMovement(&movement, movementLines)
 	if err != nil {
-		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
-			"Success": false,
-			"Message": err.Error(),
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
 		})
 	}
 
-	// Refresh client to reload dashboard
-	setReloadToast(c, fmt.Sprintf("Movement %s registered successfully.", docNo), true)
-	return c.SendStatus(fiber.StatusCreated)
+	// Set success cookies so redirect page picks up toast
+	toastType := "success"
+	message := fmt.Sprintf("Movement %s registered successfully.", movement.DocumentNo)
+	c.Cookie(&fiber.Cookie{
+		Name:     "toast_msg",
+		Value:    message,
+		HTTPOnly: false,
+		Path:     "/",
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:     "toast_type",
+		Value:    toastType,
+		HTTPOnly: false,
+		Path:     "/",
+	})
+
+	return c.JSON(fiber.Map{
+		"success":  true,
+		"redirect": "/wms/movements",
+	})
 }
+
+// GET /wms/movements
+func ServeMovementsPage(c *fiber.Ctx) error {
+	search := c.Query("search")
+	mType := c.Query("type")
+	status := c.Query("status")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	query := database.DB.Model(&models.InventoryMovement{}).
+		Preload("Lines.Product.UoM").
+		Preload("Lines.FromLocator").
+		Preload("Lines.ToLocator")
+
+	if search != "" {
+		// Search by document_no or by product SKU/name in lines
+		query = query.Where("document_no LIKE ? OR id IN (SELECT movement_id FROM inventory_movement_lines JOIN products ON inventory_movement_lines.product_id = products.id WHERE products.sku LIKE ? OR products.name LIKE ?)", "%"+search+"%", "%"+search+"%", "%"+search+"%")
+	}
+	if mType != "" {
+		query = query.Where("movement_type = ?", mType)
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if startDate != "" {
+		query = query.Where("created_at >= ?", startDate+" 00:00:00")
+	}
+	if endDate != "" {
+		query = query.Where("created_at <= ?", endDate+" 23:59:59")
+	}
+
+	var movements []models.InventoryMovement
+	if err := query.Order("updated_at DESC").Find(&movements).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	// For HTMX partial table replacement
+	if c.Get("HX-Request") == "true" && c.Get("HX-Target") == "movements-tbody" {
+		return renderPartial(c, "partials/movements_table.html", "movements_table", fiber.Map{
+			"Movements": movements,
+		})
+	}
+
+	return renderPage(c, "movements.html", fiber.Map{
+		"Movements": movements,
+	})
+}
+
+// GET /wms/movements/new
+func ServeNewMovementPage(c *fiber.Ctx) error {
+	var products []models.Product
+	_ = database.DB.Preload("UoM").Find(&products).Error
+
+	var locators []models.Locator
+	_ = database.DB.Preload("Warehouse").Find(&locators).Error
+
+	var uoms []models.UoM
+	_ = database.DB.Find(&uoms).Error
+
+	return renderPage(c, "movement_new.html", fiber.Map{
+		"Products": products,
+		"Locators": locators,
+		"UoMs":     uoms,
+	})
+}
+
+// GET /wms/movements/:id
+func ServeMovementDetailPage(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	var movement models.InventoryMovement
+	err := database.DB.Preload("Lines.Product.UoM").
+		Preload("Lines.FromLocator").
+		Preload("Lines.ToLocator").
+		First(&movement, "id = ?", id).Error
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).SendString("<h1>Document Not Found</h1>")
+	}
+
+	return renderPage(c, "movement_detail.html", fiber.Map{
+		"Movement": movement,
+	})
+}
+
 
 // POST /wms/movements/:id/claim
 func ClaimMovement(c *fiber.Ctx) error {

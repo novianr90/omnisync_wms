@@ -10,8 +10,10 @@ INSERT INTO role_permissions (role_id, permission) VALUES
 ('role-sys-admin-001', 'view_ledger'),
 ('role-sys-admin-001', 'modify_masters'),
 ('role-sys-admin-001', 'manage_system'),
+('role-sys-admin-001', 'manage_movements'),
 ('role-admin-wms-002', 'modify_masters'),
-('role-admin-wms-002', 'manage_system');
+('role-admin-wms-002', 'manage_system'),
+('role-admin-wms-002', 'manage_movements');
 
 -- Down
 -- DROP TABLE role_permissions;
