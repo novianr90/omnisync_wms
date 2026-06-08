@@ -204,3 +204,165 @@ func APICreateMovement(c *fiber.Ctx) error {
 		"document_no": docNo,
 	})
 }
+
+// APIListMovements - GET /api/v1/movements
+func APIListMovements(c *fiber.Ctx) error {
+	mType := c.Query("type")
+	status := c.Query("status")
+	assignedOp := c.Query("assigned_operator_id")
+
+	query := database.DB.Model(&models.InventoryMovement{})
+	if mType != "" {
+		query = query.Where("movement_type = ?", mType)
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if assignedOp != "" {
+		query = query.Where("assigned_operator_id = ?", assignedOp)
+	}
+
+	var movements []models.InventoryMovement
+	if err := query.Find(&movements).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(fiber.StatusOK).JSON(movements)
+}
+
+// APIGetMovementByID - GET /api/v1/movements/:id
+func APIGetMovementByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var movement models.InventoryMovement
+	err := database.DB.Preload("Lines.Product.UoM").Preload("Lines.FromLocator").Preload("Lines.ToLocator").First(&movement, "id = ?", id).Error
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Movement not found"})
+	}
+	return c.Status(fiber.StatusOK).JSON(movement)
+}
+
+// APIClaimMovement - POST /api/v1/movements/:id/claim
+func APIClaimMovement(c *fiber.Ctx) error {
+	id := c.Params("id")
+	userID := c.Locals("user_id")
+	if userID == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	var movement models.InventoryMovement
+	if err := database.DB.First(&movement, "id = ?", id).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Movement not found"})
+	}
+
+	if movement.Status != "OPEN" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Only OPEN movements can be claimed"})
+	}
+
+	movement.Status = "IN_PROGRESS"
+	movement.AssignedOperatorID = userID.(string)
+
+	if err := database.DB.Save(&movement).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Movement claimed successfully",
+		"status": "IN_PROGRESS",
+		"assigned_operator_id": movement.AssignedOperatorID,
+	})
+}
+
+type ScanVerifyRequest struct {
+	SKU         string `json:"sku"`
+	LocatorCode string `json:"locator_code"`
+	Quantity    int    `json:"quantity"`
+}
+
+// APIScanVerifyMovementLine - POST /api/v1/movements/:id/scan-verify
+func APIScanVerifyMovementLine(c *fiber.Ctx) error {
+	id := c.Params("id")
+	userID := c.Locals("user_id")
+
+	var req ScanVerifyRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request payload"})
+	}
+
+	var movement models.InventoryMovement
+	if err := database.DB.Preload("Lines.Product").Preload("Lines.FromLocator").Preload("Lines.ToLocator").First(&movement, "id = ?", id).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Movement not found"})
+	}
+
+	if movement.Status != "IN_PROGRESS" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Movement must be IN_PROGRESS"})
+	}
+
+	if movement.AssignedOperatorID != userID.(string) {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Movement is not assigned to you"})
+	}
+
+	// Match line
+	var targetLine *models.InventoryMovementLine
+	for i := range movement.Lines {
+		line := &movement.Lines[i]
+		if line.Product.SKU == req.SKU {
+			if movement.MovementType == "INBOUND" || movement.MovementType == "INTERNAL" {
+				// Assuming toLocator is the destination being scanned for putaway.
+				// For INBOUND, worker puts away to locator.
+				if line.ToLocator != nil && line.ToLocator.Code == req.LocatorCode {
+					targetLine = line
+					break
+				}
+			} 
+			if movement.MovementType == "OUTBOUND" || movement.MovementType == "INTERNAL" {
+				// For OUTBOUND, worker picks from locator.
+				if line.FromLocator != nil && line.FromLocator.Code == req.LocatorCode {
+					targetLine = line
+					break
+				}
+			}
+		}
+	}
+
+	if targetLine == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No matching line found for SKU and Locator"})
+	}
+
+	targetLine.ActualQuantity += req.Quantity
+	if err := database.DB.Save(targetLine).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Line updated successfully",
+		"line_id": targetLine.ID,
+		"actual_quantity": targetLine.ActualQuantity,
+		"requested_quantity": targetLine.RequestedQuantity,
+	})
+}
+
+// APISubmitMovement - POST /api/v1/movements/:id/submit
+func APISubmitMovement(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	var movement models.InventoryMovement
+	if err := database.DB.First(&movement, "id = ?", id).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Movement not found"})
+	}
+
+	// Note: JournalizeInventoryMovement sets status to JOURNALED internally
+	if err := repository.JournalizeInventoryMovement(id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// After journaling, we mark it COMPLETED to close the ticket
+	movement.Status = "COMPLETED"
+	if err := database.DB.Save(&movement).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update status to COMPLETED"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Movement completed and journaled successfully",
+		"document_no": movement.DocumentNo,
+		"status": "COMPLETED",
+	})
+}
