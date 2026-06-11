@@ -76,6 +76,7 @@ Administrators can create custom roles with any combination of permissions via *
 | **System Roles** | `/wms/system/roles` | `GET`, `POST`, `PUT`, `DELETE` | `manage_system` | Manage operational roles and their permissions |
 | **System Users** | `/wms/system/users` | `GET`, `POST`, `PUT` | `manage_system` | Manage users and their role assignments |
 | **Movements** | `/wms/movements` | `GET` (List & Forms), `POST` (Progress steps) | `manage_movements` | View, claim, progress, journal, or complete Inbound/Outbound/Cross-Dock/Transfer movements |
+| **Mobile API (Movements)** | `/api/v1/movements` | `GET`, `POST` | Valid JWT Token | Dedicated REST JSON endpoints for mobile clients (list, claim, scan-verify, submit) |
 | **Inventory Ledger** | `/wms/ledger` | `GET` | `view_ledger` | View immutable audit trail of stock movements |
 | **Adjustments** | `/wms/adjustments` | `GET`, `POST` | Any authenticated | View and create direct stock adjustments |
 | **Kitting** | `/wms/kitting` | `GET`, `POST` | Any authenticated | Perform product assembly and kitting |
