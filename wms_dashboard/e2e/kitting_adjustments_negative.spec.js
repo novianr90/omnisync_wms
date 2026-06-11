@@ -18,7 +18,7 @@ test.describe('Kitting & Adjustments Negative Flows', () => {
     // Use bundle product prod-005
     await page.selectOption('#newKittingModal select[name="finished_product_id"]', 'prod-005');
     await page.selectOption('#newKittingModal select[name="finished_locator_id"]', { index: 1 });
-    // Request an absurdly large qty to guarantee component deficit
+    // Large qty to guarantee component deficit
     await page.fill('#newKittingModal input[name="finished_qty"]', '9999');
 
     await page.click('button:has-text("Add Component")');
@@ -41,23 +41,24 @@ test.describe('Kitting & Adjustments Negative Flows', () => {
     await expect(toast).toBeVisible();
 
     const toastMsg = page.locator('.notyf__message');
-    const isCreated = await toastMsg.textContent().then(t => /created/i.test(t)).catch(() => false);
+    const msgText = await toastMsg.textContent();
+    const isCreated = /created/i.test(msgText);
 
     if (isCreated) {
-      // Order created — now attempt to journal it; expect stock error
+      // Order created — attempt to journal it; expect stock error
       const kitRow = page.locator('tr:has-text("OPEN")').first();
       await expect(kitRow).toBeVisible();
       await kitRow.locator('button:has-text("Journal")').click();
 
       await expect(page.locator('.notyf__toast')).toBeVisible();
-      await expect(page.locator('.notyf__message')).toContainText(/insufficient|stock|deficit/i);
+      // Actual server message: "cannot consume N items, only M available..."
+      await expect(page.locator('.notyf__message')).toContainText(/cannot consume|insufficient/i);
     } else {
-      // Creation blocked directly
-      await expect(toastMsg).toContainText(/insufficient|stock|deficit/i);
+      await expect(toastMsg).toContainText(/cannot consume|insufficient/i);
     }
   });
 
-  test('Invalid adjustment: submitting adjustment without reason code is rejected', async ({ page }) => {
+  test('Invalid adjustment: submitting adjustment without reason code is blocked by HTML5 validation', async ({ page }) => {
     test.setTimeout(60000);
     await page.click('a[href="/wms/adjustments"]');
     await expect(page).toHaveURL(/.*\/wms\/adjustments$/);
@@ -65,23 +66,32 @@ test.describe('Kitting & Adjustments Negative Flows', () => {
     await page.click('button:has-text("New Adjustment")');
     await expect(page.locator('#newAdjustmentModal')).toBeVisible();
 
-    // Fill product and locator but deliberately omit reason_code
+    // Fill product and locator but force reason_code to empty string to bypass default selection
     await page.selectOption('#newAdjustmentModal select[name="product_id"]', { index: 1 });
     await page.selectOption('#newAdjustmentModal select[name="locator_id"]', { index: 1 });
     await page.fill('#newAdjustmentModal input[name="qty_delta"]', '10');
-    // reason_code intentionally left blank
-    await page.fill('#newAdjustmentModal input[name="remarks"]', 'E2E missing reason code test');
 
+    // Force reason_code select to empty to trigger required validation
+    await page.evaluate(() => {
+      const sel = document.querySelector('#newAdjustmentModal select[name="reason_code"]');
+      if (sel) {
+        const emptyOpt = document.createElement('option');
+        emptyOpt.value = '';
+        emptyOpt.text = '';
+        sel.insertBefore(emptyOpt, sel.firstChild);
+        sel.value = '';
+      }
+    });
+
+    await page.fill('#newAdjustmentModal input[name="remarks"]', 'E2E missing reason code test');
     await page.click('#newAdjustmentModal button[type="submit"]');
 
-    // Either HTML5 validation prevents submit, or server returns error toast
+    // HTML5 required validation keeps modal open OR server returns error
     const isModalOpen = await page.locator('#newAdjustmentModal').isVisible();
     if (isModalOpen) {
       // Modal still open — HTML5 validation blocked submission
-      const reasonSelect = page.locator('#newAdjustmentModal select[name="reason_code"]');
-      await expect(reasonSelect).toBeVisible();
+      await expect(page.locator('#newAdjustmentModal select[name="reason_code"]')).toBeVisible();
     } else {
-      // Server rejected
       await expect(page.locator('.notyf__toast')).toBeVisible();
       await expect(page.locator('.notyf__message')).toContainText(/reason|required|mandatory/i);
     }

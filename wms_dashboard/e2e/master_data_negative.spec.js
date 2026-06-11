@@ -12,11 +12,12 @@ test.describe('Master Data Negative Flows', () => {
     await page.goto('http://localhost:9901/wms/masters/products');
     await expect(page.locator('h3:has-text("Product Master Maintenance")')).toBeVisible();
 
-    await page.click('button:has-text("Add Product")');
-    await expect(page.locator('[id*="modal"], [id*="Modal"]').filter({ visible: true })).toBeVisible();
+    // Button text is "Add Catalog Product"
+    await page.click('button:has-text("Add Catalog Product")');
+    await expect(page.locator('#modal-container [id*="modal"], #modal-container [id*="Modal"]')).toBeVisible();
 
-    // PROD-KYBD-01 is seeded — use existing SKU to trigger duplicate error
-    const modal = page.locator('[id*="modal"], [id*="Modal"]').filter({ visible: true }).first();
+    // PROD-KYBD-01 is seeded — duplicate SKU triggers unique constraint error
+    const modal = page.locator('#modal-container').first();
     await modal.locator('input[name="sku"]').fill('PROD-KYBD-01');
     await modal.locator('input[name="name"]').fill('Duplicate Keyboard');
     await modal.locator('button[type="submit"]').click();
@@ -28,12 +29,13 @@ test.describe('Master Data Negative Flows', () => {
   test('Duplicate warehouse code: creating warehouse with existing code shows constraint error', async ({ page }) => {
     test.setTimeout(60000);
     await page.goto('http://localhost:9901/wms/masters/warehouses');
-    await expect(page.locator('h3, h2').filter({ hasText: /Warehouse/i })).toBeVisible();
+    await expect(page.locator('h3:has-text("Warehouse Facilities Registry")')).toBeVisible();
 
-    await page.click('button:has-text("Add Warehouse")');
-    await expect(page.locator('[id*="modal"], [id*="Modal"]').filter({ visible: true })).toBeVisible();
+    // Button text is "Add Warehouse Node"
+    await page.click('button:has-text("Add Warehouse Node")');
+    await expect(page.locator('#modal-container')).toBeVisible();
 
-    const modal = page.locator('[id*="modal"], [id*="Modal"]').filter({ visible: true }).first();
+    const modal = page.locator('#modal-container').first();
     await modal.locator('input[name="code"]').fill('WH-MAIN');
     await modal.locator('input[name="name"]').fill('Duplicate Main Warehouse');
     await modal.locator('button[type="submit"]').click();

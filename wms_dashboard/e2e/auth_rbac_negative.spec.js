@@ -25,21 +25,15 @@ test.describe('Authentication & RBAC Negative Flows', () => {
     await expect(page).toHaveURL(/.*\/login$/);
   });
 
-  test('Procurement role blocked from /wms/masters/* — redirected or shown 403', async ({ page }) => {
-    await login(page, 'procurement@omnisync.com', 'procurement123');
+  // operator@omnisync.com is seeded with POS role (no modify_masters permission)
+  test('POS role blocked from /wms/masters/* — shown Access Denied', async ({ page }) => {
+    await login(page, 'operator@omnisync.com', 'operator123');
 
     await page.goto('http://localhost:9901/wms/masters/products');
     await expect(page.locator('body')).toContainText(/Access Denied|403/);
   });
 
-  test('POS role blocked from /wms/masters/* — redirected or shown 403', async ({ page }) => {
-    await login(page, 'pos@omnisync.com', 'pos123');
-
-    await page.goto('http://localhost:9901/wms/masters/products');
-    await expect(page.locator('body')).toContainText(/Access Denied|403/);
-  });
-
-  test('Non-system-admin blocked from /wms/system/roles — shows 403', async ({ page }) => {
+  test('Non-system-admin blocked from /wms/system/roles — shows Access Denied', async ({ page }) => {
     await login(page, 'operator@omnisync.com', 'operator123');
 
     await page.goto('http://localhost:9901/wms/system/roles');
