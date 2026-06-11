@@ -1,0 +1,49 @@
+const { test, expect } = require('@playwright/test');
+const { login } = require('./helpers/auth');
+
+test.describe('Authentication & RBAC Negative Flows', () => {
+
+  test('Invalid login: wrong password shows error toast and stays on /login', async ({ page }) => {
+    await page.goto('/login');
+    await page.fill('#email', 'admin@omnisync.com');
+    await page.fill('#password', 'wrongpassword123');
+    await page.click('button[type="submit"]');
+
+    await expect(page.locator('.notyf__toast')).toBeVisible();
+    await expect(page.locator('.notyf__message')).toContainText('Invalid email or password');
+    await expect(page).toHaveURL(/.*\/login$/);
+  });
+
+  test('Invalid login: non-existent email shows error toast and stays on /login', async ({ page }) => {
+    await page.goto('/login');
+    await page.fill('#email', 'nobody@omnisync.com');
+    await page.fill('#password', 'somepassword');
+    await page.click('button[type="submit"]');
+
+    await expect(page.locator('.notyf__toast')).toBeVisible();
+    await expect(page.locator('.notyf__message')).toContainText('Invalid email or password');
+    await expect(page).toHaveURL(/.*\/login$/);
+  });
+
+  test('Procurement role blocked from /wms/masters/* — redirected or shown 403', async ({ page }) => {
+    await login(page, 'procurement@omnisync.com', 'procurement123');
+
+    await page.goto('http://localhost:9901/wms/masters/products');
+    await expect(page.locator('body')).toContainText(/Access Denied|403/);
+  });
+
+  test('POS role blocked from /wms/masters/* — redirected or shown 403', async ({ page }) => {
+    await login(page, 'pos@omnisync.com', 'pos123');
+
+    await page.goto('http://localhost:9901/wms/masters/products');
+    await expect(page.locator('body')).toContainText(/Access Denied|403/);
+  });
+
+  test('Non-system-admin blocked from /wms/system/roles — shows 403', async ({ page }) => {
+    await login(page, 'operator@omnisync.com', 'operator123');
+
+    await page.goto('http://localhost:9901/wms/system/roles');
+    await expect(page.locator('body')).toContainText(/Access Denied|403/);
+  });
+
+});
