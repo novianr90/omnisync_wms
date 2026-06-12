@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -330,7 +331,7 @@ func ServeDashboard(c *fiber.Ctx) error {
 		"UoMs":           uoms,
 		"Movements":      movements,
 		"TotalOnHand":    totalOnHand,
-		"TotalReserved":   totalReserved,
+		"TotalReserved":  totalReserved,
 		"TotalAvailable": totalAvailable,
 	})
 }
@@ -570,7 +571,6 @@ func ServeMovementDetailPage(c *fiber.Ctx) error {
 		"Movement": movement,
 	})
 }
-
 
 // POST /wms/movements/:id/claim
 func ClaimMovement(c *fiber.Ctx) error {
