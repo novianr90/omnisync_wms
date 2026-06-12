@@ -163,6 +163,13 @@ func main() {
 	protectedApi.Get("/locators/scan/:code", handlers.APIGetLocatorByCode)
 	protectedApi.Post("/movements", handlers.APICreateMovement)
 
+	// Issue 52 Mobile APIs
+	protectedApi.Get("/movements", handlers.APIListMovements)
+	protectedApi.Get("/movements/:id", handlers.APIGetMovementByID)
+	protectedApi.Post("/movements/:id/claim", handlers.APIClaimMovement)
+	protectedApi.Post("/movements/:id/scan-verify", handlers.APIScanVerifyMovementLine)
+	protectedApi.Post("/movements/:id/submit", handlers.APISubmitMovement)
+
 	// 7. Start the Dashboard Service
 	port := os.Getenv("PORT")
 	if port == "" {
