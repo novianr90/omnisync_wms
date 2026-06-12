@@ -20,6 +20,10 @@ test.describe('Master Data Negative Flows', () => {
     const modal = page.locator('#modal-container').first();
     await modal.locator('input[name="sku"]').fill('PROD-KYBD-01');
     await modal.locator('input[name="name"]').fill('Duplicate Keyboard');
+    
+    // Select base UoM to pass HTML5 validation
+    await modal.locator('select[name="uom_id"]').selectOption({ index: 1 });
+
     await modal.locator('button[type="submit"]').click();
 
     await expect(page.locator('.notyf__toast').last()).toBeVisible();
@@ -33,7 +37,7 @@ test.describe('Master Data Negative Flows', () => {
 
     // Button text is "Add Warehouse Node"
     await page.click('button:has-text("Add Warehouse Node")');
-    await expect(page.locator('#modal-container')).toBeVisible();
+    await expect(page.locator('#modal-container [id*="modal"]')).toBeVisible();
 
     const modal = page.locator('#modal-container').first();
     await modal.locator('input[name="code"]').fill('WH-MAIN');
@@ -49,15 +53,12 @@ test.describe('Master Data Negative Flows', () => {
     await page.goto('http://localhost:9901/wms/masters/locators');
     await expect(page.locator('h3, h2').filter({ hasText: /Locator/i })).toBeVisible();
 
-    // Attempt to delete the first locator (seeded with stock: loc-001)
-    const firstRow = page.locator('tbody tr').first();
-    await firstRow.locator('button:has-text("Delete")').click();
+    // Accept native browser confirm dialog triggered by HTMX hx-confirm
+    page.once('dialog', dialog => dialog.accept());
 
-    // Confirm deletion in modal if present
-    const confirmModal = page.locator('div[id^="confirm-modal-"]').filter({ visible: true });
-    if (await confirmModal.isVisible()) {
-      await confirmModal.locator('button:has-text("Confirm")').click();
-    }
+    // Attempt to delete the locator with stock (loc-001 is WH-MAIN-Zone-A-Aisle-1-Shelf-1-Level-1)
+    const locatorRow = page.locator('tr:has-text("WH-MAIN-Zone-A-Aisle-1-Shelf-1-Level-1")');
+    await locatorRow.locator('button[title*="Delete"]').click();
 
     await expect(page.locator('.notyf__toast').last()).toBeVisible();
     await expect(page.locator('.notyf__message').last()).toContainText(/cannot delete|in use|stock/i);
@@ -65,17 +66,15 @@ test.describe('Master Data Negative Flows', () => {
 
   test('Delete base UoM referenced by active products is blocked', async ({ page }) => {
     test.setTimeout(60000);
-    await page.goto('http://localhost:9901/wms/masters/uom');
+    await page.goto('http://localhost:9901/wms/masters/uoms');
     await expect(page.locator('h3, h2').filter({ hasText: /UoM|Unit/i })).toBeVisible();
 
-    // Attempt to delete first UoM row (expected to be referenced by products)
-    const firstRow = page.locator('tbody tr').first();
-    await firstRow.locator('button:has-text("Delete")').click();
+    // Accept native browser confirm dialog triggered by HTMX hx-confirm
+    page.once('dialog', dialog => dialog.accept());
 
-    const confirmModal = page.locator('div[id^="confirm-modal-"]').filter({ visible: true });
-    if (await confirmModal.isVisible()) {
-      await confirmModal.locator('button:has-text("Confirm")').click();
-    }
+    // Attempt to delete UoM row referenced by products (PCS)
+    const uomRow = page.locator('tr:has-text("PCS")');
+    await uomRow.locator('button[title*="Delete"]').click();
 
     await expect(page.locator('.notyf__toast').last()).toBeVisible();
     await expect(page.locator('.notyf__message').last()).toContainText(/cannot delete|in use|referenced/i);

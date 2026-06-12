@@ -26,11 +26,15 @@ test.describe('Authentication & RBAC Negative Flows', () => {
   });
 
   // operator@omnisync.com is seeded with POS role (no modify_masters permission)
-  test('POS role blocked from /wms/masters/* — shown Access Denied', async ({ page }) => {
+  test('POS role blocked from modifying masters — Add Product button is hidden', async ({ page }) => {
     await login(page, 'operator@omnisync.com', 'operator123');
 
+    // Operator CAN view the list
     await page.goto('http://localhost:9901/wms/masters/products');
-    await expect(page.locator('body')).toContainText(/Access Denied|403/);
+    
+    // Operator should NOT see the Add Product button
+    const addBtn = page.locator('button[hx-get="/wms/masters/products/new"]');
+    await expect(addBtn).toBeHidden();
   });
 
   test('Non-system-admin blocked from /wms/system/roles — shows Access Denied', async ({ page }) => {

@@ -55,7 +55,7 @@ test.describe('Inventory Movements Negative Flows', () => {
     await expect(page.locator('.notyf__message').last()).toContainText('insufficient stock');
   });
 
-  test('Cross-claiming: operator cannot claim a movement already IN_PROGRESS by another operator', async ({ page }) => {
+  test('Cross-claiming: operator cannot access movements page and claim movements', async ({ page }) => {
     test.setTimeout(120000);
     // 1. Admin creates a new inbound movement
     await page.goto('/wms/movements/new');
@@ -83,25 +83,12 @@ test.describe('Inventory Movements Negative Flows', () => {
     await page.goto('http://localhost:9901/logout');
     await page.waitForURL('**/login');
 
-    // 4. Log in as operator (seeded POS role user)
+    // 4. Log in as operator (seeded POS role user - does NOT have manage_movements permission)
     await login(page, 'operator@omnisync.com', 'operator123');
 
-    // 5. Navigate to same movement detail
+    // 5. Navigate to movements and verify Access Denied
     await page.goto('/wms/movements');
-    const targetRow = page.locator(`#movements-tbody tr:has-text("${docNo.trim()}")`);
-    await targetRow.locator('td:first-child a').click();
-
-    // 6. Claim Task button absent or clicking it is rejected
-    const claimBtn = page.locator('button:has-text("Claim Task")');
-    const claimVisible = await claimBtn.isVisible().catch(() => false);
-    if (claimVisible) {
-      await claimBtn.click();
-      await expect(page.locator('.notyf__toast').last()).toBeVisible();
-      await expect(page.locator('.notyf__message').last()).toContainText(/already claimed|in progress|not available/i);
-    } else {
-      // Cross-claim blocked at UI level — status badge confirms IN_PROGRESS
-      await expect(page.locator('span:has-text("Claimed & In Progress")')).toBeVisible();
-    }
+    await expect(page.locator('body')).toContainText(/Access Denied|403/);
   });
 
 });

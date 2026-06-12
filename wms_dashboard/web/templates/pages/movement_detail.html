@@ -115,7 +115,7 @@
                                     <div class="flex items-center gap-1 text-slate-400 font-mono text-[10px]">
                                         <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400"></i>
                                         {{if eq $.Movement.MovementType "INBOUND"}}
-                                        <span>Target: <span class="text-slate-200 font-bold">{{.ToLocator.Code}}</span></span>
+                                        <span>Target: <span class="text-slate-200 font-bold">{{if .ToLocator}}{{.ToLocator.Code}}{{else}}CROSS-DOCK{{end}}</span></span>
                                         {{else}}
                                         <span>Source: <span class="text-slate-200 font-bold">{{if .FromLocator}}{{.FromLocator.Code}}{{else}}AUTO (FIFO){{end}}</span></span>
                                         {{end}}

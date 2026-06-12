@@ -41,14 +41,22 @@ test.describe('Cross-Docking Operations E2E Flows', () => {
     // Verify redirect to movements list page
     await expect(page.locator('h3:has-text("Inventory Movements")')).toBeVisible();
 
-    // 4. Navigate to Detail View of the new crossdock movement
+    // Re-navigate to movements to reset DOM state completely
+    await page.goto('/wms/movements');
+    await page.waitForTimeout(1000); // Give DOM/HTMX a moment to settle
+
     const firstRow = page.locator('#movements-tbody tr').first();
     await expect(firstRow).toBeVisible();
-    const docLink = firstRow.locator('td:first-child a');
-    const docNo = await docLink.innerText();
+    const docNo = (await firstRow.locator('td:first-child').innerText()).trim();
 
-    await docLink.click();
-    await expect(page.locator('h3.font-bold')).toContainText(docNo);
+    // Click the document number link directly
+    const detailLink = page.locator(`#movements-tbody tr:has-text("${docNo}") td:first-child a`).first();
+    const docHref = await detailLink.getAttribute('href');
+    
+    // Navigate via goto to guarantee navigation, using relative URL to preserve auth cookies
+    await page.goto(docHref);
+    
+    await expect(page.locator('h3.font-bold')).toContainText(docNo, { timeout: 10000 });
 
     // 5. Claim Task -> IN PROGRESS
     await page.click('button:has-text("Claim Task")');
