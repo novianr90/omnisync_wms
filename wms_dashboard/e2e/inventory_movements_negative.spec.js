@@ -28,12 +28,12 @@ test.describe('Inventory Movements Negative Flows', () => {
 
   test('QC quarantine exclusion: outbound on QC-held product reduces available qty and blocks over-pick', async ({ page }) => {
     test.setTimeout(90000);
-    // 1. Create a QC Hold on stor-004 (freeze 5 units)
+    // 1. Create a QC Hold on stor-003 (freeze 5 units)
     await page.goto('http://localhost:9901/wms/qc-holds');
     await page.click('button:has-text("Freeze Stock")');
     await expect(page.locator('#modal-create-hold')).toBeVisible();
 
-    await page.selectOption('#modal-create-hold select[name="storage_id"]', 'stor-004');
+    await page.selectOption('#modal-create-hold select[name="storage_id"]', 'stor-003');
     await page.fill('#modal-create-hold input[name="qty"]', '5');
     await page.selectOption('#modal-create-hold select[name="reason"]', 'DAMAGED');
     await page.fill('#modal-create-hold textarea[name="notes"]', 'E2E QC quarantine negative test');
