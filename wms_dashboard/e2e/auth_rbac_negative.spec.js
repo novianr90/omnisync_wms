@@ -9,8 +9,8 @@ test.describe('Authentication & RBAC Negative Flows', () => {
     await page.fill('#password', 'wrongpassword123');
     await page.click('button[type="submit"]');
 
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('Invalid email or password');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('Invalid email or password');
     await expect(page).toHaveURL(/.*\/login$/);
   });
 
@@ -20,8 +20,8 @@ test.describe('Authentication & RBAC Negative Flows', () => {
     await page.fill('#password', 'somepassword');
     await page.click('button[type="submit"]');
 
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('Invalid email or password');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('Invalid email or password');
     await expect(page).toHaveURL(/.*\/login$/);
   });
 

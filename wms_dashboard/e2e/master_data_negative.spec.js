@@ -22,8 +22,8 @@ test.describe('Master Data Negative Flows', () => {
     await modal.locator('input[name="name"]').fill('Duplicate Keyboard');
     await modal.locator('button[type="submit"]').click();
 
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText(/already exists|duplicate|unique/i);
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText(/already exists|duplicate|unique/i);
   });
 
   test('Duplicate warehouse code: creating warehouse with existing code shows constraint error', async ({ page }) => {
@@ -40,8 +40,8 @@ test.describe('Master Data Negative Flows', () => {
     await modal.locator('input[name="name"]').fill('Duplicate Main Warehouse');
     await modal.locator('button[type="submit"]').click();
 
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText(/already exists|duplicate|unique/i);
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText(/already exists|duplicate|unique/i);
   });
 
   test('Delete locator with active stock is blocked', async ({ page }) => {
@@ -59,8 +59,8 @@ test.describe('Master Data Negative Flows', () => {
       await confirmModal.locator('button:has-text("Confirm")').click();
     }
 
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText(/cannot delete|in use|stock/i);
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText(/cannot delete|in use|stock/i);
   });
 
   test('Delete base UoM referenced by active products is blocked', async ({ page }) => {
@@ -77,8 +77,8 @@ test.describe('Master Data Negative Flows', () => {
       await confirmModal.locator('button:has-text("Confirm")').click();
     }
 
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText(/cannot delete|in use|referenced/i);
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText(/cannot delete|in use|referenced/i);
   });
 
 });

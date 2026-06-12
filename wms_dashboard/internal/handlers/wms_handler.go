@@ -582,6 +582,9 @@ func ClaimMovement(c *fiber.Ctx) error {
 		if err := tx.First(&mov, "id = ?", id).Error; err != nil {
 			return err
 		}
+		if mov.Status != "OPEN" {
+			return errors.New("movement is already claimed or not available")
+		}
 		mov.Status = "IN_PROGRESS"
 		mov.AssignedOperatorID = operatorID
 		mov.UpdatedAt = time.Now()

@@ -19,8 +19,8 @@ test.describe('Inventory Movements Negative Flows', () => {
     await page.fill('.quantity-input', '200');
     await page.click('button[type="submit"]');
 
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('insufficient stock');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('insufficient stock');
 
     // URL should remain on /new (not redirected to list)
     await expect(page).toHaveURL(/.*\/movements\/new$/);
@@ -39,7 +39,7 @@ test.describe('Inventory Movements Negative Flows', () => {
     await page.fill('#modal-create-hold textarea[name="notes"]', 'E2E QC quarantine negative test');
     await page.click('#modal-create-hold button[type="submit"]');
 
-    await expect(page.locator('.notyf__message')).toContainText('Hold executed successfully');
+    await expect(page.locator('.notyf__message').last()).toContainText('Hold executed successfully');
 
     // 2. Attempt outbound for PROD-MOUS-02: 80 on-hand, 5 now on-hold → 75 available max
     //    Request 80 (exceeds available 75) — system must reject
@@ -51,8 +51,8 @@ test.describe('Inventory Movements Negative Flows', () => {
     await page.fill('.quantity-input', '80');
     await page.click('button[type="submit"]');
 
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('insufficient stock');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('insufficient stock');
   });
 
   test('Cross-claiming: operator cannot claim a movement already IN_PROGRESS by another operator', async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe('Inventory Movements Negative Flows', () => {
     await page.fill('#movement-remarks', 'E2E cross-claim negative test');
     await page.click('button[type="submit"]');
 
-    await expect(page.locator('.notyf__message')).toContainText('registered successfully');
+    await expect(page.locator('.notyf__message').last()).toContainText('registered successfully');
 
     // 2. Admin claims the movement
     const firstRow = page.locator('#movements-tbody tr').first();
@@ -76,7 +76,7 @@ test.describe('Inventory Movements Negative Flows', () => {
     await docLink.click();
 
     await page.click('button:has-text("Claim Task")');
-    await expect(page.locator('.notyf__message')).toContainText('claimed successfully');
+    await expect(page.locator('.notyf__message').last()).toContainText('claimed successfully');
     await expect(page.locator('span:has-text("Claimed & In Progress")')).toBeVisible();
 
     // 3. Log out admin
@@ -96,8 +96,8 @@ test.describe('Inventory Movements Negative Flows', () => {
     const claimVisible = await claimBtn.isVisible().catch(() => false);
     if (claimVisible) {
       await claimBtn.click();
-      await expect(page.locator('.notyf__toast')).toBeVisible();
-      await expect(page.locator('.notyf__message')).toContainText(/already claimed|in progress|not available/i);
+      await expect(page.locator('.notyf__toast').last()).toBeVisible();
+      await expect(page.locator('.notyf__message').last()).toContainText(/already claimed|in progress|not available/i);
     } else {
       // Cross-claim blocked at UI level — status badge confirms IN_PROGRESS
       await expect(page.locator('span:has-text("Claimed & In Progress")')).toBeVisible();

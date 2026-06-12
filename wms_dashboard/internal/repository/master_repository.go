@@ -27,6 +27,11 @@ func FetchProductByID(id string) (models.Product, error) {
 }
 
 func CreateProduct(product *models.Product) error {
+	var count int64
+	database.DB.Model(&models.Product{}).Where("sku = ?", product.SKU).Count(&count)
+	if count > 0 {
+		return errors.New("duplicate product: SKU already exists")
+	}
 	product.ID = uuid.New().String()
 	product.CreatedAt = time.Now()
 	return database.DB.Create(product).Error
@@ -84,6 +89,11 @@ func FetchWarehouseByID(id string) (models.Warehouse, error) {
 }
 
 func CreateWarehouse(warehouse *models.Warehouse) error {
+	var count int64
+	database.DB.Model(&models.Warehouse{}).Where("code = ?", warehouse.Code).Count(&count)
+	if count > 0 {
+		return errors.New("duplicate warehouse: code already exists")
+	}
 	warehouse.ID = uuid.New().String()
 	warehouse.CreatedAt = time.Now()
 	warehouse.IsActive = true

@@ -29,9 +29,9 @@ test.describe('Inventory Movements & FIFO Outbound E2E Flows', () => {
     await page.click('button[type="submit"]');
 
     // Verify redirect back to list page and success toast
-    const toast = page.locator('.notyf__toast');
+    const toast = page.locator('.notyf__toast').last();
     await expect(toast).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('registered successfully');
+    await expect(page.locator('.notyf__message').last()).toContainText('registered successfully');
 
     await expect(page.locator('h3:has-text("Inventory Movements")')).toBeVisible();
 
@@ -46,20 +46,20 @@ test.describe('Inventory Movements & FIFO Outbound E2E Flows', () => {
 
     // 6. Advance through lifecycle: Claim Task
     await page.click('button:has-text("Claim Task")');
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('claimed successfully');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('claimed successfully');
     await expect(page.locator('span:has-text("Claimed & In Progress")')).toBeVisible();
 
     // 7. Advance through lifecycle: Journal Receipt
     await page.click('button:has-text("Journalize Stock")');
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('successfully journaled');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('successfully journaled');
     await expect(page.locator('span:has-text("Stock Journaled")')).toBeVisible();
 
     // 8. Advance through lifecycle: Complete Task
     await page.click('button:has-text("Complete Document")');
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('completed successfully');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('completed successfully');
 
     // After completion, verify status badge says Completed
     await expect(page.locator('.w-full:has-text("Document Locked & Closed")')).toBeVisible();
@@ -86,16 +86,16 @@ test.describe('Inventory Movements & FIFO Outbound E2E Flows', () => {
     await page.click('button[type="submit"]');
 
     // Verify fail toast
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('insufficient stock');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('insufficient stock');
 
     // 2. Fill a valid amount (30 mice)
     await page.fill('.quantity-input', '30'); // Valid amount
     await page.click('button[type="submit"]');
 
     // Verify success toast
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('registered successfully');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('registered successfully');
 
     // 3. Navigate to detail view
     await expect(page.locator('h3:has-text("Inventory Movements")')).toBeVisible();
@@ -115,16 +115,16 @@ test.describe('Inventory Movements & FIFO Outbound E2E Flows', () => {
 
     // Claim, Journal and Complete the outbound task
     await page.click('button:has-text("Claim Task")');
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('claimed successfully');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('claimed successfully');
 
     await page.click('button:has-text("Journalize Stock")');
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('successfully journaled');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('successfully journaled');
 
     await page.click('button:has-text("Complete Document")');
-    await expect(page.locator('.notyf__toast')).toBeVisible();
-    await expect(page.locator('.notyf__message')).toContainText('completed successfully');
+    await expect(page.locator('.notyf__toast').last()).toBeVisible();
+    await expect(page.locator('.notyf__message').last()).toContainText('completed successfully');
 
     // Verify final stock levels in catalog decreased appropriately on Dashboard
     await page.goto('/');
