@@ -1,0 +1,162 @@
+{{ define "content" }}
+<div class="p-6 lg:p-8 space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-100 tracking-tight">Inventory Valuation &amp; Aging</h1>
+            <p class="text-sm text-slate-400 mt-1">FIFO cost-layer stock valuation with aging analysis. Generated: {{ .GeneratedAt }}</p>
+        </div>
+        <a href="/wms/reports/valuation/export?warehouse_id={{ .Filter.WarehouseID }}&category={{ .Filter.Category }}&aging_bucket={{ .Filter.AsBucket }}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow transition-all">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Export CSV
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-slate-900/50 p-5 rounded-xl border border-slate-800 backdrop-blur-sm">
+        <form method="GET" action="/wms/reports/valuation" class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Warehouse</label>
+                <select name="warehouse_id" class="w-full px-4 py-2 bg-slate-950/50 border border-slate-700 rounded-lg text-sm text-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                    <option value="">All Warehouses</option>
+                    {{ range .Warehouses }}
+                    <option value="{{ .ID }}" {{ if eq $.Filter.WarehouseID .ID }}selected{{ end }}>{{ .Code }} – {{ .Name }}</option>
+                    {{ end }}
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Category</label>
+                <select name="category" class="w-full px-4 py-2 bg-slate-950/50 border border-slate-700 rounded-lg text-sm text-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                    <option value="">All Categories</option>
+                    {{ range .Categories }}
+                    <option value="{{ . }}" {{ if eq $.Filter.Category . }}selected{{ end }}>{{ . }}</option>
+                    {{ end }}
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Aging Bucket</label>
+                <select name="aging_bucket" class="w-full px-4 py-2 bg-slate-950/50 border border-slate-700 rounded-lg text-sm text-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                    <option value="">All Buckets</option>
+                    <option value="0-30"  {{ if eq $.Filter.AsBucket "0-30"  }}selected{{ end }}>0 – 30 days (Fresh)</option>
+                    <option value="31-90" {{ if eq $.Filter.AsBucket "31-90" }}selected{{ end }}>31 – 90 days (Moderate)</option>
+                    <option value="91+"   {{ if eq $.Filter.AsBucket "91+"   }}selected{{ end }}>91+ days (Slow-moving)</option>
+                </select>
+            </div>
+            <div class="flex gap-3 items-end">
+                <button type="submit" class="flex-1 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold shadow-lg shadow-indigo-500/20 transition-all h-[38px] flex items-center justify-center gap-2">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+                    Apply
+                </button>
+                <a href="/wms/reports/valuation" class="px-4 py-2 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg text-sm transition h-[38px] flex items-center justify-center">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 backdrop-blur-sm">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Stock Value</p>
+            <p class="text-2xl font-bold text-slate-100">${{ printf "%.2f" .Summary.TotalValue }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ .Summary.TotalQty }} units · {{ .Summary.UniqueProducts }} SKUs</p>
+        </div>
+        <div class="bg-emerald-950/30 border border-emerald-800/40 rounded-xl p-5 backdrop-blur-sm">
+            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Fresh (0–30 days)</p>
+            <p class="text-2xl font-bold text-emerald-400">${{ printf "%.2f" .Summary.Bucket0_30 }}</p>
+            {{ if gt .Pct0_30 0.0 }}
+            <p class="text-xs text-emerald-700 mt-1">{{ printf "%.1f" .Pct0_30 }}% of total</p>
+            {{ end }}
+        </div>
+        <div class="bg-amber-950/30 border border-amber-800/40 rounded-xl p-5 backdrop-blur-sm">
+            <p class="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Moderate (31–90 days)</p>
+            <p class="text-2xl font-bold text-amber-400">${{ printf "%.2f" .Summary.Bucket31_90 }}</p>
+            {{ if gt .Pct31_90 0.0 }}
+            <p class="text-xs text-amber-700 mt-1">{{ printf "%.1f" .Pct31_90 }}% of total</p>
+            {{ end }}
+        </div>
+        <div class="bg-rose-950/30 border border-rose-800/40 rounded-xl p-5 backdrop-blur-sm">
+            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">Slow-moving (91+ days)</p>
+            <p class="text-2xl font-bold text-rose-400">${{ printf "%.2f" .Summary.Bucket91Plus }}</p>
+            {{ if gt .Pct91Plus 0.0 }}
+            <p class="text-xs text-rose-700 mt-1">{{ printf "%.1f" .Pct91Plus }}% of total</p>
+            {{ end }}
+        </div>
+    </div>
+
+    <!-- Valuation Table -->
+    <div class="bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300 whitespace-nowrap">
+                <thead class="bg-slate-800/50 text-slate-400 font-medium border-b border-slate-700/50">
+                    <tr>
+                        <th class="px-5 py-4">SKU / Product</th>
+                        <th class="px-5 py-4">Batch</th>
+                        <th class="px-5 py-4">Location</th>
+                        <th class="px-5 py-4 text-right">Qty</th>
+                        <th class="px-5 py-4 text-right">Unit Cost</th>
+                        <th class="px-5 py-4 text-right">Total Value</th>
+                        <th class="px-5 py-4">Received</th>
+                        <th class="px-5 py-4">Aging</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/50">
+                    {{ if not .Rows }}
+                    <tr>
+                        <td colspan="8" class="px-6 py-16 text-center text-slate-500">
+                            <i data-lucide="bar-chart-2" class="w-10 h-10 mx-auto mb-4 text-slate-600"></i>
+                            <p class="text-base font-medium text-slate-400">No stock found</p>
+                            <p class="text-sm mt-1">Adjust filters or receive some inventory first.</p>
+                        </td>
+                    </tr>
+                    {{ else }}
+                    {{ range .Rows }}
+                    <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="px-5 py-3.5">
+                            <div class="font-semibold text-slate-200 text-xs">{{ .SKU }}</div>
+                            <div class="text-slate-400 text-xs mt-0.5 max-w-[200px] truncate" title="{{ .ProductName }}">{{ .ProductName }}</div>
+                            {{ if .Category }}<span class="text-[10px] text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded mt-1 inline-block">{{ .Category }}</span>{{ end }}
+                        </td>
+                        <td class="px-5 py-3.5 font-mono text-xs text-slate-300">{{ .BatchNumber }}</td>
+                        <td class="px-5 py-3.5">
+                            <div class="text-xs text-slate-300">{{ .LocatorCode }}</div>
+                            <div class="text-[10px] text-slate-500 mt-0.5">{{ .WarehouseCode }}</div>
+                        </td>
+                        <td class="px-5 py-3.5 text-right font-semibold text-slate-200">{{ .QtyOnHand }}</td>
+                        <td class="px-5 py-3.5 text-right text-slate-300">${{ printf "%.2f" .UnitCost }}</td>
+                        <td class="px-5 py-3.5 text-right font-bold text-slate-100">${{ printf "%.2f" .TotalValue }}</td>
+                        <td class="px-5 py-3.5 text-xs text-slate-400">{{ .ReceivedAt.Format "2006-01-02" }}</td>
+                        <td class="px-5 py-3.5">
+                            {{ if eq .AgingBucket "0-30" }}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <i data-lucide="circle-check" class="w-3 h-3"></i> {{ .AgingDays }}d · Fresh
+                            </span>
+                            {{ else if eq .AgingBucket "31-90" }}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <i data-lucide="clock" class="w-3 h-3"></i> {{ .AgingDays }}d · Moderate
+                            </span>
+                            {{ else }}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                <i data-lucide="alert-triangle" class="w-3 h-3"></i> {{ .AgingDays }}d · Slow
+                            </span>
+                            {{ end }}
+                        </td>
+                    </tr>
+                    {{ end }}
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+        {{ if .Rows }}
+        <div class="px-5 py-3 border-t border-slate-800 bg-slate-900/30 text-xs text-slate-500 flex items-center gap-1">
+            <i data-lucide="info" class="w-3 h-3 text-slate-600"></i>
+            Unit cost sourced from INBOUND ledger entries (FIFO receipt cost). Falls back to product catalog price when no ledger entry exists.
+        </div>
+        {{ end }}
+    </div>
+</div>
+<script>
+    if (typeof lucide !== 'undefined') { lucide.createIcons(); }
+</script>
+{{ end }}
