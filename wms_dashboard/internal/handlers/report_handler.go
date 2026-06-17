@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/csv"
 	"fmt"
 	"strconv"
 	"time"
@@ -78,8 +79,8 @@ func ExportLedgerExcel(c *fiber.Ctx) error {
 
 	// Table Headers
 	headers := []string{
-		"Transaction Date", "Type", "Document No", "Batch Number", 
-		"SKU", "Product Name", "Locator Code", "Quantity Change", 
+		"Transaction Date", "Type", "Document No", "Batch Number",
+		"SKU", "Product Name", "Locator Code", "Quantity Change",
 		"Batch Balance", "Account No", "Contra Account No",
 	}
 	for colIdx, h := range headers {
@@ -101,13 +102,13 @@ func ExportLedgerExcel(c *fiber.Ctx) error {
 
 	// Data Rows
 	rowStyleEven, _ := f.NewStyle(&excelize.Style{
-		Font: &excelize.Font{Size: 9.5},
-		Fill: excelize.Fill{Type: "pattern", Color: []string{"ffffff"}, Pattern: 1},
+		Font:   &excelize.Font{Size: 9.5},
+		Fill:   excelize.Fill{Type: "pattern", Color: []string{"ffffff"}, Pattern: 1},
 		Border: []excelize.Border{{Type: "bottom", Color: "e2e8f0", Style: 1}},
 	})
 	rowStyleOdd, _ := f.NewStyle(&excelize.Style{
-		Font: &excelize.Font{Size: 9.5},
-		Fill: excelize.Fill{Type: "pattern", Color: []string{"f8fafc"}, Pattern: 1},
+		Font:   &excelize.Font{Size: 9.5},
+		Fill:   excelize.Fill{Type: "pattern", Color: []string{"f8fafc"}, Pattern: 1},
 		Border: []excelize.Border{{Type: "bottom", Color: "e2e8f0", Style: 1}},
 	})
 
@@ -122,7 +123,7 @@ func ExportLedgerExcel(c *fiber.Ctx) error {
 		_ = f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowIdx), l.Locator.Code)
 		_ = f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowIdx), l.QtyChange)
 		_ = f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowIdx), l.BatchBalance)
-		
+
 		accNo := ""
 		if l.AccountNo != nil {
 			accNo = *l.AccountNo
@@ -190,10 +191,9 @@ func ExportLedgerPDF(c *fiber.Ctx) error {
 
 	// Define Header and Footer
 	pdf.SetHeaderFunc(func() {
-		// Omnisync Brand Header Block
 		pdf.SetFillColor(79, 70, 229) // Indigo Accent
 		pdf.Rect(10, 10, 277, 20, "F")
-		
+
 		pdf.SetTextColor(255, 255, 255)
 		pdf.SetFont("Arial", "B", 14)
 		pdf.CellFormat(277, 20, "   OMNISYNC WMS - INVENTORY LEDGER REPORT", "", 0, "L", false, 0, "")
@@ -212,12 +212,12 @@ func ExportLedgerPDF(c *fiber.Ctx) error {
 	pdf.AddPage()
 
 	// Metadata Panel
-	pdf.SetFillColor(241, 245, 249) // Light Slate
+	pdf.SetFillColor(241, 245, 249)
 	pdf.Rect(10, 32, 277, 18, "F")
-	
+
 	pdf.SetTextColor(71, 85, 105)
 	pdf.SetFont("Arial", "", 8.5)
-	
+
 	metaLeft := fmt.Sprintf("Export Time: %s", time.Now().Format("2006-01-02 15:04:05"))
 	metaRight := "Active Filters: "
 	if filter.StartDate != "" || filter.EndDate != "" {
@@ -240,7 +240,7 @@ func ExportLedgerPDF(c *fiber.Ctx) error {
 	pdf.Ln(15)
 
 	// Table Headers
-	headers := []struct {
+	pdfHeaders := []struct {
 		Name  string
 		Width float64
 	}{
@@ -257,26 +257,25 @@ func ExportLedgerPDF(c *fiber.Ctx) error {
 		{"Contra", 14},
 	}
 
-	pdf.SetFillColor(30, 41, 59) // Slate-900 Header Fill
+	pdf.SetFillColor(30, 41, 59)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Arial", "B", 8)
-	
+
 	pdf.SetX(10)
-	for _, h := range headers {
+	for _, h := range pdfHeaders {
 		pdf.CellFormat(h.Width, 7, h.Name, "1", 0, "L", true, 0, "")
 	}
 	pdf.Ln(7)
 
-	// Render Data Rows
+	// Data Rows
 	pdf.SetFont("Arial", "", 7.5)
 	pdf.SetTextColor(51, 65, 85)
 
 	for i, l := range ledgers {
-		// Alternating row background colors
 		if i%2 == 0 {
 			pdf.SetFillColor(255, 255, 255)
 		} else {
-			pdf.SetFillColor(248, 250, 252) // slate-50
+			pdf.SetFillColor(248, 250, 252)
 		}
 
 		accNo := ""
@@ -288,9 +287,13 @@ func ExportLedgerPDF(c *fiber.Ctx) error {
 			contraAcc = *l.ContraAccountNo
 		}
 
-		// Pre-process variables to prevent overflow or truncation
 		qtyStr := fmt.Sprintf("%+d", l.QtyChange)
 		balStr := strconv.Itoa(l.BatchBalance)
+
+		prodName := l.Product.Name
+		if len(prodName) > 22 {
+			prodName = prodName[:19] + "..."
+		}
 
 		pdf.SetX(10)
 		pdf.CellFormat(35, 6.5, l.TransactionDate.Format("2006-01-02 15:04:05"), "1", 0, "L", true, 0, "")
@@ -298,12 +301,6 @@ func ExportLedgerPDF(c *fiber.Ctx) error {
 		pdf.CellFormat(32, 6.5, l.DocumentNo, "1", 0, "L", true, 0, "")
 		pdf.CellFormat(28, 6.5, l.BatchNumber, "1", 0, "L", true, 0, "")
 		pdf.CellFormat(30, 6.5, l.Product.SKU, "1", 0, "L", true, 0, "")
-		
-		// Clip or shorten product name to avoid wrapping layout failures
-		prodName := l.Product.Name
-		if len(prodName) > 22 {
-			prodName = prodName[:19] + "..."
-		}
 		pdf.CellFormat(42, 6.5, prodName, "1", 0, "L", true, 0, "")
 		pdf.CellFormat(30, 6.5, l.Locator.Code, "1", 0, "L", true, 0, "")
 		pdf.CellFormat(15, 6.5, qtyStr, "1", 0, "R", true, 0, "")
@@ -321,4 +318,89 @@ func ExportLedgerPDF(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error generating PDF: " + err.Error())
 	}
 	return c.Send(buf.Bytes())
+}
+
+// ServeValuationReport renders the FIFO Valuation & Aging report page
+func ServeValuationReport(c *fiber.Ctx) error {
+	filter := repository.ValuationFilter{
+		WarehouseID: c.Query("warehouse_id", ""),
+		Category:    c.Query("category", ""),
+		AsBucket:    c.Query("aging_bucket", ""),
+	}
+
+	rows, summary, err := repository.FetchFIFOValuation(filter)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error fetching valuation: " + err.Error())
+	}
+
+	warehouses, _ := repository.FetchValuationWarehouses()
+	categories, _ := repository.FetchValuationCategories()
+
+	pct0_30, pct31_90, pct91Plus := 0.0, 0.0, 0.0
+	if summary.TotalValue > 0 {
+		pct0_30 = summary.Bucket0_30 / summary.TotalValue * 100
+		pct31_90 = summary.Bucket31_90 / summary.TotalValue * 100
+		pct91Plus = summary.Bucket91Plus / summary.TotalValue * 100
+	}
+
+	data := fiber.Map{
+		"Rows":        rows,
+		"Summary":     summary,
+		"Warehouses":  warehouses,
+		"Categories":  categories,
+		"Filter":      filter,
+		"GeneratedAt": time.Now().Format("2006-01-02 15:04:05"),
+		"Pct0_30":    pct0_30,
+		"Pct31_90":   pct31_90,
+		"Pct91Plus":  pct91Plus,
+	}
+
+	return renderPage(c, "valuation.html", data)
+}
+
+// ExportValuationCSV streams a CSV download of the current valuation view
+func ExportValuationCSV(c *fiber.Ctx) error {
+	filter := repository.ValuationFilter{
+		WarehouseID: c.Query("warehouse_id", ""),
+		Category:    c.Query("category", ""),
+		AsBucket:    c.Query("aging_bucket", ""),
+	}
+
+	rows, _, err := repository.FetchFIFOValuation(filter)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Export error: " + err.Error())
+	}
+
+	filename := fmt.Sprintf("valuation_%s.csv", time.Now().Format("20060102_150405"))
+	c.Set("Content-Type", "text/csv")
+	c.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+
+	w := csv.NewWriter(c.Response().BodyWriter())
+	_ = w.Write([]string{
+		"SKU", "Product Name", "Category",
+		"Warehouse", "Locator", "Batch Number",
+		"Received At", "Qty On Hand",
+		"Unit Cost", "Total Value",
+		"Aging Days", "Aging Bucket",
+	})
+
+	for _, r := range rows {
+		_ = w.Write([]string{
+			r.SKU,
+			r.ProductName,
+			r.Category,
+			r.WarehouseCode,
+			r.LocatorCode,
+			r.BatchNumber,
+			r.ReceivedAt.Format("2006-01-02"),
+			strconv.Itoa(r.QtyOnHand),
+			fmt.Sprintf("%.2f", r.UnitCost),
+			fmt.Sprintf("%.2f", r.TotalValue),
+			strconv.Itoa(r.AgingDays),
+			r.AgingBucket,
+		})
+	}
+
+	w.Flush()
+	return nil
 }

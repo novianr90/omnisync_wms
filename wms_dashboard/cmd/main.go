@@ -95,6 +95,11 @@ func main() {
 	app.Get("/wms/transfers/destinations", handlers.ServeTransferDestinations)
 	app.Post("/wms/transfers/new", handlers.CreateTransfer)
 
+	// --- INVENTORY REPORTS ---
+	app.Get("/wms/reports/valuation", handlers.ServeValuationReport)
+	app.Get("/wms/reports/valuation/export", handlers.ExportValuationCSV)
+
+	// --- INVENTORY LEDGER ---
 	app.Get("/wms/ledger", middleware.RequireSystemAdmin(), handlers.ServeLedger)
 	app.Get("/wms/ledger/export/pdf", middleware.RequireSystemAdmin(), handlers.ExportLedgerPDF)
 	app.Get("/wms/ledger/export/excel", middleware.RequireSystemAdmin(), handlers.ExportLedgerExcel)
