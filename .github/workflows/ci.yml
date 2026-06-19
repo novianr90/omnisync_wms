@@ -184,7 +184,7 @@ jobs:
       JWT_SECRET_KEY: ci-test-signing-key-for-github-actions-12345
       DB_TYPE: postgres
       AUTH_DATABASE_URL: postgres://omnisync:test1234@localhost:5432/omnisync_test?sslmode=disable
-      WMS_DATABASE_URL: postgres://omnisync:test1234@localhost:5432/omnisync_test?sslmode=disable
+      WMS_DATABASE_URL: postgres://omnisync:test1234@localhost:5432/wms_test?sslmode=disable
       PORT: 9901
       AUTH_API_URL: http://localhost:8000
       SEED_ADMIN_EMAIL: admin@omnisync.com
@@ -277,6 +277,9 @@ jobs:
       - name: Pre-build WMS Dashboard
         working-directory: wms_dashboard
         run: go build -o wms_dashboard ./cmd/main.go
+
+      - name: Setup Databases
+        run: PGPASSWORD=test1234 psql -h localhost -U omnisync -d omnisync_test -c "CREATE DATABASE wms_test;"
 
       - name: Run Playwright E2E Tests
         working-directory: wms_dashboard

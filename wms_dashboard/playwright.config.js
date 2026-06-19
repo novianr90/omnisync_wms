@@ -56,6 +56,7 @@ module.exports = defineConfig({
         PORT: '8000',
         JWT_SECRET_KEY: process.env.JWT_SECRET_KEY || 'test-signing-key-for-auth-services-unit-tests-12345',
         DB_TYPE: process.env.DB_TYPE || 'sqlite',
+        ...(process.env.AUTH_DATABASE_URL ? { AUTH_DATABASE_URL: process.env.AUTH_DATABASE_URL } : {}),
       },
     },
     {
@@ -71,6 +72,7 @@ module.exports = defineConfig({
         JWT_SECRET_KEY: process.env.JWT_SECRET_KEY || 'test-signing-key-for-auth-services-unit-tests-12345',
         AUTH_API_URL: 'http://localhost:8000',
         DB_TYPE: process.env.DB_TYPE || 'sqlite',
+        ...(process.env.WMS_DATABASE_URL ? { WMS_DATABASE_URL: process.env.WMS_DATABASE_URL } : {}),
         ...(process.env.GOMODCACHE ? { GOMODCACHE: process.env.GOMODCACHE } : { GOMODCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\pkg\\mod' }),
         ...(process.env.GOCACHE ? { GOCACHE: process.env.GOCACHE } : { GOCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\build' }),
       },
