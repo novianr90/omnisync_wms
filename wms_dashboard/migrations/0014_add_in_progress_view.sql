@@ -1,5 +1,5 @@
 -- Up
-CREATE VIEW IF NOT EXISTS in_progress_documents AS
+CREATE OR REPLACE VIEW in_progress_documents AS
 SELECT 
     id, 
     document_no, 

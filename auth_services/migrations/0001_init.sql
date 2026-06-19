@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     role_id VARCHAR(36) NOT NULL,
-    is_active BOOLEAN DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at DATETIME,
     updated_at DATETIME,
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT

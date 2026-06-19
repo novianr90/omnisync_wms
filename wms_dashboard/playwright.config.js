@@ -28,8 +28,8 @@ module.exports = defineConfig({
   expect: {
     timeout: isCI ? 10000 : 5000,
   },
-  fullyParallel: false,
-  workers: 1, // Run sequentially to avoid DB locks and race conditions
+  fullyParallel: true,
+  workers: isCI ? 4 : undefined, // Enable parallel workers
   reporter: 'line',
   use: {
     baseURL: 'http://localhost:9901',
@@ -55,7 +55,7 @@ module.exports = defineConfig({
       env: {
         PORT: '8000',
         JWT_SECRET_KEY: process.env.JWT_SECRET_KEY || 'test-signing-key-for-auth-services-unit-tests-12345',
-        DB_TYPE: 'sqlite',
+        DB_TYPE: process.env.DB_TYPE || 'sqlite',
       },
     },
     {
@@ -70,7 +70,7 @@ module.exports = defineConfig({
         PORT: '9901',
         JWT_SECRET_KEY: process.env.JWT_SECRET_KEY || 'test-signing-key-for-auth-services-unit-tests-12345',
         AUTH_API_URL: 'http://localhost:8000',
-        DB_TYPE: 'sqlite',
+        DB_TYPE: process.env.DB_TYPE || 'sqlite',
         ...(process.env.GOMODCACHE ? { GOMODCACHE: process.env.GOMODCACHE } : { GOMODCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\pkg\\mod' }),
         ...(process.env.GOCACHE ? { GOCACHE: process.env.GOCACHE } : { GOCACHE: 'D:\\Code\\projects\\omnisync_wms\\go_cache\\build' }),
       },

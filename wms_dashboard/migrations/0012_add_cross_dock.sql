@@ -1,5 +1,5 @@
 -- Add IsCrossDock flag to inventory_movements
-ALTER TABLE inventory_movements ADD COLUMN is_cross_dock BOOLEAN NOT NULL DEFAULT 0;
+ALTER TABLE inventory_movements ADD COLUMN is_cross_dock BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Seed the CROSS-DOCK staging area locator
 INSERT INTO locators (id, warehouse_id, zone, aisle, shelf, level, code, is_active) 

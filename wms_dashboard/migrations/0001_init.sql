@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS warehouses (
     code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(100) NOT NULL,
     address TEXT,
-    is_active BOOLEAN DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at DATETIME,
     deleted_at DATETIME
 );
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS locators (
     shelf VARCHAR(20) NOT NULL,
     level VARCHAR(20) NOT NULL,
     code VARCHAR(100) NOT NULL UNIQUE,
-    is_active BOOLEAN DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at DATETIME,
     deleted_at DATETIME,
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE

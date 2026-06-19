@@ -171,7 +171,7 @@ To run full end-to-end browser workflows (encompassing Authentication, Side-menu
 | Backend Framework | [Go Fiber v2](https://gofiber.io/) |
 | ORM | [GORM v2](https://gorm.io/) |
 | Database (dev) | SQLite via [`glebarez/sqlite`](https://github.com/glebarez/sqlite) (pure Go, no CGo) |
-| Database (prod) | PostgreSQL (set `DB_TYPE=postgres`) |
+| Database (prod) | PostgreSQL (set `DB_TYPE=postgres`, append `?sslmode=require` for Supabase) |
 | Frontend | [HTMX v1.9](https://htmx.org/) |
 | Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
 | Icons | [Lucide Icons](https://lucide.dev/) |

@@ -17,6 +17,8 @@ graph TD
     AuthService -->|Read/Write Operations| AuthDB[(auth.db - Auth SQLite)]
 ```
 
+> **Note**: For production PostgreSQL deployments (e.g. Supabase), set `DB_TYPE=postgres` and ensure you append `?sslmode=require` to your `AUTH_DATABASE_URL` and `WMS_DATABASE_URL` connection strings.
+
 ### 1. Auth Service (`auth_services/`)
 - **Port**: `8000`
 - **Database**: `auth.db`

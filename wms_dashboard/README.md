@@ -103,7 +103,7 @@ Dashboard available at **http://localhost:9901**.
 ## Database
 
 - **Development**: SQLite (`wms.db`) — auto-created on first run.
-- **Production**: PostgreSQL — set `DB_TYPE=postgres` and provide `WMS_DATABASE_URL`.
+- **Production**: PostgreSQL — set `DB_TYPE=postgres` and provide `WMS_DATABASE_URL` (append `?sslmode=require` if using Supabase).
 
 Schema is automatically migrated via GORM `AutoMigrate` on startup.
 
