@@ -63,12 +63,18 @@ func CreateProduct(c *fiber.Ctx) error {
 		})
 	}
 
+	var unitWeight, unitVolume float64
+	_, _ = fmt.Sscanf(c.FormValue("unit_weight"), "%f", &unitWeight)
+	_, _ = fmt.Sscanf(c.FormValue("unit_volume"), "%f", &unitVolume)
+
 	product := models.Product{
 		SKU:         sku,
 		Name:        name,
 		Description: description,
 		Category:    category,
 		Price:       price,
+		UnitWeight:  unitWeight,
+		UnitVolume:  unitVolume,
 		IsBundle:    isBundle,
 		UoMID:       c.FormValue("uom_id"),
 	}
@@ -130,6 +136,8 @@ func UpdateProduct(c *fiber.Ctx) error {
 		_, _ = fmt.Sscanf(c.FormValue("price"), "%f", &price)
 	}
 	product.Price = price
+	_, _ = fmt.Sscanf(c.FormValue("unit_weight"), "%f", &product.UnitWeight)
+	_, _ = fmt.Sscanf(c.FormValue("unit_volume"), "%f", &product.UnitVolume)
 
 	if err := repository.UpdateProduct(&product); err != nil {
 		return renderPartial(c, "partials/notification.html", "notification", fiber.Map{
@@ -288,14 +296,42 @@ func ServeLocatorsMaster(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
+	occupancies, _ := repository.FetchLocatorOccupancies()
+	occMap := make(map[string]repository.LocatorOccupancy, len(occupancies))
+	var greenCount, amberCount, redCount int
+	var totalUtil float64
+	for _, o := range occupancies {
+		occMap[o.LocatorID] = o
+		totalUtil += o.UtilPct
+		switch o.ColorBand() {
+		case "red":
+			redCount++
+		case "amber":
+			amberCount++
+		default:
+			greenCount++
+		}
+	}
+	var avgUtil float64
+	if len(occupancies) > 0 {
+		avgUtil = totalUtil / float64(len(occupancies))
+	}
+
 	if c.Get("HX-Request") == "true" && c.Query("rows_only") == "true" {
 		return renderPartial(c, "partials/locator_row.html", "locator_rows", fiber.Map{
-			"Locators": locators,
+			"Locators":     locators,
+			"OccupancyMap": occMap,
 		})
 	}
 
 	return renderPage(c, "locators_master.html", fiber.Map{
-		"Locators": locators,
+		"Locators":     locators,
+		"Occupancies":  occupancies,
+		"OccupancyMap": occMap,
+		"GreenCount":   greenCount,
+		"AmberCount":   amberCount,
+		"RedCount":     redCount,
+		"AvgUtil":      avgUtil,
 	})
 }
 
@@ -335,6 +371,10 @@ func CreateLocator(c *fiber.Ctx) error {
 
 	code := fmt.Sprintf("%s-%s-%s-%s-%s", wh.Code, zone, aisle, shelf, level)
 
+	var maxWeight, maxVolume float64
+	_, _ = fmt.Sscanf(c.FormValue("max_weight"), "%f", &maxWeight)
+	_, _ = fmt.Sscanf(c.FormValue("max_volume"), "%f", &maxVolume)
+
 	locator := models.Locator{
 		WarehouseID: whID,
 		Zone:        zone,
@@ -342,6 +382,8 @@ func CreateLocator(c *fiber.Ctx) error {
 		Shelf:       shelf,
 		Level:       level,
 		Code:        code,
+		MaxWeight:   maxWeight,
+		MaxVolume:   maxVolume,
 	}
 
 	if err := repository.CreateLocator(&locator); err != nil {
@@ -392,6 +434,8 @@ func UpdateLocator(c *fiber.Ctx) error {
 	locator.Shelf = c.FormValue("shelf")
 	locator.Level = c.FormValue("level")
 	locator.IsActive = c.FormValue("is_active") == "true"
+	_, _ = fmt.Sscanf(c.FormValue("max_weight"), "%f", &locator.MaxWeight)
+	_, _ = fmt.Sscanf(c.FormValue("max_volume"), "%f", &locator.MaxVolume)
 
 	// Fetch warehouse code to update code
 	var wh models.Warehouse

@@ -14,6 +14,8 @@ type Product struct {
 	Description string         `gorm:"type:text" json:"description"`
 	Category    string         `gorm:"type:varchar(100)" json:"category"`
 	Price       float64        `gorm:"type:decimal(12,2);default:0.00" json:"price"`
+	UnitWeight  float64        `gorm:"type:decimal(10,4);default:0" json:"unit_weight"`
+	UnitVolume  float64        `gorm:"type:decimal(10,6);default:0" json:"unit_volume"`
 	IsBundle    bool           `gorm:"type:boolean;default:false" json:"is_bundle"`
 	UoMID       string         `gorm:"type:varchar(36);index;column:uom_id" json:"uom_id"`
 	UoM         UoM            `gorm:"foreignKey:UoMID" json:"uom,omitempty"`
@@ -41,6 +43,8 @@ type Locator struct {
 	Shelf       string         `gorm:"type:varchar(20);not null" json:"shelf"` // e.g. "Shelf-3"
 	Level       string         `gorm:"type:varchar(20);not null" json:"level"` // e.g. "Level-2"
 	Code        string         `gorm:"type:varchar(100);uniqueIndex;not null" json:"code"` // combined unique code: "WH-MAIN-A-14-3-2"
+	MaxWeight   float64        `gorm:"type:decimal(10,2);default:0" json:"max_weight"`     // kg, 0 = unlimited
+	MaxVolume   float64        `gorm:"type:decimal(10,4);default:0" json:"max_volume"`     // m³, 0 = unlimited
 	IsActive    bool           `gorm:"type:boolean;default:true" json:"is_active"`
 	CreatedAt   time.Time      `json:"created_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`

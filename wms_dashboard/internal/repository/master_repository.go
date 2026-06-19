@@ -169,6 +169,75 @@ func DeleteLocator(id string) error {
 	})
 }
 
+// LocatorOccupancy is a query result holding computed occupancy metrics for one locator.
+type LocatorOccupancy struct {
+	LocatorID     string
+	LocatorCode   string
+	MaxWeight     float64
+	MaxVolume     float64
+	CurrentWeight float64
+	CurrentVolume float64
+	UtilPct       float64 // max(weight%, volume%); 0 when no limit set
+}
+
+// ColorBand returns the CSS color band for template rendering.
+func (o LocatorOccupancy) ColorBand() string {
+	if o.UtilPct >= 90 {
+		return "red"
+	}
+	if o.UtilPct >= 50 {
+		return "amber"
+	}
+	return "green"
+}
+
+// FetchLocatorOccupancies returns all locators with their computed occupancy metrics.
+func FetchLocatorOccupancies() ([]LocatorOccupancy, error) {
+	rows, err := database.DB.Raw(`
+		SELECT
+			l.id          AS locator_id,
+			l.code        AS locator_code,
+			l.max_weight,
+			l.max_volume,
+			COALESCE(SUM(s.qty_on_hand * p.unit_weight), 0) AS current_weight,
+			COALESCE(SUM(s.qty_on_hand * p.unit_volume), 0) AS current_volume
+		FROM locators l
+		LEFT JOIN storages s ON s.locator_id = l.id
+		LEFT JOIN products p ON p.id = s.product_id AND p.deleted_at IS NULL
+		WHERE l.deleted_at IS NULL
+		GROUP BY l.id, l.code, l.max_weight, l.max_volume
+		ORDER BY l.code ASC
+	`).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []LocatorOccupancy
+	for rows.Next() {
+		var o LocatorOccupancy
+		if err := rows.Scan(&o.LocatorID, &o.LocatorCode, &o.MaxWeight, &o.MaxVolume, &o.CurrentWeight, &o.CurrentVolume); err != nil {
+			return nil, err
+		}
+		if o.MaxWeight > 0 || o.MaxVolume > 0 {
+			var wPct, vPct float64
+			if o.MaxWeight > 0 {
+				wPct = (o.CurrentWeight / o.MaxWeight) * 100
+			}
+			if o.MaxVolume > 0 {
+				vPct = (o.CurrentVolume / o.MaxVolume) * 100
+			}
+			if wPct > vPct {
+				o.UtilPct = wPct
+			} else {
+				o.UtilPct = vPct
+			}
+		}
+		result = append(result, o)
+	}
+	return result, nil
+}
+
 // ==========================================
 // 4. UOM MASTER CRUD
 // ==========================================

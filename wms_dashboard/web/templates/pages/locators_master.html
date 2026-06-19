@@ -11,7 +11,7 @@
             <h3 class="font-bold text-xl text-slate-100 font-outfit">Storage Locator Coordinates</h3>
             <p class="text-xs text-slate-400 mt-0.5">Manage physical shelf addresses, picking coordinates, and slotting zones</p>
         </div>
-        
+
         <!-- Add button shown if user is admin -->
         {{if hasPermission .UserPermissions .UserRole "modify_masters"}}
         <button hx-get="/wms/masters/locators/new" hx-target="#modal-container"
@@ -22,24 +22,48 @@
         {{end}}
     </div>
 
-    <!-- Toolbar: Search & Statistics Summary -->
-    <div class="glass-panel p-5 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col gap-5">
+    <!-- Occupancy Summary Bar -->
+    <div class="glass-panel p-4 rounded-2xl border border-slate-800/80 shadow-xl flex flex-wrap items-center gap-3 text-[10px] font-semibold uppercase tracking-wider">
+        <span class="text-slate-500">Space Utilization:</span>
+        <span class="bg-amber-950/40 text-amber-400 border border-amber-900/60 px-3 py-1 rounded-full">
+            Total: {{len .Locators}}
+        </span>
+        <span class="bg-slate-800/60 text-slate-400 border border-slate-700/40 px-3 py-1 rounded-full">
+            Avg: {{printf "%.1f" .AvgUtil}}%
+        </span>
+        <span class="bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 px-3 py-1 rounded-full flex items-center gap-1">
+            <i data-lucide="check-circle" class="w-3 h-3"></i> OK: {{.GreenCount}}
+        </span>
+        <span class="bg-amber-950/40 text-amber-400 border border-amber-900/40 px-3 py-1 rounded-full flex items-center gap-1">
+            <i data-lucide="alert-triangle" class="w-3 h-3"></i> Mid: {{.AmberCount}}
+        </span>
+        <span class="bg-rose-950/40 text-rose-400 border border-rose-900/40 px-3 py-1 rounded-full flex items-center gap-1">
+            <i data-lucide="alert-circle" class="w-3 h-3"></i> Full: {{.RedCount}}
+        </span>
+        <!-- View toggle -->
+        <div class="ml-auto flex items-center gap-1 bg-slate-900/60 rounded-lg p-1 border border-slate-800">
+            <button id="btn-table-view" onclick="switchView('table')"
+                    class="px-3 py-1 rounded text-[10px] font-bold transition cursor-pointer bg-slate-700 text-slate-100 flex items-center gap-1">
+                <i data-lucide="table" class="w-3 h-3"></i> Table
+            </button>
+            <button id="btn-grid-view" onclick="switchView('grid')"
+                    class="px-3 py-1 rounded text-[10px] font-bold transition cursor-pointer text-slate-400 hover:text-slate-200 flex items-center gap-1">
+                <i data-lucide="grid-3x3" class="w-3 h-3"></i> Heat Map
+            </button>
+        </div>
+    </div>
+
+    <!-- Table View -->
+    <div id="view-table" class="glass-panel p-5 rounded-2xl border border-slate-800/80 shadow-xl flex flex-col gap-5">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <!-- Client-side real-time filter -->
             <div class="relative w-full max-w-md">
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
                     <i data-lucide="search" class="w-4 h-4"></i>
                 </span>
-                <input type="text" id="locator-search" onkeyup="filterLocators()" 
+                <input type="text" id="locator-search" onkeyup="filterLocators()"
                        placeholder="Fuzzy search shelf coordinates by warehouse, code, or zone..."
                        class="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-200 text-xs placeholder:text-slate-600 focus:outline-none focus:border-amber-500 transition duration-200">
-            </div>
-
-            <!-- Stats Pill -->
-            <div class="flex items-center gap-3">
-                <span class="bg-amber-950/40 text-amber-400 border border-amber-900/60 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider">
-                    Total Locators: {{len .Locators}}
-                </span>
             </div>
         </div>
 
@@ -54,6 +78,7 @@
                         <th class="px-6 py-4">Aisle</th>
                         <th class="px-6 py-4">Shelf</th>
                         <th class="px-6 py-4">Level</th>
+                        <th class="px-6 py-4 text-center">Utilization</th>
                         <th class="px-6 py-4 text-center">Status</th>
                         {{if hasPermission .UserPermissions .UserRole "modify_masters"}}
                         <th class="px-6 py-4 w-28 text-center">Actions</th>
@@ -61,12 +86,53 @@
                     </tr>
                 </thead>
                 <tbody id="locators-tbody" class="divide-y divide-slate-800/60"
-                       hx-get="/wms/masters/locators?rows_only=true" 
-                       hx-trigger="refreshLocatorsList from:body" 
+                       hx-get="/wms/masters/locators?rows_only=true"
+                       hx-trigger="refreshLocatorsList from:body"
                        hx-target="#locators-tbody">
                     {{template "locator_rows" .}}
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Heat Map Grid View -->
+    <div id="view-grid" class="hidden glass-panel p-5 rounded-2xl border border-slate-800/80 shadow-xl">
+        <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-4 font-semibold">
+            Locator Occupancy Heat Map —
+            <span class="text-emerald-400">Green &lt;50%</span> ·
+            <span class="text-amber-400">Amber 50–89%</span> ·
+            <span class="text-rose-400">Red ≥90%</span> ·
+            <span class="text-slate-500">— = no limit set</span>
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+            {{range .Occupancies}}
+            {{if (and (eq .MaxWeight 0.0) (eq .MaxVolume 0.0))}}
+            <div class="flex flex-col gap-1 p-3 rounded-xl border border-slate-700/60 bg-slate-900/40">
+            {{else if ge .UtilPct 90.0}}
+            <div class="flex flex-col gap-1 p-3 rounded-xl border border-rose-900/60 bg-rose-950/30">
+            {{else if ge .UtilPct 50.0}}
+            <div class="flex flex-col gap-1 p-3 rounded-xl border border-amber-900/60 bg-amber-950/20">
+            {{else}}
+            <div class="flex flex-col gap-1 p-3 rounded-xl border border-emerald-900/60 bg-emerald-950/20">
+            {{end}}
+                <span class="font-mono text-[9px] font-bold text-slate-300 truncate" title="{{.LocatorCode}}">{{.LocatorCode}}</span>
+                {{if (and (eq .MaxWeight 0.0) (eq .MaxVolume 0.0))}}
+                <span class="text-[10px] font-bold text-slate-500">—</span>
+                {{else if ge .UtilPct 90.0}}
+                <span class="text-[10px] font-bold text-rose-400">{{printf "%.0f" .UtilPct}}%</span>
+                {{else if ge .UtilPct 50.0}}
+                <span class="text-[10px] font-bold text-amber-400">{{printf "%.0f" .UtilPct}}%</span>
+                {{else}}
+                <span class="text-[10px] font-bold text-emerald-400">{{printf "%.0f" .UtilPct}}%</span>
+                {{end}}
+                {{if gt .MaxWeight 0.0}}
+                <span class="text-[8px] text-slate-500 truncate">{{printf "%.1f" .CurrentWeight}}/{{printf "%.1f" .MaxWeight}} kg</span>
+                {{end}}
+                {{if gt .MaxVolume 0.0}}
+                <span class="text-[8px] text-slate-500 truncate">{{printf "%.4f" .CurrentVolume}}/{{printf "%.4f" .MaxVolume}} m³</span>
+                {{end}}
+            </div>
+            {{end}}
         </div>
     </div>
 </div>
@@ -75,11 +141,10 @@
 <div id="modal-container"></div>
 
 <script>
-    // Live client-side fuzzy list filter
     function filterLocators() {
         const query = document.getElementById('locator-search').value.toLowerCase();
         const rows = document.querySelectorAll('#locators-tbody tr');
-        
+
         rows.forEach(row => {
             if (row.querySelector('.text-center') && row.cells.length === 1) return;
 
@@ -94,6 +159,29 @@
                 row.style.display = 'none';
             }
         });
+    }
+
+    function switchView(view) {
+        const tableEl = document.getElementById('view-table');
+        const gridEl = document.getElementById('view-grid');
+        const btnTable = document.getElementById('btn-table-view');
+        const btnGrid = document.getElementById('btn-grid-view');
+
+        if (view === 'table') {
+            tableEl.classList.remove('hidden');
+            gridEl.classList.add('hidden');
+            btnTable.classList.add('bg-slate-700', 'text-slate-100');
+            btnTable.classList.remove('text-slate-400', 'hover:text-slate-200');
+            btnGrid.classList.remove('bg-slate-700', 'text-slate-100');
+            btnGrid.classList.add('text-slate-400', 'hover:text-slate-200');
+        } else {
+            tableEl.classList.add('hidden');
+            gridEl.classList.remove('hidden');
+            btnGrid.classList.add('bg-slate-700', 'text-slate-100');
+            btnGrid.classList.remove('text-slate-400', 'hover:text-slate-200');
+            btnTable.classList.remove('bg-slate-700', 'text-slate-100');
+            btnTable.classList.add('text-slate-400', 'hover:text-slate-200');
+        }
     }
 </script>
 {{end}}

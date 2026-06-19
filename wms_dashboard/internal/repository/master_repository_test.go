@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"math"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -9,6 +10,8 @@ import (
 	"wms_dashboard/internal/database"
 	"wms_dashboard/internal/models"
 )
+
+func approxEq(a, b, eps float64) bool { return math.Abs(a-b) <= eps }
 
 func setupTestDB(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -278,5 +281,136 @@ func TestUoMCRUDAndSafeguards(t *testing.T) {
 	database.DB.Unscoped().Model(&models.UoM{}).Where("id = ?", u.ID).Count(&count)
 	if count != 1 {
 		t.Errorf("expected unscoped count 1 (soft deleted uom), got %d", count)
+	}
+}
+
+func TestFetchLocatorOccupancies(t *testing.T) {
+	setupTestDB(t)
+
+	wh := &models.Warehouse{ID: uuid.New().String(), Code: "WH-OCC", Name: "Occ Hub", IsActive: true}
+	database.DB.Create(wh)
+
+	// Locator with no capacity limit (max=0)
+	locUnlimited := &models.Locator{
+		ID: uuid.New().String(), WarehouseID: wh.ID,
+		Code: "WH-OCC-A-1", Zone: "A", Aisle: "1", Shelf: "1", Level: "1", IsActive: true,
+	}
+	// Locator with capacity (weight=100kg, volume=1m³)
+	locCapped := &models.Locator{
+		ID: uuid.New().String(), WarehouseID: wh.ID,
+		Code: "WH-OCC-A-2", Zone: "A", Aisle: "1", Shelf: "1", Level: "2", IsActive: true,
+		MaxWeight: 100, MaxVolume: 1.0,
+	}
+	database.DB.Create(locUnlimited)
+	database.DB.Create(locCapped)
+
+	prod := &models.Product{ID: uuid.New().String(), SKU: "OCC-PROD", Name: "Heavy Item", UnitWeight: 10, UnitVolume: 0.1}
+	database.DB.Create(prod)
+
+	// Put 6 units in the capped locator → 60kg / 0.6m³ → 60% util (Amber band)
+	storage := &models.Storage{
+		ID: uuid.New().String(), ProductID: prod.ID, LocatorID: locCapped.ID,
+		BatchNumber: "BATCH-1", QtyOnHand: 6,
+	}
+	database.DB.Create(storage)
+
+	occs, err := FetchLocatorOccupancies()
+	if err != nil {
+		t.Fatalf("FetchLocatorOccupancies error: %v", err)
+	}
+	if len(occs) < 2 {
+		t.Fatalf("expected at least 2 occupancy rows, got %d", len(occs))
+	}
+
+	occMap := make(map[string]LocatorOccupancy)
+	for _, o := range occs {
+		occMap[o.LocatorID] = o
+	}
+
+	// Unlimited locator: UtilPct must be 0 regardless of stock
+	u := occMap[locUnlimited.ID]
+	if u.UtilPct != 0 {
+		t.Errorf("unlimited locator UtilPct should be 0, got %f", u.UtilPct)
+	}
+	if u.ColorBand() != "green" {
+		t.Errorf("unlimited locator ColorBand should be green, got %s", u.ColorBand())
+	}
+
+	// Capped locator: 6*10=60kg / 100 = 60% → Amber
+	c := occMap[locCapped.ID]
+	if !approxEq(c.CurrentWeight, 60.0, 0.001) {
+		t.Errorf("expected CurrentWeight ~60, got %f", c.CurrentWeight)
+	}
+	if !approxEq(c.CurrentVolume, 0.6, 0.001) {
+		t.Errorf("expected CurrentVolume ~0.6, got %f", c.CurrentVolume)
+	}
+	if !approxEq(c.UtilPct, 60.0, 0.001) {
+		t.Errorf("expected UtilPct ~60, got %f", c.UtilPct)
+	}
+	if c.ColorBand() != "amber" {
+		t.Errorf("expected amber color band, got %s", c.ColorBand())
+	}
+}
+
+func TestLocatorOccupancy_ColorBands(t *testing.T) {
+	cases := []struct {
+		util float64
+		want string
+	}{
+		{0, "green"},
+		{49.9, "green"},
+		{50, "amber"},
+		{89.9, "amber"},
+		{90, "red"},
+		{100, "red"},
+	}
+	for _, tc := range cases {
+		o := LocatorOccupancy{UtilPct: tc.util, MaxWeight: 100}
+		if got := o.ColorBand(); got != tc.want {
+			t.Errorf("UtilPct %.1f: expected %s, got %s", tc.util, tc.want, got)
+		}
+	}
+}
+
+func TestLocatorOccupancy_MaxOfWeightAndVolume(t *testing.T) {
+	setupTestDB(t)
+
+	wh := &models.Warehouse{ID: uuid.New().String(), Code: "WH-MAX", Name: "Max Hub", IsActive: true}
+	database.DB.Create(wh)
+
+	// Locator: weight limit 200kg, volume limit 1m³
+	loc := &models.Locator{
+		ID: uuid.New().String(), WarehouseID: wh.ID,
+		Code: "WH-MAX-A-1", Zone: "A", Aisle: "1", Shelf: "1", Level: "1", IsActive: true,
+		MaxWeight: 200, MaxVolume: 1.0,
+	}
+	database.DB.Create(loc)
+
+	// Product: light but bulky (low weight, high volume)
+	prod := &models.Product{ID: uuid.New().String(), SKU: "BULKY", Name: "Bulky Item", UnitWeight: 1, UnitVolume: 0.2}
+	database.DB.Create(prod)
+
+	// 5 units → 5kg (2.5% weight util) / 1.0m³ (100% volume util) → should pick volume = 100%
+	storage := &models.Storage{
+		ID: uuid.New().String(), ProductID: prod.ID, LocatorID: loc.ID,
+		BatchNumber: "BATCH-BULKY", QtyOnHand: 5,
+	}
+	database.DB.Create(storage)
+
+	occs, err := FetchLocatorOccupancies()
+	if err != nil {
+		t.Fatalf("FetchLocatorOccupancies error: %v", err)
+	}
+	var found LocatorOccupancy
+	for _, o := range occs {
+		if o.LocatorID == loc.ID {
+			found = o
+		}
+	}
+	if found.UtilPct != 100.0 {
+		t.Errorf("expected UtilPct 100 (volume-dominated), got %f", found.UtilPct)
+	}
+	if found.ColorBand() != "red" {
+		t.Errorf("expected red band, got %s", found.ColorBand())
 	}
 }
