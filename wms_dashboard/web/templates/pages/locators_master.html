@@ -119,17 +119,17 @@
                 {{if (and (eq .MaxWeight 0.0) (eq .MaxVolume 0.0))}}
                 <span class="text-[10px] font-bold text-slate-500">—</span>
                 {{else if ge .UtilPct 90.0}}
-                <span class="text-[10px] font-bold text-rose-400">{{printf "%.0f" .UtilPct}}%</span>
+                <span class="text-[10px] font-bold text-rose-400">{{printf "%.0f" .UtilPct}}%{{if .HasPending}} ↑{{end}}</span>
                 {{else if ge .UtilPct 50.0}}
-                <span class="text-[10px] font-bold text-amber-400">{{printf "%.0f" .UtilPct}}%</span>
+                <span class="text-[10px] font-bold text-amber-400">{{printf "%.0f" .UtilPct}}%{{if .HasPending}} ↑{{end}}</span>
                 {{else}}
-                <span class="text-[10px] font-bold text-emerald-400">{{printf "%.0f" .UtilPct}}%</span>
+                <span class="text-[10px] font-bold text-emerald-400">{{printf "%.0f" .UtilPct}}%{{if .HasPending}} ↑{{end}}</span>
                 {{end}}
                 {{if gt .MaxWeight 0.0}}
-                <span class="text-[8px] text-slate-500 truncate">{{printf "%.1f" .CurrentWeight}}/{{printf "%.1f" .MaxWeight}} kg</span>
+                <span class="text-[8px] text-slate-500 truncate">{{printf "%.1f" .CurrentWeight}}+{{printf "%.1f" .PendingWeight}}/{{printf "%.1f" .MaxWeight}} kg</span>
                 {{end}}
                 {{if gt .MaxVolume 0.0}}
-                <span class="text-[8px] text-slate-500 truncate">{{printf "%.4f" .CurrentVolume}}/{{printf "%.4f" .MaxVolume}} m³</span>
+                <span class="text-[8px] text-slate-500 truncate">{{printf "%.4f" .CurrentVolume}}+{{printf "%.4f" .PendingVolume}}/{{printf "%.4f" .MaxVolume}} m³</span>
                 {{end}}
             </div>
             {{end}}

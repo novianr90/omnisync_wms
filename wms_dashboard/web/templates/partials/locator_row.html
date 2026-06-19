@@ -17,11 +17,11 @@
         {{if (and (eq $occ.MaxWeight 0.0) (eq $occ.MaxVolume 0.0))}}
         <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-800/60 text-slate-500 border border-slate-700/40 uppercase tracking-widest" title="No capacity limit set">—</span>
         {{else if ge $occ.UtilPct 90.0}}
-        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-rose-950/40 text-rose-400 border border-rose-900/40 uppercase tracking-widest" title="{{printf "%.1f" $occ.UtilPct}}%">{{printf "%.0f" $occ.UtilPct}}% FULL</span>
+        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-rose-950/40 text-rose-400 border border-rose-900/40 uppercase tracking-widest" title="{{printf "%.1f" $occ.UtilPct}}% (incl. pending inbound)">{{printf "%.0f" $occ.UtilPct}}% FULL{{if (or (gt $occ.PendingWeight 0.0) (gt $occ.PendingVolume 0.0))}} ↑{{end}}</span>
         {{else if ge $occ.UtilPct 50.0}}
-        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-950/40 text-amber-400 border border-amber-900/40 uppercase tracking-widest" title="{{printf "%.1f" $occ.UtilPct}}%">{{printf "%.0f" $occ.UtilPct}}%</span>
+        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-950/40 text-amber-400 border border-amber-900/40 uppercase tracking-widest" title="{{printf "%.1f" $occ.UtilPct}}% (incl. pending inbound)">{{printf "%.0f" $occ.UtilPct}}%{{if (or (gt $occ.PendingWeight 0.0) (gt $occ.PendingVolume 0.0))}} ↑{{end}}</span>
         {{else}}
-        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 uppercase tracking-widest" title="{{printf "%.1f" $occ.UtilPct}}%">{{printf "%.0f" $occ.UtilPct}}%</span>
+        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 uppercase tracking-widest" title="{{printf "%.1f" $occ.UtilPct}}% (incl. pending inbound)">{{printf "%.0f" $occ.UtilPct}}%{{if (or (gt $occ.PendingWeight 0.0) (gt $occ.PendingVolume 0.0))}} ↑{{end}}</span>
         {{end}}
     </td>
     <td class="px-6 py-4 text-center">

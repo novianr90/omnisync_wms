@@ -100,6 +100,7 @@ To prevent SQLite lockups and crash-prone schema synchronization in production, 
   - `auth_services/migrations/0002_seed_roles.sql`: Seeds the operational system roles.
   - `auth_services/migrations/0003_add_role_permissions.sql`: Creates the `role_permissions` table and seeds default permission assignments.
   - `wms_dashboard/migrations/0002_seed_wms_master.sql`: Seeds default physical layouts, base units, and conversions.
+  - `wms_dashboard/migrations/0017_seed_capacity_data.sql`: Seeds realistic `unit_weight`/`unit_volume` on demo products and `max_weight`/`max_volume` on all seeded locators (200 kg / 0.5 m³ per shelf).
 
 ---
 
@@ -167,6 +168,28 @@ Every core WMS physical modification automatically inserts a ledger row within t
 - **Kitting (Components)**: Debits WIP (`11020`), Credits Inventory (`11000`).
 - **Kitting (Finished)**: Debits Finished Goods (`11010`), Credits WIP (`11020`).
 - **QC Hold & Release**: Logged purely for physical tracking with `QtyChange = 0`.
+
+---
+
+## 📦 Locator Occupancy & Space Utilization
+
+The `/wms/masters/locators` page includes a real-time occupancy heat map computed via a read-only SQL query — no writes or locks.
+
+### How It Works
+- **Confirmed weight/volume**: `SUM(storages.qty_on_hand × products.unit_weight/unit_volume)` grouped by locator.
+- **Pending inbound**: correlated subquery over `inventory_movement_lines` where `movement_type = 'INBOUND'` and `status NOT IN ('JOURNALED', 'COMPLETED', 'REJECTED')`.
+- **Utilization %**: `MAX(confirmed+pending weight ÷ max_weight, confirmed+pending volume ÷ max_volume) × 100`. Falls back to `0` (displays `—`) when no capacity limit is set on a locator.
+- **Colour bands**: Green < 50%, Amber 50–89%, Red ≥ 90%. Locators with pending-only inbound show a `↑` indicator.
+
+### Key Fields Added (migration `0016`)
+| Table | Column | Default |
+|---|---|---|
+| `locators` | `max_weight DECIMAL(10,2)` | `0` (unlimited) |
+| `locators` | `max_volume DECIMAL(10,4)` | `0` (unlimited) |
+| `products` | `unit_weight DECIMAL(10,4)` | `0` |
+| `products` | `unit_volume DECIMAL(10,6)` | `0` |
+
+> **Important**: Utilization will always show `0%` (even with stock or in-progress movements) if `unit_weight` and `unit_volume` are both `0` on all products, since `SUM(qty × 0) = 0`. Set these values via the Products master UI or via migration `0017`.
 
 ---
 

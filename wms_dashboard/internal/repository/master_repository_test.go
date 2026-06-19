@@ -414,3 +414,85 @@ func TestLocatorOccupancy_MaxOfWeightAndVolume(t *testing.T) {
 		t.Errorf("expected red band, got %s", found.ColorBand())
 	}
 }
+
+func TestFetchLocatorOccupancies_PendingInbound(t *testing.T) {
+	setupTestDB(t)
+
+	wh := &models.Warehouse{ID: uuid.New().String(), Code: "WH-PEND", Name: "Pending Hub", IsActive: true}
+	database.DB.Create(wh)
+
+	loc := &models.Locator{
+		ID: uuid.New().String(), WarehouseID: wh.ID,
+		Code: "WH-PEND-A-1", Zone: "A", Aisle: "1", Shelf: "1", Level: "1", IsActive: true,
+		MaxWeight: 100, MaxVolume: 1.0,
+	}
+	database.DB.Create(loc)
+
+	prod := &models.Product{ID: uuid.New().String(), SKU: "PEND-PROD", Name: "Pending Item", UnitWeight: 20, UnitVolume: 0.2}
+	database.DB.Create(prod)
+
+	// No stock on hand — locator is empty
+	// But there is an open INBOUND movement for 3 units → 60kg pending / 0.6m³ pending → 60% util
+	mvt := &models.InventoryMovement{
+		ID:           uuid.New().String(),
+		DocumentNo:   "MOV-PEND-001",
+		MovementType: "INBOUND",
+		Status:       "OPEN",
+		CreatedBy:    "test",
+	}
+	database.DB.Create(mvt)
+
+	line := &models.InventoryMovementLine{
+		ID:                uuid.New().String(),
+		MovementID:        mvt.ID,
+		ProductID:         prod.ID,
+		ToLocatorID:       loc.ID,
+		RequestedQuantity: 3,
+	}
+	database.DB.Create(line)
+
+	occs, err := FetchLocatorOccupancies()
+	if err != nil {
+		t.Fatalf("FetchLocatorOccupancies error: %v", err)
+	}
+
+	var found LocatorOccupancy
+	for _, o := range occs {
+		if o.LocatorID == loc.ID {
+			found = o
+		}
+	}
+
+	// Confirmed stock = 0; pending = 3 × 20 = 60kg → 60% util
+	if found.CurrentWeight != 0 {
+		t.Errorf("expected CurrentWeight 0 (no stock), got %f", found.CurrentWeight)
+	}
+	if !approxEq(found.PendingWeight, 60.0, 0.001) {
+		t.Errorf("expected PendingWeight ~60, got %f", found.PendingWeight)
+	}
+	if !approxEq(found.UtilPct, 60.0, 0.001) {
+		t.Errorf("expected UtilPct ~60 (from pending), got %f", found.UtilPct)
+	}
+	if found.ColorBand() != "amber" {
+		t.Errorf("expected amber band, got %s", found.ColorBand())
+	}
+	if !found.HasPending() {
+		t.Errorf("expected HasPending() = true")
+	}
+
+	// Reject the movement → pending should drop to 0
+	mvt.Status = "REJECTED"
+	database.DB.Save(mvt)
+
+	occs2, _ := FetchLocatorOccupancies()
+	for _, o := range occs2 {
+		if o.LocatorID == loc.ID {
+			if o.PendingWeight != 0 {
+				t.Errorf("after rejection, expected PendingWeight 0, got %f", o.PendingWeight)
+			}
+			if o.UtilPct != 0 {
+				t.Errorf("after rejection, expected UtilPct 0, got %f", o.UtilPct)
+			}
+		}
+	}
+}

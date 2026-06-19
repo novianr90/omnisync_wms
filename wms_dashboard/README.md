@@ -10,9 +10,10 @@ The main operational dashboard for Omnisync WMS. Provides real-time inventory vi
 |---|---|
 | **Live Inventory View** | Stock levels per product/locator with FIFO batch tracking |
 | **Inventory Movements** | Create inbound, outbound, or transfer orders with claim → journal → complete lifecycle |
-| **Master Data: Products** | SKU catalog with base Unit of Measure assignment |
+| **Master Data: Products** | SKU catalog with base Unit of Measure, unit weight (kg), and unit volume (m³) |
 | **Master Data: Warehouses** | Physical facility registry with active/inactive status |
-| **Master Data: Locators** | Shelf-level coordinates (Zone / Aisle / Shelf / Level) |
+| **Master Data: Locators** | Shelf-level coordinates (Zone / Aisle / Shelf / Level) with optional weight/volume capacity limits |
+| **Locator Occupancy Heat Map** | Real-time space utilization per locator — confirmed stock + pending inbound, colour-coded Green/Amber/Red with grid and table views |
 | **Master Data: UoM** | Standard units (kg, pcs, box…) with user-defined conversion rules |
 | **UoM Conversions** | Dynamic formula rules (e.g. `1 pack = 1.0 kg`) for inbound processing |
 | **RBAC** | `admin` can mutate master data; `operator` has read-only access |
