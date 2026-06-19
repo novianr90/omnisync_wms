@@ -62,21 +62,21 @@
             <p class="text-2xl font-bold text-slate-100">${{ printf "%.2f" .Summary.TotalValue }}</p>
             <p class="text-xs text-slate-500 mt-1">{{ .Summary.TotalQty }} units · {{ .Summary.UniqueProducts }} SKUs</p>
         </div>
-        <div class="bg-emerald-950/30 border border-emerald-800/40 rounded-xl p-5 backdrop-blur-sm">
+        <div class="bg-emerald-950/30 border border-slate-800 rounded-xl p-5 backdrop-blur-sm">
             <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Fresh (0–30 days)</p>
             <p class="text-2xl font-bold text-emerald-400">${{ printf "%.2f" .Summary.Bucket0_30 }}</p>
             {{ if gt .Pct0_30 0.0 }}
             <p class="text-xs text-emerald-700 mt-1">{{ printf "%.1f" .Pct0_30 }}% of total</p>
             {{ end }}
         </div>
-        <div class="bg-amber-950/30 border border-amber-800/40 rounded-xl p-5 backdrop-blur-sm">
+        <div class="bg-amber-950/30 border border-slate-800 rounded-xl p-5 backdrop-blur-sm">
             <p class="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Moderate (31–90 days)</p>
             <p class="text-2xl font-bold text-amber-400">${{ printf "%.2f" .Summary.Bucket31_90 }}</p>
             {{ if gt .Pct31_90 0.0 }}
             <p class="text-xs text-amber-700 mt-1">{{ printf "%.1f" .Pct31_90 }}% of total</p>
             {{ end }}
         </div>
-        <div class="bg-rose-950/30 border border-rose-800/40 rounded-xl p-5 backdrop-blur-sm">
+        <div class="bg-rose-950/30 border border-slate-800 rounded-xl p-5 backdrop-blur-sm">
             <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">Slow-moving (91+ days)</p>
             <p class="text-2xl font-bold text-rose-400">${{ printf "%.2f" .Summary.Bucket91Plus }}</p>
             {{ if gt .Pct91Plus 0.0 }}

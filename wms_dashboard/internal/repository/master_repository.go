@@ -169,6 +169,109 @@ func DeleteLocator(id string) error {
 	})
 }
 
+// LocatorOccupancy is a query result holding computed occupancy metrics for one locator.
+type LocatorOccupancy struct {
+	LocatorID      string
+	LocatorCode    string
+	MaxWeight      float64
+	MaxVolume      float64
+	CurrentWeight  float64 // confirmed: qty_on_hand × unit_weight
+	CurrentVolume  float64 // confirmed: qty_on_hand × unit_volume
+	PendingWeight  float64 // in-progress inbound: requested_qty × unit_weight
+	PendingVolume  float64 // in-progress inbound: requested_qty × unit_volume
+	UtilPct        float64 // max((confirmed+pending)/max); 0 when no limit set
+}
+
+// HasPending reports whether there is uncommitted inbound stock en route.
+func (o LocatorOccupancy) HasPending() bool {
+	return o.PendingWeight > 0 || o.PendingVolume > 0
+}
+
+// ColorBand returns the CSS color band for template rendering.
+func (o LocatorOccupancy) ColorBand() string {
+	if o.UtilPct >= 90 {
+		return "red"
+	}
+	if o.UtilPct >= 50 {
+		return "amber"
+	}
+	return "green"
+}
+
+// FetchLocatorOccupancies returns all locators with confirmed + pending inbound occupancy.
+// Pending = INBOUND movements not yet JOURNALED, COMPLETED, or REJECTED.
+// Read-only SELECT — no writes or locks.
+func FetchLocatorOccupancies() ([]LocatorOccupancy, error) {
+	rows, err := database.DB.Raw(`
+		SELECT
+			l.id         AS locator_id,
+			l.code       AS locator_code,
+			l.max_weight,
+			l.max_volume,
+			COALESCE(SUM(s.qty_on_hand * p.unit_weight), 0) AS current_weight,
+			COALESCE(SUM(s.qty_on_hand * p.unit_volume), 0) AS current_volume,
+			COALESCE((
+				SELECT SUM(ml.requested_quantity * p2.unit_weight)
+				FROM inventory_movement_lines ml
+				JOIN inventory_movements m  ON m.id  = ml.movement_id
+				JOIN products p2            ON p2.id = ml.product_id AND p2.deleted_at IS NULL
+				WHERE ml.to_locator_id = l.id
+				  AND m.movement_type  = 'INBOUND'
+				  AND m.status NOT IN ('JOURNALED', 'COMPLETED', 'REJECTED')
+			), 0) AS pending_weight,
+			COALESCE((
+				SELECT SUM(ml.requested_quantity * p2.unit_volume)
+				FROM inventory_movement_lines ml
+				JOIN inventory_movements m  ON m.id  = ml.movement_id
+				JOIN products p2            ON p2.id = ml.product_id AND p2.deleted_at IS NULL
+				WHERE ml.to_locator_id = l.id
+				  AND m.movement_type  = 'INBOUND'
+				  AND m.status NOT IN ('JOURNALED', 'COMPLETED', 'REJECTED')
+			), 0) AS pending_volume
+		FROM locators l
+		LEFT JOIN storages s ON s.locator_id = l.id
+		LEFT JOIN products p ON p.id = s.product_id AND p.deleted_at IS NULL
+		WHERE l.deleted_at IS NULL
+		GROUP BY l.id, l.code, l.max_weight, l.max_volume
+		ORDER BY l.code ASC
+	`).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []LocatorOccupancy
+	for rows.Next() {
+		var o LocatorOccupancy
+		if err := rows.Scan(
+			&o.LocatorID, &o.LocatorCode,
+			&o.MaxWeight, &o.MaxVolume,
+			&o.CurrentWeight, &o.CurrentVolume,
+			&o.PendingWeight, &o.PendingVolume,
+		); err != nil {
+			return nil, err
+		}
+		if o.MaxWeight > 0 || o.MaxVolume > 0 {
+			totalWeight := o.CurrentWeight + o.PendingWeight
+			totalVolume := o.CurrentVolume + o.PendingVolume
+			var wPct, vPct float64
+			if o.MaxWeight > 0 {
+				wPct = (totalWeight / o.MaxWeight) * 100
+			}
+			if o.MaxVolume > 0 {
+				vPct = (totalVolume / o.MaxVolume) * 100
+			}
+			if wPct > vPct {
+				o.UtilPct = wPct
+			} else {
+				o.UtilPct = vPct
+			}
+		}
+		result = append(result, o)
+	}
+	return result, nil
+}
+
 // ==========================================
 // 4. UOM MASTER CRUD
 // ==========================================
