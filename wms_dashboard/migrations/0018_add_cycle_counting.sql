@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS cycle_counts (
     status VARCHAR(20) DEFAULT 'DRAFT',
     remarks TEXT,
     created_by VARCHAR(36) NOT NULL,
-    adjusted_at DATETIME,
-    created_at DATETIME,
-    updated_at DATETIME
+    adjusted_at TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS cycle_count_lines (
