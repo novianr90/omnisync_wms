@@ -83,6 +83,34 @@ func seedUsers() {
 	}
 }
 
+func createAdminCmd(email, password string) {
+	hashPassword := func(pwd string) string {
+		bytes, _ := bcrypt.GenerateFromPassword([]byte(pwd), 14)
+		return string(bytes)
+	}
+
+	var adminRole models.Role
+	if err := database.DB.Where("name = ?", "System Admin").First(&adminRole).Error; err != nil {
+		log.Println("Could not find System Admin role. Have migrations run?")
+		return
+	}
+
+	admin := models.User{
+		ID:           uuid.New().String(),
+		Email:        email,
+		PasswordHash: hashPassword(password),
+		FirstName:    "Omni",
+		LastName:     "Admin",
+		RoleID:       adminRole.ID,
+		IsActive:     true,
+	}
+
+	if err := database.DB.Create(&admin).Error; err != nil {
+		log.Fatalf("Failed to create admin: %v", err)
+	}
+	log.Printf("Admin user created successfully: %s", email)
+}
+
 func main() {
 	// 0. Load .env file (ignored if not present — e.g. in production with real env vars)
 	if err := godotenv.Load(); err != nil {
@@ -92,8 +120,17 @@ func main() {
 	// 1. Initialize Database
 	database.InitDB()
 
-	// 2. Seed Default Users
-	seedUsers()
+	// Check CLI arguments for creating admin
+	if len(os.Args) >= 4 && os.Args[1] == "create-admin" {
+		createAdminCmd(os.Args[2], os.Args[3])
+		return
+	}
+
+	// 2. Seed Default Users (Skip if production)
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv != "production" {
+		seedUsers()
+	}
 
 	// 3. Initialize Go Fiber Application
 	app := fiber.New(fiber.Config{

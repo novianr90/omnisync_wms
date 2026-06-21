@@ -42,7 +42,15 @@ func RunMigrations(db *gorm.DB, migrationsDir string) {
 	// Sort migrations alphabetically
 	sort.Strings(sqlFiles)
 
+	appEnv := os.Getenv("APP_ENV")
+
 	for _, fileName := range sqlFiles {
+		// Skip dummy data seed in production
+		if appEnv == "production" && fileName == "0002_seed_wms_master.sql" {
+			log.Printf("Skipping dummy data seed %s in production", fileName)
+			continue
+		}
+
 		var count int64
 		db.Model(&SchemaMigration{}).Where("version = ?", fileName).Count(&count)
 
