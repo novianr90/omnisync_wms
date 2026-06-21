@@ -23,7 +23,7 @@ func CreateCycleCount(userID string, locatorIDs []string) (*models.CycleCount, e
 		count = models.CycleCount{
 			ID:         uuid.New().String(),
 			DocumentNo: docNo,
-			Status:     "IN_PROGRESS",
+			Status:     "CREATED",
 			CreatedBy:  userID,
 			CreatedAt:  time.Now(),
 			UpdatedAt:  time.Now(),
@@ -112,6 +112,12 @@ func UpdateCycleCountLine(lineID string, countedQty int) error {
 
 		return tx.Save(&line).Error
 	})
+}
+
+// UpdateCycleCountStatus safely transitions a count document's status
+// ponytail: single method handles generic transitions without bloated logic
+func UpdateCycleCountStatus(countID, newStatus string) error {
+	return database.DB.Model(&models.CycleCount{}).Where("id = ?", countID).Update("status", newStatus).Error
 }
 
 // ReconcileCycleCount approves the count, generates an adjustment for variances, and unfreezes locators.
@@ -205,8 +211,8 @@ func CancelCycleCount(countID string) error {
 			return err
 		}
 
-		if count.Status != "IN_PROGRESS" {
-			return errors.New("only IN_PROGRESS counts can be cancelled")
+		if count.Status != "IN_PROGRESS" && count.Status != "CREATED" {
+			return errors.New("only IN_PROGRESS or CREATED counts can be canceled")
 		}
 
 		// Collect locators to unfreeze
@@ -225,7 +231,7 @@ func CancelCycleCount(countID string) error {
 			}
 		}
 
-		count.Status = "CANCELLED"
+		count.Status = "CANCELED"
 		return tx.Save(&count).Error
 	})
 }

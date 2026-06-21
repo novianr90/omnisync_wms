@@ -227,7 +227,7 @@ type QCHold struct {
 type CycleCount struct {
 	ID         string    `gorm:"type:varchar(36);primaryKey" json:"id"`
 	DocumentNo string    `gorm:"type:varchar(50);uniqueIndex;not null" json:"document_no"`
-	Status     string    `gorm:"type:varchar(20);default:'DRAFT'" json:"status"` // DRAFT, IN_PROGRESS, RECONCILED, CANCELLED
+	Status     string    `gorm:"type:varchar(20);default:'CREATED'" json:"status"` // CREATED, IN_PROGRESS, RECONCILED, CANCELED, COMPLETED
 	Remarks    string    `gorm:"type:text" json:"remarks"`
 	CreatedBy  string    `gorm:"type:varchar(36);not null" json:"created_by"`
 	AdjustedAt *time.Time `json:"adjusted_at,omitempty"`

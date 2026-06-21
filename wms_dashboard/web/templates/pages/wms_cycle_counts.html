@@ -33,14 +33,16 @@
                     <tr class="hover:bg-slate-800/20 transition-colors duration-150">
                         <td class="px-6 py-4 font-medium text-slate-300">{{ .DocumentNo }}</td>
                         <td class="px-6 py-4">
-                            {{ if eq .Status "DRAFT" }}
-                                <span class="px-2 py-1 rounded border border-slate-700 bg-slate-800/50 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">DRAFT</span>
+                            {{ if eq .Status "CREATED" }}
+                                <span class="px-2 py-1 rounded border border-slate-700 bg-slate-800/50 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">CREATED</span>
                             {{ else if eq .Status "IN_PROGRESS" }}
                                 <span class="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-[10px] uppercase tracking-wider text-amber-400 font-semibold">IN PROGRESS</span>
                             {{ else if eq .Status "RECONCILED" }}
                                 <span class="px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">RECONCILED</span>
-                            {{ else if eq .Status "CANCELLED" }}
-                                <span class="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-[10px] uppercase tracking-wider text-rose-400 font-semibold">CANCELLED</span>
+                            {{ else if eq .Status "CANCELED" }}
+                                <span class="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-[10px] uppercase tracking-wider text-rose-400 font-semibold">CANCELED</span>
+                            {{ else if eq .Status "COMPLETED" }}
+                                <span class="px-2 py-1 rounded border border-indigo-500/30 bg-indigo-500/10 text-[10px] uppercase tracking-wider text-indigo-400 font-semibold">COMPLETED</span>
                             {{ else }}
                                 <span class="px-2 py-1 rounded border border-slate-700 bg-slate-800/50 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">{{ .Status }}</span>
                             {{ end }}

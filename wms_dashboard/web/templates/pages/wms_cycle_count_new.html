@@ -35,7 +35,14 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
 <script>
+const notyf = new Notyf({
+    duration: 3000,
+    position: { x: 'right', y: 'top' },
+    types: [{ type: 'error', background: '#e11d48', duration: 4000 }]
+});
+
 document.getElementById('newCountForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -43,7 +50,7 @@ document.getElementById('newCountForm').addEventListener('submit', async (e) => 
     const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
     
     if (selectedOptions.length === 0) {
-        alert("Please select at least one locator");
+        notyf.error("Please select at least one locator");
         return;
     }
 
@@ -60,11 +67,11 @@ document.getElementById('newCountForm').addEventListener('submit', async (e) => 
             // But doing a full refresh is okay here, or we can trigger htmx:
             window.location.href = `/wms/cycle-counts/${data.id}`;
         } else {
-            alert("Error: " + data.error);
+            notyf.error("Error: " + data.error);
         }
     } catch (err) {
         console.error(err);
-        alert("An error occurred");
+        notyf.error("An error occurred");
     }
 });
 </script>

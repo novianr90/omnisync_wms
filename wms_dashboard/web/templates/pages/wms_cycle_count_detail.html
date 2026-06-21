@@ -9,26 +9,39 @@
       </div>
       <div class="flex items-center gap-3">
         <h3 class="font-bold text-xl text-slate-100 font-outfit">Count Sheet: {{ .Count.DocumentNo }}</h3>
-        {{ if eq .Count.Status "DRAFT" }}
-          <span class="px-2 py-1 rounded border border-slate-700 bg-slate-800/50 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">DRAFT</span>
+        {{ if eq .Count.Status "CREATED" }}
+          <span class="px-2 py-1 rounded border border-slate-700 bg-slate-800/50 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">CREATED</span>
         {{ else if eq .Count.Status "IN_PROGRESS" }}
           <span class="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-[10px] uppercase tracking-wider text-amber-400 font-semibold">IN PROGRESS (Frozen)</span>
         {{ else if eq .Count.Status "RECONCILED" }}
           <span class="px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">RECONCILED</span>
-        {{ else if eq .Count.Status "CANCELLED" }}
-          <span class="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-[10px] uppercase tracking-wider text-rose-400 font-semibold">CANCELLED</span>
+        {{ else if eq .Count.Status "CANCELED" }}
+          <span class="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-[10px] uppercase tracking-wider text-rose-400 font-semibold">CANCELED</span>
+        {{ else if eq .Count.Status "COMPLETED" }}
+          <span class="px-2 py-1 rounded border border-indigo-500/30 bg-indigo-500/10 text-[10px] uppercase tracking-wider text-indigo-400 font-semibold">COMPLETED</span>
         {{ end }}
       </div>
     </div>
     
     <div class="flex items-center gap-2">
-      {{ if eq .Count.Status "IN_PROGRESS" }}
-        {{ if .IsAdmin }}
-          <button id="btnCancel" class="px-4 py-2 bg-slate-800 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs rounded-lg border border-slate-700 hover:border-rose-500/50 transition duration-200 cursor-pointer">
+      {{ if .IsAdmin }}
+        {{ if eq .Count.Status "CREATED" }}
+          <button id="btnCancel" class="px-4 py-2 bg-slate-800 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs rounded-lg border border-slate-700 hover:border-rose-500/50 transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900">
             Cancel Count
           </button>
-          <button id="btnReconcile" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg shadow-lg shadow-indigo-500/10 transition duration-200 cursor-pointer">
+          <button id="btnStart" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg shadow-lg shadow-indigo-500/10 transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900">
+            Start Count
+          </button>
+        {{ else if eq .Count.Status "IN_PROGRESS" }}
+          <button id="btnCancel" class="px-4 py-2 bg-slate-800 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs rounded-lg border border-slate-700 hover:border-rose-500/50 transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900">
+            Cancel Count
+          </button>
+          <button id="btnReconcile" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg shadow-lg shadow-indigo-500/10 transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900">
             Reconcile & Unfreeze
+          </button>
+        {{ else if eq .Count.Status "RECONCILED" }}
+          <button id="btnComplete" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg shadow-lg shadow-emerald-500/10 transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900">
+            Complete Count
           </button>
         {{ end }}
       {{ end }}
@@ -84,8 +97,18 @@
   </div>
 </div>
 
-{{ if eq .Count.Status "IN_PROGRESS" }}
+<script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
 <script>
+const notyf = new Notyf({
+    duration: 3000,
+    position: { x: 'right', y: 'top' },
+    types: [
+        { type: 'error', background: '#e11d48', duration: 4000 },
+        { type: 'success', background: '#10b981' }
+    ]
+});
+
+{{ if eq .Count.Status "IN_PROGRESS" }}
 document.querySelectorAll('.count-input').forEach(input => {
     input.addEventListener('change', async (e) => {
         const lineId = e.target.dataset.lineId;
@@ -111,13 +134,15 @@ document.querySelectorAll('.count-input').forEach(input => {
             });
             if (!res.ok) {
                 const data = await res.json();
-                alert("Failed to save count: " + data.error);
+                notyf.error("Failed to save count: " + data.error);
             }
         } catch(err) {
             console.error(err);
+            notyf.error("Network error while saving count");
         }
     });
 });
+{{ end }}
 
 const btnReconcile = document.getElementById('btnReconcile');
 if (btnReconcile) {
@@ -126,15 +151,16 @@ if (btnReconcile) {
         
         try {
             const res = await fetch(`/wms/cycle-counts/{{ .Count.ID }}/reconcile`, { method: 'POST' });
-            const data = await res.json();
             if (res.ok) {
-                alert("Success");
-                window.location.reload();
+                notyf.success("Successfully reconciled");
+                setTimeout(() => window.location.reload(), 1000);
             } else {
-                alert("Error: " + data.error);
+                const data = await res.json();
+                notyf.error("Error: " + data.error);
             }
         } catch(err) {
             console.error(err);
+            notyf.error("Network error");
         }
     });
 }
@@ -147,16 +173,63 @@ if (btnCancel) {
         try {
             const res = await fetch(`/wms/cycle-counts/{{ .Count.ID }}/cancel`, { method: 'POST' });
             if (res.ok) {
-                window.location.reload();
+                notyf.success("Count canceled");
+                setTimeout(() => window.location.reload(), 1000);
             } else {
                 const data = await res.json();
-                alert("Error: " + data.error);
+                notyf.error("Error: " + data.error);
             }
         } catch(err) {
             console.error(err);
+            notyf.error("Network error");
+        }
+    });
+}
+
+const btnStart = document.getElementById('btnStart');
+if (btnStart) {
+    btnStart.addEventListener('click', async () => {
+        try {
+            const res = await fetch(`/wms/cycle-counts/{{ .Count.ID }}/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: "IN_PROGRESS" })
+            });
+            if (res.ok) {
+                notyf.success("Count started");
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                const data = await res.json();
+                notyf.error("Error: " + data.error);
+            }
+        } catch(err) {
+            console.error(err);
+            notyf.error("Network error");
+        }
+    });
+}
+
+const btnComplete = document.getElementById('btnComplete');
+if (btnComplete) {
+    btnComplete.addEventListener('click', async () => {
+        try {
+            const res = await fetch(`/wms/cycle-counts/{{ .Count.ID }}/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: "COMPLETED" })
+            });
+            if (res.ok) {
+                notyf.success("Count completed");
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                const data = await res.json();
+                notyf.error("Error: " + data.error);
+            }
+        } catch(err) {
+            console.error(err);
+            notyf.error("Network error");
         }
     });
 }
 </script>
-{{ end }}
 {{ end }}

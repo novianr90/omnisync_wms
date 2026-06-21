@@ -181,6 +181,48 @@ func CancelCycleCount(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"success": true,
-		"message": "Cycle count cancelled successfully",
+		"message": "Cycle count canceled successfully",
+	})
+}
+
+func UpdateCycleCountStatus(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	type Request struct {
+		Status string `json:"status"`
+	}
+
+	var req Request
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request payload"})
+	}
+
+	if req.Status == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "status is required"})
+	}
+
+	// Verify the cycle count exists
+	count, err := repository.GetCycleCountByID(id)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Cycle count not found"})
+	}
+
+	// Basic validation of valid transitions
+	if req.Status == "IN_PROGRESS" && count.Status != "CREATED" {
+		return c.Status(400).JSON(fiber.Map{"error": "Only CREATED counts can be started"})
+	}
+	if req.Status == "COMPLETED" && count.Status != "RECONCILED" {
+		return c.Status(400).JSON(fiber.Map{"error": "Only RECONCILED counts can be completed"})
+	}
+
+	err = repository.UpdateCycleCountStatus(id, req.Status)
+	if err != nil {
+		slog.Error("Failed to update cycle count status", slog.Any("error", err))
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Cycle count status updated",
 	})
 }

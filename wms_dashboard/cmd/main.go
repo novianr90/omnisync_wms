@@ -116,6 +116,7 @@ func main() {
 	app.Post("/wms/cycle-counts/:id/lines", handlers.UpdateCountSheet)
 	app.Post("/wms/cycle-counts/:id/reconcile", middleware.RequireAdmin(), handlers.ReconcileCycleCount)
 	app.Post("/wms/cycle-counts/:id/cancel", middleware.RequireAdmin(), handlers.CancelCycleCount)
+	app.Post("/wms/cycle-counts/:id/status", middleware.RequireAdmin(), handlers.UpdateCycleCountStatus)
 
 	// --- INVENTORY LEDGER ---
 	app.Get("/wms/ledger", middleware.RequireSystemAdmin(), handlers.ServeLedger)

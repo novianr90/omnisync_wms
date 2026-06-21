@@ -4,8 +4,8 @@ const fs = require('fs');
 const http = require('http');
 
 const PIDS_FILE = path.join(__dirname, '.e2e-pids.json');
-const WMS_BASE_PORT = 9901;
-const AUTH_PORT = 8000;
+const WMS_BASE_PORT = 9991;
+const AUTH_PORT = 8080;
 
 const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 const usePostgres = DB_TYPE === 'postgres';
