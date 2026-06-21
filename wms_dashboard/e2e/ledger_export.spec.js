@@ -9,7 +9,7 @@ test.describe('Inventory Ledger Export', () => {
 
     test('should render export buttons and download PDF/Excel reports', async ({ page }) => {
         // Navigate to Dashboard
-        await page.goto('http://localhost:9901/');
+        await page.goto('/');
         
         // Navigate to Ledger
         const ledgerLink = page.locator('a[href="/wms/ledger"]');

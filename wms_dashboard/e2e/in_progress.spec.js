@@ -9,7 +9,7 @@ test.describe('In-Progress Documents page', () => {
 
     test('should allow user to navigate to and interact with in-progress documents page', async ({ page }) => {
         // Navigate to the Dashboard first
-        await page.goto('http://localhost:9901/');
+        await page.goto('/');
         
         // Wait for the sidebar to load and click on In Progress Docs
         const inProgressLink = page.locator('a[href="/wms/in-progress"]');

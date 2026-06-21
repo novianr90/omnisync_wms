@@ -13,7 +13,7 @@ test.describe('Dynamic RBAC access control', () => {
         const email = `specialist-${uniqueId}@omnisync.com`;
 
         // 2. Navigate to Roles Registry and create a custom Specialist role
-        await page.goto('http://localhost:9901/wms/system/roles');
+        await page.goto('/wms/system/roles');
         await page.locator('button:has-text("Create New Role")').click();
         await page.fill('#new-role-modal input[name="name"]', roleName);
         await page.fill('#new-role-modal textarea[name="description"]', 'Custom specialist role');
@@ -28,7 +28,7 @@ test.describe('Dynamic RBAC access control', () => {
         await expect(page.locator('.notyf__message').last()).toContainText('Role created successfully');
 
         // 3. Navigate to User Account Registry and assign the custom role to a new user
-        await page.goto('http://localhost:9901/wms/system/users');
+        await page.goto('/wms/system/users');
         await page.locator('button:has-text("Add New User")').click();
         await page.fill('#new-user-modal input[name="first_name"]', 'Jane');
         await page.fill('#new-user-modal input[name="last_name"]', 'Specialist');
@@ -41,18 +41,18 @@ test.describe('Dynamic RBAC access control', () => {
         await expect(page.locator('.notyf__message').last()).toContainText('User created successfully');
 
         // 4. Log out System Admin
-        await page.goto('http://localhost:9901/logout');
+        await page.goto('/logout');
         await page.waitForURL('**/login');
 
         // 5. Log in as the new user
         await login(page, email, 'password123');
 
         // 6. Verify Jane can view products master (modify_masters)
-        await page.goto('http://localhost:9901/wms/masters/products');
+        await page.goto('/wms/masters/products');
         await expect(page.locator('h3:has-text("Product Master Maintenance")')).toBeVisible();
 
         // 7. Verify Jane is denied access to Ledger (view_ledger)
-        await page.goto('http://localhost:9901/wms/ledger');
+        await page.goto('/wms/ledger');
         await expect(page.locator('body')).toContainText('Access Denied');
     });
 });

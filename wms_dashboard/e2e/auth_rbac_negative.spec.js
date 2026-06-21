@@ -30,7 +30,7 @@ test.describe('Authentication & RBAC Negative Flows', () => {
     await login(page, 'operator@omnisync.com', 'operator123');
 
     // Operator CAN view the list
-    await page.goto('http://localhost:9901/wms/masters/products');
+    await page.goto('/wms/masters/products');
     
     // Operator should NOT see the Add Product button
     const addBtn = page.locator('button[hx-get="/wms/masters/products/new"]');
@@ -40,7 +40,7 @@ test.describe('Authentication & RBAC Negative Flows', () => {
   test('Non-system-admin blocked from /wms/system/roles — shows Access Denied', async ({ page }) => {
     await login(page, 'operator@omnisync.com', 'operator123');
 
-    await page.goto('http://localhost:9901/wms/system/roles');
+    await page.goto('/wms/system/roles');
     await expect(page.locator('body')).toContainText(/Access Denied|403/);
   });
 
