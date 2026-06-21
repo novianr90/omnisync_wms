@@ -12,8 +12,8 @@ CREATE TABLE qc_holds (
     notes TEXT,
     created_by VARCHAR(36) NOT NULL,
     released_by VARCHAR(36),
-    created_at DATETIME NOT NULL,
-    released_at DATETIME,
+    created_at TIMESTAMP NOT NULL,
+    released_at TIMESTAMP,
     FOREIGN KEY (storage_id) REFERENCES storages(id)
 );
 

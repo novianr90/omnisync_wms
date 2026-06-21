@@ -3,8 +3,8 @@ CREATE TABLE IF NOT EXISTS uoms (
     code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    created_at DATETIME,
-    deleted_at DATETIME
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS products (
@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS products (
     category VARCHAR(100),
     price DECIMAL(12,2) DEFAULT 0.00,
     uom_id VARCHAR(36),
-    created_at DATETIME,
-    deleted_at DATETIME,
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP,
     FOREIGN KEY (uom_id) REFERENCES uoms(id) ON DELETE SET NULL
 );
 
@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS uom_conversions (
     from_uom_id VARCHAR(36) NOT NULL,
     to_uom_id VARCHAR(36) NOT NULL,
     multiply_factor DECIMAL(12,6) DEFAULT 1.0,
-    created_at DATETIME,
-    deleted_at DATETIME,
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (from_uom_id) REFERENCES uoms(id) ON DELETE CASCADE,
     FOREIGN KEY (to_uom_id) REFERENCES uoms(id) ON DELETE CASCADE
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS warehouses (
     name VARCHAR(100) NOT NULL,
     address TEXT,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at DATETIME,
-    deleted_at DATETIME
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS locators (
@@ -52,8 +52,8 @@ CREATE TABLE IF NOT EXISTS locators (
     level VARCHAR(20) NOT NULL,
     code VARCHAR(100) NOT NULL UNIQUE,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at DATETIME,
-    deleted_at DATETIME,
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP,
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
@@ -63,10 +63,10 @@ CREATE TABLE IF NOT EXISTS storages (
     locator_id VARCHAR(36) NOT NULL,
     batch_number VARCHAR(100) NOT NULL,
     serial_number VARCHAR(100),
-    received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     qty_on_hand INTEGER DEFAULT 0,
     qty_reserved INTEGER DEFAULT 0,
-    updated_at DATETIME,
+    updated_at TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (locator_id) REFERENCES locators(id) ON DELETE CASCADE
 );
@@ -80,8 +80,8 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     assigned_operator_id VARCHAR(36),
     remarks TEXT,
     rejection_reason TEXT,
-    created_at DATETIME,
-    updated_at DATETIME
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS inventory_movement_lines (

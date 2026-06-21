@@ -2,12 +2,12 @@ CREATE TABLE IF NOT EXISTS accounts (
     account_no VARCHAR(50) PRIMARY KEY,
     account_name VARCHAR(100) NOT NULL,
     account_type VARCHAR(50) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS inventory_ledgers (
     id VARCHAR(36) PRIMARY KEY,
-    transaction_date DATETIME NOT NULL,
+    transaction_date TIMESTAMP NOT NULL,
     product_id VARCHAR(36) NOT NULL,
     locator_id VARCHAR(36) NOT NULL,
     batch_number VARCHAR(100) NOT NULL,
