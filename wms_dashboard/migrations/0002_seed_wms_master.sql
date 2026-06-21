@@ -7,26 +7,26 @@ INSERT INTO uoms (id, code, name, description, created_at) VALUES
 
 -- 1. Seed Warehouses
 INSERT INTO warehouses (id, code, name, address, is_active, created_at) VALUES 
-('wh-main-0001', 'WH-MAIN', 'Central Logistics Hub', 'Golden Gate Sector 4, Silicon Valley', 1, CURRENT_TIMESTAMP);
+('wh-main-0001', 'WH-MAIN', 'Central Logistics Hub', 'Golden Gate Sector 4, Silicon Valley', TRUE, CURRENT_TIMESTAMP);
 
 -- 2. Seed Locators (Shelves)
 INSERT INTO locators (id, warehouse_id, zone, aisle, shelf, level, code, is_active, created_at) VALUES 
-('loc-001', 'wh-main-0001', 'Zone-A', 'Aisle-1', 'Shelf-1', 'Level-1', 'WH-MAIN-Zone-A-Aisle-1-Shelf-1-Level-1', 1, CURRENT_TIMESTAMP),
-('loc-002', 'wh-main-0001', 'Zone-A', 'Aisle-1', 'Shelf-1', 'Level-2', 'WH-MAIN-Zone-A-Aisle-1-Shelf-1-Level-2', 1, CURRENT_TIMESTAMP),
-('loc-003', 'wh-main-0001', 'Zone-A', 'Aisle-1', 'Shelf-2', 'Level-1', 'WH-MAIN-Zone-A-Aisle-1-Shelf-2-Level-1', 1, CURRENT_TIMESTAMP),
-('loc-004', 'wh-main-0001', 'Zone-A', 'Aisle-1', 'Shelf-2', 'Level-2', 'WH-MAIN-Zone-A-Aisle-1-Shelf-2-Level-2', 1, CURRENT_TIMESTAMP),
-('loc-005', 'wh-main-0001', 'Zone-A', 'Aisle-2', 'Shelf-1', 'Level-1', 'WH-MAIN-Zone-A-Aisle-2-Shelf-1-Level-1', 1, CURRENT_TIMESTAMP),
-('loc-006', 'wh-main-0001', 'Zone-A', 'Aisle-2', 'Shelf-1', 'Level-2', 'WH-MAIN-Zone-A-Aisle-2-Shelf-1-Level-2', 1, CURRENT_TIMESTAMP),
-('loc-007', 'wh-main-0001', 'Zone-A', 'Aisle-2', 'Shelf-2', 'Level-1', 'WH-MAIN-Zone-A-Aisle-2-Shelf-2-Level-1', 1, CURRENT_TIMESTAMP),
-('loc-008', 'wh-main-0001', 'Zone-A', 'Aisle-2', 'Shelf-2', 'Level-2', 'WH-MAIN-Zone-A-Aisle-2-Shelf-2-Level-2', 1, CURRENT_TIMESTAMP),
-('loc-009', 'wh-main-0001', 'Zone-B', 'Aisle-1', 'Shelf-1', 'Level-1', 'WH-MAIN-Zone-B-Aisle-1-Shelf-1-Level-1', 1, CURRENT_TIMESTAMP),
-('loc-010', 'wh-main-0001', 'Zone-B', 'Aisle-1', 'Shelf-1', 'Level-2', 'WH-MAIN-Zone-B-Aisle-1-Shelf-1-Level-2', 1, CURRENT_TIMESTAMP),
-('loc-011', 'wh-main-0001', 'Zone-B', 'Aisle-1', 'Shelf-2', 'Level-1', 'WH-MAIN-Zone-B-Aisle-1-Shelf-2-Level-1', 1, CURRENT_TIMESTAMP),
-('loc-012', 'wh-main-0001', 'Zone-B', 'Aisle-1', 'Shelf-2', 'Level-2', 'WH-MAIN-Zone-B-Aisle-1-Shelf-2-Level-2', 1, CURRENT_TIMESTAMP),
-('loc-013', 'wh-main-0001', 'Zone-B', 'Aisle-2', 'Shelf-1', 'Level-1', 'WH-MAIN-Zone-B-Aisle-2-Shelf-1-Level-1', 1, CURRENT_TIMESTAMP),
-('loc-014', 'wh-main-0001', 'Zone-B', 'Aisle-2', 'Shelf-1', 'Level-2', 'WH-MAIN-Zone-B-Aisle-2-Shelf-1-Level-2', 1, CURRENT_TIMESTAMP),
-('loc-015', 'wh-main-0001', 'Zone-B', 'Aisle-2', 'Shelf-2', 'Level-1', 'WH-MAIN-Zone-B-Aisle-2-Shelf-2-Level-1', 1, CURRENT_TIMESTAMP),
-('loc-016', 'wh-main-0001', 'Zone-B', 'Aisle-2', 'Shelf-2', 'Level-2', 'WH-MAIN-Zone-B-Aisle-2-Shelf-2-Level-2', 1, CURRENT_TIMESTAMP);
+('loc-001', 'wh-main-0001', 'Zone-A', 'Aisle-1', 'Shelf-1', 'Level-1', 'WH-MAIN-Zone-A-Aisle-1-Shelf-1-Level-1', TRUE, CURRENT_TIMESTAMP),
+('loc-002', 'wh-main-0001', 'Zone-A', 'Aisle-1', 'Shelf-1', 'Level-2', 'WH-MAIN-Zone-A-Aisle-1-Shelf-1-Level-2', TRUE, CURRENT_TIMESTAMP),
+('loc-003', 'wh-main-0001', 'Zone-A', 'Aisle-1', 'Shelf-2', 'Level-1', 'WH-MAIN-Zone-A-Aisle-1-Shelf-2-Level-1', TRUE, CURRENT_TIMESTAMP),
+('loc-004', 'wh-main-0001', 'Zone-A', 'Aisle-1', 'Shelf-2', 'Level-2', 'WH-MAIN-Zone-A-Aisle-1-Shelf-2-Level-2', TRUE, CURRENT_TIMESTAMP),
+('loc-005', 'wh-main-0001', 'Zone-A', 'Aisle-2', 'Shelf-1', 'Level-1', 'WH-MAIN-Zone-A-Aisle-2-Shelf-1-Level-1', TRUE, CURRENT_TIMESTAMP),
+('loc-006', 'wh-main-0001', 'Zone-A', 'Aisle-2', 'Shelf-1', 'Level-2', 'WH-MAIN-Zone-A-Aisle-2-Shelf-1-Level-2', TRUE, CURRENT_TIMESTAMP),
+('loc-007', 'wh-main-0001', 'Zone-A', 'Aisle-2', 'Shelf-2', 'Level-1', 'WH-MAIN-Zone-A-Aisle-2-Shelf-2-Level-1', TRUE, CURRENT_TIMESTAMP),
+('loc-008', 'wh-main-0001', 'Zone-A', 'Aisle-2', 'Shelf-2', 'Level-2', 'WH-MAIN-Zone-A-Aisle-2-Shelf-2-Level-2', TRUE, CURRENT_TIMESTAMP),
+('loc-009', 'wh-main-0001', 'Zone-B', 'Aisle-1', 'Shelf-1', 'Level-1', 'WH-MAIN-Zone-B-Aisle-1-Shelf-1-Level-1', TRUE, CURRENT_TIMESTAMP),
+('loc-010', 'wh-main-0001', 'Zone-B', 'Aisle-1', 'Shelf-1', 'Level-2', 'WH-MAIN-Zone-B-Aisle-1-Shelf-1-Level-2', TRUE, CURRENT_TIMESTAMP),
+('loc-011', 'wh-main-0001', 'Zone-B', 'Aisle-1', 'Shelf-2', 'Level-1', 'WH-MAIN-Zone-B-Aisle-1-Shelf-2-Level-1', TRUE, CURRENT_TIMESTAMP),
+('loc-012', 'wh-main-0001', 'Zone-B', 'Aisle-1', 'Shelf-2', 'Level-2', 'WH-MAIN-Zone-B-Aisle-1-Shelf-2-Level-2', TRUE, CURRENT_TIMESTAMP),
+('loc-013', 'wh-main-0001', 'Zone-B', 'Aisle-2', 'Shelf-1', 'Level-1', 'WH-MAIN-Zone-B-Aisle-2-Shelf-1-Level-1', TRUE, CURRENT_TIMESTAMP),
+('loc-014', 'wh-main-0001', 'Zone-B', 'Aisle-2', 'Shelf-1', 'Level-2', 'WH-MAIN-Zone-B-Aisle-2-Shelf-1-Level-2', TRUE, CURRENT_TIMESTAMP),
+('loc-015', 'wh-main-0001', 'Zone-B', 'Aisle-2', 'Shelf-2', 'Level-1', 'WH-MAIN-Zone-B-Aisle-2-Shelf-2-Level-1', TRUE, CURRENT_TIMESTAMP),
+('loc-016', 'wh-main-0001', 'Zone-B', 'Aisle-2', 'Shelf-2', 'Level-2', 'WH-MAIN-Zone-B-Aisle-2-Shelf-2-Level-2', TRUE, CURRENT_TIMESTAMP);
 
 -- 3. Seed Products
 INSERT INTO products (id, sku, name, description, category, price, uom_id, created_at) VALUES 
