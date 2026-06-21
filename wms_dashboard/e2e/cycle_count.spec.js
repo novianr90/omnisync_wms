@@ -44,6 +44,9 @@ test.describe('Cycle Counting Feature (Positive & Negative Flows)', () => {
     await expect(page.locator('span:has-text("CREATED")')).toBeVisible();
 
     const docNo = (await page.locator('h3:has-text("Count Sheet:")').innerText()).replace('Count Sheet: ', '').trim();
+    
+    // Extract the exact SKU that is in this locator from the count sheet
+    const productSku = await page.locator('tbody.divide-y tr').first().locator('td:nth-child(2) div.font-medium').innerText();
 
     // --- POSITIVE FLOW: Start Count to transition to IN_PROGRESS ---
     await page.click('button#btnStart');
@@ -54,10 +57,11 @@ test.describe('Cycle Counting Feature (Positive & Negative Flows)', () => {
     await page.goto('/wms/movements/new');
     await page.selectOption('#movement-type-select', 'OUTBOUND');
     
-    // Select the first product available in this locator (for simplicity, just select the first product and the frozen locator)
-    await page.selectOption('.product-select', { index: 1 }); // Just pick the first product
+    // Select the exact product that we know is in this frozen locator using RegExp to match SKU
+    await page.selectOption('.product-select', { label: new RegExp(productSku) });
+    await page.waitForTimeout(500); // Wait for UI update
     await page.fill('.quantity-input', '1');
-    await page.selectOption('.locator-select', { label: locatorCode });
+    await page.selectOption('.locator-select', locatorId);
     await page.click('button[type="submit"]');
 
     // Should see an error toast about frozen locator
@@ -68,7 +72,8 @@ test.describe('Cycle Counting Feature (Positive & Negative Flows)', () => {
     await page.goto('/wms/adjustments');
     await page.click('button:has-text("New Adjustment")');
     await expect(page.locator('select[name="product_id"]')).toBeVisible();
-    await page.selectOption('select[name="product_id"]', { index: 1 });
+    await page.selectOption('select[name="product_id"]', { label: new RegExp(productSku) });
+    await page.waitForTimeout(500); // Wait for HTMX to load locators
     await page.selectOption('select[name="locator_id"]', locatorId);
     await page.fill('input[name="qty_delta"]', '1');
     await page.fill('input[name="remarks"]', 'Test frozen adjustment');
