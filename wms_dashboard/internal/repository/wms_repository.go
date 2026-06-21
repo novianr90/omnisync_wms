@@ -591,7 +591,15 @@ func JournalizeInventoryMovement(movementID string) error {
 			}
 
 			// Update line's actual quantity and batch details
-			if err := tx.Save(line).Error; err != nil {
+			// Omit empty FK fields so Postgres stores NULL not ''
+			qSave := tx
+			if line.FromLocatorID == "" {
+				qSave = qSave.Omit("FromLocatorID")
+			}
+			if line.ToLocatorID == "" {
+				qSave = qSave.Omit("ToLocatorID")
+			}
+			if err := qSave.Save(line).Error; err != nil {
 				return err
 			}
 		}
@@ -742,7 +750,15 @@ func ProcessCrossDockInbound(movementID string) error {
 			}
 
 			// Update the line item with the generated batch number
-			if err := tx.Save(line).Error; err != nil {
+			// Omit empty FK fields so Postgres stores NULL not ''
+			qSave := tx
+			if line.FromLocatorID == "" {
+				qSave = qSave.Omit("FromLocatorID")
+			}
+			if line.ToLocatorID == "" {
+				qSave = qSave.Omit("ToLocatorID")
+			}
+			if err := qSave.Save(line).Error; err != nil {
 				return err
 			}
 
