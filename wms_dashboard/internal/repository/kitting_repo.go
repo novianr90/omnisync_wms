@@ -32,6 +32,28 @@ func CreateKittingOrder(kitting *models.InventoryKitting, lines []models.Invento
 			line.ID = uuid.New().String()
 			line.KittingID = kitting.ID
 
+		}
+
+		// Check for frozen locators (finished goods and components)
+		var locatorIDs []string
+		locatorIDs = append(locatorIDs, kitting.FinishedLocatorID)
+		for _, line := range lines {
+			locatorIDs = append(locatorIDs, line.LocatorID)
+		}
+
+		if len(locatorIDs) > 0 {
+			var frozenLocatorCodes []string
+			if err := tx.Model(&models.Locator{}).Where("id IN ? AND is_frozen = ?", locatorIDs, true).Pluck("code", &frozenLocatorCodes).Error; err != nil {
+				return err
+			}
+			if len(frozenLocatorCodes) > 0 {
+				return fmt.Errorf("cannot process kitting: locators %v are currently frozen for cycle counting", frozenLocatorCodes)
+			}
+		}
+
+		for i := range lines {
+			line := &lines[i]
+
 			if line.ConsumedQty <= 0 {
 				return errors.New("consumed quantity must be greater than zero")
 			}

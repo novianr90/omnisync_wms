@@ -1,0 +1,150 @@
+{{ define "content" }}
+<div class="px-4 sm:px-6 lg:px-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h1 class="text-xl font-semibold leading-6 text-gray-900">Count Sheet: {{ .Count.DocumentNo }}</h1>
+      <p class="mt-2 text-sm text-gray-700">Status: 
+        {{ if eq .Count.Status "DRAFT" }}<span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">DRAFT</span>
+        {{ else if eq .Count.Status "IN_PROGRESS" }}<span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">IN PROGRESS (Frozen)</span>
+        {{ else if eq .Count.Status "RECONCILED" }}<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">RECONCILED</span>
+        {{ else if eq .Count.Status "CANCELLED" }}<span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">CANCELLED</span>
+        {{ end }}
+      </p>
+    </div>
+    <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex gap-2">
+      {{ if eq .Count.Status "IN_PROGRESS" }}
+        {{ if .IsAdmin }}
+          <button id="btnCancel" class="block rounded-md bg-white px-3 py-2 text-center text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-gray-50">Cancel Count</button>
+          <button id="btnReconcile" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">Reconcile & Unfreeze</button>
+        {{ end }}
+      {{ end }}
+    </div>
+  </div>
+  
+  <div class="mt-8 flow-root">
+    <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+        <table class="min-w-full divide-y divide-gray-300">
+          <thead>
+            <tr>
+              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Locator</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">SKU / Product</th>
+              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Expected Qty</th>
+              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Counted Qty</th>
+              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Variance</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            {{ range .Count.Lines }}
+            <tr>
+              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">{{ .Locator.Code }}</td>
+              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                <div class="font-medium text-gray-900">{{ .Product.SKU }}</div>
+                <div>{{ .Product.Name }}</div>
+              </td>
+              <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500">{{ .ExpectedQty }}</td>
+              <td class="whitespace-nowrap px-3 py-4 text-sm text-right">
+                {{ if eq $.Count.Status "IN_PROGRESS" }}
+                  <input type="number" 
+                         data-line-id="{{ .ID }}" 
+                         data-expected="{{ .ExpectedQty }}"
+                         class="count-input block w-24 ml-auto rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 text-right" 
+                         {{ if .CountedQty }}value="{{ .CountedQty }}"{{ end }}>
+                {{ else }}
+                  {{ if .CountedQty }}{{ .CountedQty }}{{ else }}-{{ end }}
+                {{ end }}
+              </td>
+              <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-medium">
+                {{ if .CountedQty }}
+                  <span class="variance-display {{ if lt .Variance 0 }}text-red-600{{ else if gt .Variance 0 }}text-green-600{{ else }}text-gray-500{{ end }}">
+                    {{ if gt .Variance 0 }}+{{ end }}{{ .Variance }}
+                  </span>
+                {{ else }}
+                  <span class="variance-display text-gray-400">-</span>
+                {{ end }}
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ if eq .Count.Status "IN_PROGRESS" }}
+<script>
+document.querySelectorAll('.count-input').forEach(input => {
+    input.addEventListener('change', async (e) => {
+        const lineId = e.target.dataset.lineId;
+        const expected = parseInt(e.target.dataset.expected, 10);
+        const countedStr = e.target.value;
+        
+        if (countedStr === "") return;
+        
+        const countedQty = parseInt(countedStr, 10);
+        const variance = countedQty - expected;
+        
+        // Update UI optimistically
+        const tr = e.target.closest('tr');
+        const varSpan = tr.querySelector('.variance-display');
+        varSpan.textContent = (variance > 0 ? '+' : '') + variance;
+        varSpan.className = 'variance-display ' + (variance < 0 ? 'text-red-600' : (variance > 0 ? 'text-green-600' : 'text-gray-500'));
+
+        try {
+            const res = await fetch(`/wms/cycle-counts/{{ .Count.ID }}/lines`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ line_id: lineId, counted_qty: countedQty })
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                alert("Failed to save count: " + data.error);
+            }
+        } catch(err) {
+            console.error(err);
+        }
+    });
+});
+
+const btnReconcile = document.getElementById('btnReconcile');
+if (btnReconcile) {
+    btnReconcile.addEventListener('click', async () => {
+        if(!confirm("Are you sure you want to reconcile this count? This will adjust stock and unfreeze locators.")) return;
+        
+        try {
+            const res = await fetch(`/wms/cycle-counts/{{ .Count.ID }}/reconcile`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                alert("Success");
+                window.location.reload();
+            } else {
+                alert("Error: " + data.error);
+            }
+        } catch(err) {
+            console.error(err);
+        }
+    });
+}
+
+const btnCancel = document.getElementById('btnCancel');
+if (btnCancel) {
+    btnCancel.addEventListener('click', async () => {
+        if(!confirm("Are you sure you want to cancel this count? Locators will be unfrozen.")) return;
+        
+        try {
+            const res = await fetch(`/wms/cycle-counts/{{ .Count.ID }}/cancel`, { method: 'POST' });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                const data = await res.json();
+                alert("Error: " + data.error);
+            }
+        } catch(err) {
+            console.error(err);
+        }
+    });
+}
+</script>
+{{ end }}
+{{ end }}

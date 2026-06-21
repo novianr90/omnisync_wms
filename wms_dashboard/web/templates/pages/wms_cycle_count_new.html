@@ -1,0 +1,71 @@
+{{ define "content" }}
+<div class="px-4 sm:px-6 lg:px-8">
+  <div class="sm:flex sm:items-center mb-6">
+    <div class="sm:flex-auto">
+      <h1 class="text-xl font-semibold leading-6 text-gray-900">Start New Cycle Count</h1>
+      <p class="mt-2 text-sm text-gray-700">Select locators to audit. Generating a count sheet will temporarily freeze these locators from further movements.</p>
+    </div>
+  </div>
+
+  <form id="newCountForm" class="space-y-8 divide-y divide-gray-200">
+    <div class="space-y-8 divide-y divide-gray-200 sm:space-y-5">
+      <div>
+        <div class="mt-6 sm:mt-5 space-y-6 sm:space-y-5">
+          
+          <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:pt-5">
+            <label for="locators" class="block text-sm font-medium leading-6 text-gray-900 sm:pt-1.5">Locators to Audit</label>
+            <div class="mt-2 sm:col-span-2 sm:mt-0">
+              <select id="locators" name="locator_ids" multiple size="10" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                {{ range .Locators }}
+                  <option value="{{ .ID }}">{{ .Code }} - {{ .Warehouse.Name }}</option>
+                {{ end }}
+              </select>
+              <p class="mt-2 text-sm text-gray-500">Hold Ctrl (or Cmd) to select multiple locators.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-5">
+      <div class="flex justify-end gap-x-3">
+        <a href="/wms/cycle-counts" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</a>
+        <button type="submit" class="inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Generate Count Sheet</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.getElementById('newCountForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const select = document.getElementById('locators');
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    if (selectedOptions.length === 0) {
+        alert("Please select at least one locator");
+        return;
+    }
+
+    try {
+        const res = await fetch('/wms/cycle-counts/new', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ locator_ids: selectedOptions })
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+            window.location.href = `/wms/cycle-counts/${data.id}`;
+        } else {
+            alert("Error: " + data.error);
+        }
+    } catch (err) {
+        console.error(err);
+        alert("An error occurred");
+    }
+});
+</script>
+{{ end }}
