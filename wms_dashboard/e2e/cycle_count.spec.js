@@ -57,8 +57,9 @@ test.describe('Cycle Counting Feature (Positive & Negative Flows)', () => {
     await page.goto('/wms/movements/new');
     await page.selectOption('#movement-type-select', 'OUTBOUND');
     
-    // Select the exact product that we know is in this frozen locator using RegExp to match SKU
-    await page.selectOption('.product-select', { label: new RegExp(productSku) });
+    // Select the exact product that we know is in this frozen locator
+    const movProductId = await page.locator(`.product-select option:has-text("${productSku}")`).getAttribute('value');
+    await page.selectOption('.product-select', movProductId);
     await page.waitForTimeout(500); // Wait for UI update
     await page.fill('.quantity-input', '1');
     await page.selectOption('.locator-select', locatorId);
@@ -72,7 +73,8 @@ test.describe('Cycle Counting Feature (Positive & Negative Flows)', () => {
     await page.goto('/wms/adjustments');
     await page.click('button:has-text("New Adjustment")');
     await expect(page.locator('select[name="product_id"]')).toBeVisible();
-    await page.selectOption('select[name="product_id"]', { label: new RegExp(productSku) });
+    const adjProductId = await page.locator(`select[name="product_id"] option:has-text("${productSku}")`).getAttribute('value');
+    await page.selectOption('select[name="product_id"]', adjProductId);
     await page.waitForTimeout(500); // Wait for HTMX to load locators
     await page.selectOption('select[name="locator_id"]', locatorId);
     await page.fill('input[name="qty_delta"]', '1');
