@@ -15,11 +15,11 @@ func ServeCycleCounts(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Internal Server Error")
 	}
 
-	return c.Render("wms_cycle_counts", fiber.Map{
+	return renderPage(c, "wms_cycle_counts.html", fiber.Map{
 		"Title":       "Cycle Counting",
 		"Counts":      counts,
 		"CurrentPath": c.Path(),
-	}, "layouts/main")
+	})
 }
 
 func ServeNewCycleCountForm(c *fiber.Ctx) error {
@@ -29,11 +29,11 @@ func ServeNewCycleCountForm(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Internal Server Error")
 	}
 
-	return c.Render("wms_cycle_count_new", fiber.Map{
+	return renderPage(c, "wms_cycle_count_new.html", fiber.Map{
 		"Title":       "New Cycle Count",
 		"Locators":    locators,
 		"CurrentPath": "/wms/cycle-counts",
-	}, "layouts/main")
+	})
 }
 
 func CreateCycleCount(c *fiber.Ctx) error {
@@ -83,12 +83,12 @@ func ServeCycleCountDetail(c *fiber.Ctx) error {
 		isAdmin = true
 	}
 
-	return c.Render("wms_cycle_count_detail", fiber.Map{
+	return renderPage(c, "wms_cycle_count_detail.html", fiber.Map{
 		"Title":       "Cycle Count " + count.DocumentNo,
 		"Count":       count,
 		"CurrentPath": "/wms/cycle-counts",
 		"IsAdmin":     isAdmin,
-	}, "layouts/main")
+	})
 }
 
 func UpdateCountSheet(c *fiber.Ctx) error {
