@@ -44,8 +44,26 @@ func CreateInventoryAdjustment(adjustment *models.InventoryAdjustment, lines []m
 					return err
 				}
 
+				// Check if frozen
+				var locator models.Locator
+				if err := tx.Where("id = ?", line.LocatorID).First(&locator).Error; err != nil {
+					return err
+				}
+				if locator.IsFrozen {
+					return fmt.Errorf("cannot adjust stock in frozen locator %s (Cycle count in progress)", locator.Code)
+				}
+
 				if available < -line.QtyDelta {
 					return fmt.Errorf("cannot deduct %d items, only %d available (unreserved) in this locator", -line.QtyDelta, available)
+				}
+			} else {
+				// Also check if frozen for positive adjustments
+				var locator models.Locator
+				if err := tx.Where("id = ?", line.LocatorID).First(&locator).Error; err != nil {
+					return err
+				}
+				if locator.IsFrozen {
+					return fmt.Errorf("cannot adjust stock in frozen locator %s (Cycle count in progress)", locator.Code)
 				}
 			}
 

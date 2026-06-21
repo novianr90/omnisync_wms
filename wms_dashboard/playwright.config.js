@@ -14,7 +14,7 @@ module.exports = defineConfig({
   workers: isCI ? 4 : 1,
   reporter: 'line',
   use: {
-    baseURL: 'http://localhost:9901',
+    baseURL: 'http://localhost:9991',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     headless: true,

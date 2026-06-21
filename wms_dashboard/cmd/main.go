@@ -108,6 +108,16 @@ func main() {
 	app.Get("/wms/reports/valuation", handlers.ServeValuationReport)
 	app.Get("/wms/reports/valuation/export", handlers.ExportValuationCSV)
 
+	// --- CYCLE COUNTING ---
+	app.Get("/wms/cycle-counts", handlers.ServeCycleCounts)
+	app.Get("/wms/cycle-counts/new", handlers.ServeNewCycleCountForm)
+	app.Post("/wms/cycle-counts/new", handlers.CreateCycleCount)
+	app.Get("/wms/cycle-counts/:id", handlers.ServeCycleCountDetail)
+	app.Post("/wms/cycle-counts/:id/lines", handlers.UpdateCountSheet)
+	app.Post("/wms/cycle-counts/:id/reconcile", middleware.RequireAdmin(), handlers.ReconcileCycleCount)
+	app.Post("/wms/cycle-counts/:id/cancel", middleware.RequireAdmin(), handlers.CancelCycleCount)
+	app.Post("/wms/cycle-counts/:id/status", middleware.RequireAdmin(), handlers.UpdateCycleCountStatus)
+
 	// --- INVENTORY LEDGER ---
 	app.Get("/wms/ledger", middleware.RequireSystemAdmin(), handlers.ServeLedger)
 	app.Get("/wms/ledger/export/pdf", middleware.RequireSystemAdmin(), handlers.ExportLedgerPDF)

@@ -1,0 +1,78 @@
+{{ define "content" }}
+<div class="p-6 flex flex-col gap-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
+        <a href="/wms/cycle-counts" hx-get="/wms/cycle-counts" hx-target="#main-workspace" hx-push-url="true" class="hover:text-indigo-400 transition">Cycle Counting</a>
+        <i data-lucide="chevron-right" class="w-3 h-3 text-slate-600"></i>
+        <span class="text-indigo-400">New Count</span>
+      </div>
+      <h3 class="font-bold text-xl text-slate-100 font-outfit">Start New Cycle Count</h3>
+      <p class="text-xs text-slate-400 mt-0.5">Select locators to audit. Generating a count sheet will temporarily freeze these locators from further movements.</p>
+    </div>
+  </div>
+
+  <div class="glass-panel p-5 rounded-2xl border border-slate-800/80 shadow-xl max-w-2xl">
+    <form id="newCountForm" class="flex flex-col gap-5">
+      
+      <div class="flex flex-col gap-2">
+        <label for="locators" class="text-xs font-bold text-slate-300 tracking-wider uppercase">Locators to Audit</label>
+        <select id="locators" name="locator_ids" multiple size="8" class="w-full px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 transition scrollbar-thin scrollbar-thumb-slate-700">
+          {{ range .Locators }}
+            <option value="{{ .ID }}" class="py-1 px-2 hover:bg-slate-800 rounded">{{ .Code }} - {{ .Warehouse.Name }}</option>
+          {{ end }}
+        </select>
+        <p class="text-xs text-slate-500 mt-1">Hold <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300 font-mono text-[10px]">Ctrl</kbd> (or Cmd) to select multiple locators.</p>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-slate-800/60">
+        <a href="/wms/cycle-counts" hx-get="/wms/cycle-counts" hx-target="#main-workspace" hx-push-url="true" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg active:translate-y-[1px] transition duration-200 cursor-pointer">Cancel</a>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg active:translate-y-[1px] shadow-lg shadow-indigo-500/10 cursor-pointer transition duration-200">
+          Generate Count Sheet
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+<script>
+const notyf = new Notyf({
+    duration: 3000,
+    position: { x: 'right', y: 'top' },
+    types: [{ type: 'error', background: '#e11d48', duration: 4000 }]
+});
+
+document.getElementById('newCountForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const select = document.getElementById('locators');
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    if (selectedOptions.length === 0) {
+        notyf.error("Please select at least one locator");
+        return;
+    }
+
+    try {
+        const res = await fetch('/wms/cycle-counts/new', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ locator_ids: selectedOptions })
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+            // Because we use HTMX, doing standard window.location might do a full page refresh
+            // But doing a full refresh is okay here, or we can trigger htmx:
+            window.location.href = `/wms/cycle-counts/${data.id}`;
+        } else {
+            notyf.error("Error: " + data.error);
+        }
+    } catch (err) {
+        console.error(err);
+        notyf.error("An error occurred");
+    }
+});
+</script>
+{{ end }}

@@ -93,12 +93,32 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 		movement.CreatedAt = time.Now()
 		movement.UpdatedAt = time.Now()
 
-		// 1. Save movement header
+		// 1. Check for frozen locators
+		var frozenLocatorCodes []string
+		var locatorIDs []string
+		for _, line := range lines {
+			if line.FromLocatorID != "" {
+				locatorIDs = append(locatorIDs, line.FromLocatorID)
+			}
+			if line.ToLocatorID != "" {
+				locatorIDs = append(locatorIDs, line.ToLocatorID)
+			}
+		}
+		if len(locatorIDs) > 0 {
+			if err := tx.Model(&models.Locator{}).Where("id IN ? AND is_frozen = ?", locatorIDs, true).Pluck("code", &frozenLocatorCodes).Error; err != nil {
+				return err
+			}
+			if len(frozenLocatorCodes) > 0 {
+				return fmt.Errorf("cannot process movement: locators %v are currently frozen for cycle counting", frozenLocatorCodes)
+			}
+		}
+
+		// 2. Save movement header
 		if err := tx.Create(movement).Error; err != nil {
 			return err
 		}
 
-		// 2. Process each line
+		// 3. Process each line
 		for i := range lines {
 			line := &lines[i]
 			line.ID = uuid.New().String()
@@ -116,6 +136,7 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 				// Query active storage lots sorted by received_at ASC (FIFO)
 				var lots []models.Storage
 				err := tx.Where("product_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", line.ProductID).
+					Where("locator_id IN (SELECT id FROM locators WHERE is_frozen = false)").
 					Order("received_at ASC").
 					Find(&lots).Error
 
@@ -172,9 +193,11 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 					if line.FromLocatorID != "" && line.BatchNumber != "" {
 						// Sourced from a specific lot
 						var lot models.Storage
-						err := tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, line.FromLocatorID, line.BatchNumber).First(&lot).Error
+						err := tx.Where("product_id = ? AND locator_id = ? AND batch_number = ?", line.ProductID, line.FromLocatorID, line.BatchNumber).
+							Where("locator_id IN (SELECT id FROM locators WHERE is_frozen = false)").
+							First(&lot).Error
 						if err != nil {
-							return fmt.Errorf("matching storage lot not found for return: %w", err)
+							return fmt.Errorf("matching storage lot not found (or locator is frozen) for return: %w", err)
 						}
 						available := lot.QtyOnHand - lot.QtyReserved - lot.QtyOnHold
 						if available < line.RequestedQuantity {
@@ -191,6 +214,7 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 
 						var lots []models.Storage
 						err := tx.Where("product_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", line.ProductID).
+							Where("locator_id IN (SELECT id FROM locators WHERE is_frozen = false)").
 							Order("received_at ASC").
 							Find(&lots).Error
 
@@ -240,6 +264,7 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 
 				var lots []models.Storage
 				err := tx.Where("product_id = ? AND locator_id = ? AND (qty_on_hand - qty_reserved - qty_on_hold) > 0", line.ProductID, line.FromLocatorID).
+					Where("locator_id IN (SELECT id FROM locators WHERE is_frozen = false)").
 					Order("received_at ASC").
 					Find(&lots).Error
 

@@ -80,6 +80,7 @@ Administrators can create custom roles with any combination of permissions via *
 | **Mobile API (Movements)** | `/api/v1/movements` | `GET`, `POST` | Valid JWT Token | Dedicated REST JSON endpoints for mobile clients (list, claim, scan-verify, submit) |
 | **Inventory Ledger** | `/wms/ledger` | `GET` | `view_ledger` | View immutable audit trail of stock movements |
 | **Adjustments** | `/wms/adjustments` | `GET`, `POST` | Any authenticated | View and create direct stock adjustments |
+| **Cycle Counts** | `/wms/cycle-counts` | `GET`, `POST` | Any authenticated | Manage document flow (CREATED/IN_PROGRESS/RECONCILED) and physical counts |
 | **Kitting** | `/wms/kitting` | `GET`, `POST` | Any authenticated | Perform product assembly and kitting |
 | **QC Holds** | `/wms/qc-holds` | `GET`, `POST` | Any authenticated | Freeze stock quantities under QC investigation |
 | **QC Holds** | `/wms/qc-holds/:id/release` | `POST` | Any authenticated | Release frozen stock back to available inventory |
@@ -123,6 +124,10 @@ To protect historical movement transactions and inventory records, the repositor
 5. **QC Hold Stock Freeze**:
    - The `Storage` model now carries a `qty_on_hold` column. This quantity is excluded from **all** available-stock calculations across Outbound Movements, Kitting, and Adjustments.
    - Only the `ReleaseQCHold` function can decrement `qty_on_hold` back to available stock.
+
+6. **Cycle Count Locator Freeze**:
+   - Locators that are associated with an `IN_PROGRESS` cycle count document are frozen.
+   - Any manual inventory adjustments or outbound movements involving these locators are blocked until the count is reconciled or canceled.
 
 *Note: All deleted master records are **soft-deleted** (`gorm.DeletedAt` GORM schema attribute) to preserve ledger audits.*
 
@@ -293,4 +298,5 @@ npx playwright test
 - **Database Mapping**: GORM v2 (ORM) + Pure-Go SQLite Driver (`github.com/glebarez/sqlite`)
 - **Frontend SPA Layer**: HTMX v1.9.10 (Asynchronous swaps & dynamic forms)
 - **Styling Core**: Tailwind CSS v4.0 + Custom Glassmorphism Theme (Outfit + Inter font faces)
+- **UI Feedback**: Notyf (Sleek Toast Notifications)
 - **Iconsets**: Lucide Icons (asynchronously re-bound on HTMX swaps)

@@ -46,6 +46,7 @@ type Locator struct {
 	MaxWeight   float64        `gorm:"type:decimal(10,2);default:0" json:"max_weight"`     // kg, 0 = unlimited
 	MaxVolume   float64        `gorm:"type:decimal(10,4);default:0" json:"max_volume"`     // m³, 0 = unlimited
 	IsActive    bool           `gorm:"type:boolean;default:true" json:"is_active"`
+	IsFrozen    bool           `gorm:"type:boolean;default:false" json:"is_frozen"`        // Temporarily lock stock during cycle count
 	CreatedAt   time.Time      `json:"created_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 
@@ -220,6 +221,37 @@ type QCHold struct {
 
 	// Preloads
 	Storage Storage `gorm:"foreignKey:StorageID" json:"storage,omitempty"`
+}
+
+// CycleCount represents a physical stock audit document
+type CycleCount struct {
+	ID         string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+	DocumentNo string    `gorm:"type:varchar(50);uniqueIndex;not null" json:"document_no"`
+	Status     string    `gorm:"type:varchar(20);default:'CREATED'" json:"status"` // CREATED, IN_PROGRESS, RECONCILED, CANCELED, COMPLETED
+	Remarks    string    `gorm:"type:text" json:"remarks"`
+	CreatedBy  string    `gorm:"type:varchar(36);not null" json:"created_by"`
+	AdjustedAt *time.Time `json:"adjusted_at,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+
+	// Preloads
+	Lines []CycleCountLine `gorm:"foreignKey:CycleCountID" json:"lines,omitempty"`
+}
+
+// CycleCountLine represents an individual line to count
+type CycleCountLine struct {
+	ID           string `gorm:"type:varchar(36);primaryKey" json:"id"`
+	CycleCountID string `gorm:"type:varchar(36);not null;index" json:"cycle_count_id"`
+	LocatorID    string `gorm:"type:varchar(36);not null;index" json:"locator_id"`
+	ProductID    string `gorm:"type:varchar(36);not null;index" json:"product_id"`
+	ExpectedQty  int    `gorm:"type:int;not null" json:"expected_qty"`
+	CountedQty   *int   `gorm:"type:int" json:"counted_qty"`
+	Variance     int    `gorm:"type:int;default:0" json:"variance"`
+	IsFrozen     bool   `gorm:"type:boolean;default:false" json:"is_frozen"`
+
+	// Preloads
+	Product Product `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+	Locator Locator `gorm:"foreignKey:LocatorID" json:"locator,omitempty"`
 }
 
 // SequenceGenerator represents a dynamic sequence config and offset for a target context

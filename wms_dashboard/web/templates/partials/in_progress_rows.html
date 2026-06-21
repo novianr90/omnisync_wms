@@ -10,6 +10,8 @@
                 <i data-lucide="file-edit" class="w-3.5 h-3.5 text-rose-500"></i>
             {{else if eq .DocType "Inventory Kitting"}}
                 <i data-lucide="package-plus" class="w-3.5 h-3.5 text-fuchsia-400"></i>
+            {{else if eq .DocType "Cycle Count"}}
+                <i data-lucide="clipboard-list" class="w-3.5 h-3.5 text-emerald-400"></i>
             {{else}}
                 <i data-lucide="arrow-left-right" class="w-3.5 h-3.5 text-indigo-400"></i>
             {{end}}
