@@ -341,6 +341,12 @@ jobs:
           SEED_OPERATOR_PASSWORD: operator123
         run: CI=true npx playwright test --workers=1
 
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          echo "=== Auth Logs ===" && docker logs omnisync_wms-auth-1 2>&1 || echo "(auth container not found)"
+          echo "=== WMS Logs ===" && docker logs omnisync_wms-wms-1 2>&1 || echo "(wms container not found)"
+
       - name: Tear down Docker stack
         if: always()
         run: docker compose -f docker-compose.yml -f docker-compose.local-db.yml down -v
