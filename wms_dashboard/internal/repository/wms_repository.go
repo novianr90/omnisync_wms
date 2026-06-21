@@ -69,7 +69,7 @@ func FetchInventoryCatalog(search string) ([]ProductInventory, error) {
 	err := query.
 		Joins("LEFT JOIN storages ON products.id = storages.product_id").
 		Joins("LEFT JOIN uoms ON products.uom_id = uoms.id").
-		Group("products.id").
+		Group("products.id, products.sku, products.name, products.category, products.price, uoms.code").
 		Scan(&results).Error
 
 	return results, err
