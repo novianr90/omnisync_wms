@@ -23,7 +23,6 @@ const AUTH_DATABASE_URL =
 
 const wmsRoot = path.join(__dirname, '..');
 const authRoot = path.join(__dirname, '../../auth_services');
-const migrationsDir = path.join(wmsRoot, 'migrations');
 
 const wmsBinName = process.platform === 'win32' ? 'wms_dashboard.exe' : 'wms_dashboard';
 const authBinName = process.platform === 'win32' ? 'auth_services.exe' : 'auth_services';
@@ -57,16 +56,6 @@ function psql(sql, db) {
   );
 }
 
-function runMigrations(db) {
-  const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-  for (const file of files) {
-    execSync(
-      `psql -h ${PGHOST} -p ${PGPORT} -U ${PGUSER} -d "${db}" -f "${path.join(migrationsDir, file)}"`,
-      { env: { ...process.env, PGPASSWORD }, stdio: 'pipe' }
-    );
-  }
-}
-
 function spawnServer(cmd, args, opts) {
   const proc = spawn(cmd, args, { ...opts, stdio: 'inherit' });
   proc.on('error', (err) => console.error(`[global-setup] spawn error (${cmd}):`, err.message));
@@ -77,14 +66,13 @@ module.exports = async function globalSetup() {
   const pids = [];
 
   if (usePostgres) {
-    console.log(`[global-setup] Preparing ${numWorkers} worker database(s)...`);
+    // ponytail: create empty DBs only — each WMS server runs its own tracked migrations on startup
+    console.log(`[global-setup] Creating ${numWorkers} worker database(s)...`);
     for (let i = 0; i < numWorkers; i++) {
       const db = `wms_test_${i}`;
-      // ponytail: WITH (FORCE) terminates open connections before drop — requires PG13+
+      // WITH (FORCE) terminates open connections before drop — requires PG13+
       psql(`DROP DATABASE IF EXISTS ${db} WITH (FORCE);`);
       psql(`CREATE DATABASE ${db};`);
-      console.log(`[global-setup] Running migrations on ${db}...`);
-      runMigrations(db);
     }
   }
 
