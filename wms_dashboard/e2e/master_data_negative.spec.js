@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./fixtures');
 const { login } = require('./helpers/auth');
 
 test.describe('Master Data Negative Flows', () => {
@@ -9,7 +9,7 @@ test.describe('Master Data Negative Flows', () => {
 
   test('Duplicate SKU: creating product with existing SKU shows constraint error', async ({ page }) => {
     test.setTimeout(60000);
-    await page.goto('http://localhost:9901/wms/masters/products');
+    await page.goto('/wms/masters/products');
     await expect(page.locator('h3:has-text("Product Master Maintenance")')).toBeVisible();
 
     // Button text is "Add Catalog Product"
@@ -32,7 +32,7 @@ test.describe('Master Data Negative Flows', () => {
 
   test('Duplicate warehouse code: creating warehouse with existing code shows constraint error', async ({ page }) => {
     test.setTimeout(60000);
-    await page.goto('http://localhost:9901/wms/masters/warehouses');
+    await page.goto('/wms/masters/warehouses');
     await expect(page.locator('h3:has-text("Warehouse Facilities Registry")')).toBeVisible();
 
     // Button text is "Add Warehouse Node"
@@ -50,7 +50,7 @@ test.describe('Master Data Negative Flows', () => {
 
   test('Delete locator with active stock is blocked', async ({ page }) => {
     test.setTimeout(60000);
-    await page.goto('http://localhost:9901/wms/masters/locators');
+    await page.goto('/wms/masters/locators');
     await expect(page.locator('h3, h2').filter({ hasText: /Locator/i })).toBeVisible();
 
     // Accept native browser confirm dialog triggered by HTMX hx-confirm
@@ -66,7 +66,7 @@ test.describe('Master Data Negative Flows', () => {
 
   test('Delete base UoM referenced by active products is blocked', async ({ page }) => {
     test.setTimeout(60000);
-    await page.goto('http://localhost:9901/wms/masters/uoms');
+    await page.goto('/wms/masters/uoms');
     await expect(page.locator('h3, h2').filter({ hasText: /UoM|Unit/i })).toBeVisible();
 
     // Accept native browser confirm dialog triggered by HTMX hx-confirm

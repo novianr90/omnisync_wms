@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./fixtures');
 const { login } = require('./helpers/auth');
 
 test.describe('Inventory Movements Negative Flows', () => {
@@ -29,7 +29,7 @@ test.describe('Inventory Movements Negative Flows', () => {
   test('QC quarantine exclusion: outbound on QC-held product reduces available qty and blocks over-pick', async ({ page }) => {
     test.setTimeout(90000);
     // 1. Create a QC Hold on stor-003 (freeze 5 units)
-    await page.goto('http://localhost:9901/wms/qc-holds');
+    await page.goto('/wms/qc-holds');
     await page.click('button:has-text("Freeze Stock")');
     await expect(page.locator('#modal-create-hold')).toBeVisible();
 
@@ -80,7 +80,7 @@ test.describe('Inventory Movements Negative Flows', () => {
     await expect(page.locator('span:has-text("Claimed & In Progress")')).toBeVisible();
 
     // 3. Log out admin
-    await page.goto('http://localhost:9901/logout');
+    await page.goto('/logout');
     await page.waitForURL('**/login');
 
     // 4. Log in as operator (seeded POS role user - does NOT have manage_movements permission)

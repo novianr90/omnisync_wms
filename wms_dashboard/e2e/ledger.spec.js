@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./fixtures');
 const { login } = require('./helpers/auth');
 
 test.describe('Inventory Ledger', () => {
@@ -9,7 +9,7 @@ test.describe('Inventory Ledger', () => {
 
     test('should allow System Admin to view and filter the inventory ledger', async ({ page }) => {
         // Navigate to the Dashboard first
-        await page.goto('http://localhost:9901/');
+        await page.goto('/');
         
         // Wait for the sidebar to load and click on Inventory Ledger
         const ledgerLink = page.locator('a[href="/wms/ledger"]');

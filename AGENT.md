@@ -12,10 +12,11 @@ The WMS suite is organized into two primary microservices, connecting to separat
 graph TD
     Client[HTMX Browser Client] -->|Port 9901| Dashboard[WMS Dashboard Service]
     Dashboard -->|Authenticate Claims| AuthService[Auth Service - Port 8000]
-    Dashboard -->|Read/Write Operations| WMSDB[(wms.db - Dev SQLite)]
-    Dashboard -->|UoM Conversions| WMSDB
-    AuthService -->|Read/Write Operations| AuthDB[(auth.db - Auth SQLite)]
+    Dashboard -->|Read/Write Operations| WMSDB[(SQLite dev / PostgreSQL prod+CI)]
+    AuthService -->|Read/Write Operations| AuthDB[(SQLite dev / PostgreSQL prod+CI)]
 ```
+
+> **Database modes**: Set `DB_TYPE=postgres` with a `WMS_DATABASE_URL` / `AUTH_DATABASE_URL` connection string to switch to PostgreSQL. For Supabase, append `?sslmode=require`. Omit `DB_TYPE` (or set `sqlite`) for local development with zero infrastructure. All SQL migrations are compatible with both engines.
 
 ### 1. Auth Service (`auth_services/`)
 - **Port**: `8000`
@@ -223,17 +224,28 @@ go test -v ./...
 ```
 
 #### 2. Playwright E2E Tests
-Run the automated end-to-end user journeys inside a headless Chrome environment. Before each run, it is highly recommended to clean local SQLite database files to ensure clean FIFO lot levels and seeded states:
+Run the automated end-to-end user journeys inside a headless Chrome environment.
 
+**SQLite mode (default):**
 ```powershell
-# Stop services, clear DBs, and run Playwright
-Stop-Process -Name "main" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "wms_dashboard" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "wms_dashboard\wms.db*", "auth_services\auth.db*" -Force -ErrorAction SilentlyContinue
 
 cd wms_dashboard
 npx playwright test
 ```
+
+**PostgreSQL mode (mirrors CI):**
+```bash
+DB_TYPE=postgres PGHOST=localhost PGPORT=5432 PGUSER=omnisync PGPASSWORD=test1234 \
+AUTH_DATABASE_URL=postgres://omnisync:test1234@localhost:5432/omnisync_test?sslmode=disable \
+npx playwright test
+```
+
+**Parallel worker infrastructure (CI):**
+- `e2e/global-setup.js` boots 1 shared Auth Service (port 8000) + 4 WMS instances (ports 9901–9904), each backed by its own isolated Postgres DB (`wms_test_0..3`). Migrations run automatically on WMS startup via `schema_migrations` tracker.
+- `e2e/fixtures/index.js` resolves per-worker `baseURL` using `testInfo.workerIndex % NUM_WORKERS` to guard against worker restart index overflow.
+- `e2e/global-teardown.js` sends SIGTERM to all spawned PIDs recorded in `.e2e-pids.json`.
 
 ---
 
@@ -265,6 +277,14 @@ npx playwright test
 9. **CI Gate Must Pass Before Merge:**
    - The `CI Gate` status check is a **required** check on the `master` branch. PRs **cannot** be merged if any test (lint, unit, or E2E) has failed.
    - **Rule:** Never bypass or force-merge a PR with a failing CI Gate. Fix the failing tests first, push the fix, and wait for the pipeline to go green before merging.
+10. **Always Use Relative URLs in Playwright E2E Tests:**
+    - **Gotcha:** Hardcoding `http://localhost:9901` in `page.goto()` or `request.get/post()` calls breaks parallel E2E runs. Each Playwright worker is assigned a different port (9901–9904) backed by its own isolated DB. A test running on worker 2 (port 9903) that navigates to port 9901 will hit a different DB — finding no data and timing out.
+    - **Rule:** Always use relative paths (e.g. `page.goto('/wms/movements')`, `request.get('/api/v1/movements')`). Playwright resolves them against the per-worker `baseURL` fixture automatically. Never hardcode `localhost:PORT` anywhere in spec files.
+11. **PostgreSQL Compatibility Rules:**
+    - **GROUP BY strictness:** PostgreSQL requires all non-aggregated `SELECT` columns to appear in `GROUP BY`. SQLite allows selecting unaggregated columns. Always list every projected column explicitly in `GROUP BY` clauses, not just the primary key.
+    - **LIKE case sensitivity:** SQLite `LIKE` is case-insensitive; PostgreSQL `LIKE` is case-sensitive. `ILIKE` is Postgres-only. Use `LOWER(col) LIKE LOWER(?)` — it is portable across both engines and safe in unit tests.
+    - **GORM `Save()` with nullable FK columns:** `Save()` writes all struct fields, including zero-values. An empty string `""` for a foreign key column is sent as `''` to Postgres which rejects it (FK violation). Use `tx.Omit("FieldName")` conditionally when the FK field is empty before calling `Save()` or `Create()`.
+    - **Boolean literals:** SQLite accepts `0`/`1`; PostgreSQL requires `TRUE`/`FALSE`. Never use integer literals for boolean columns in raw SQL.
 
 ---
 

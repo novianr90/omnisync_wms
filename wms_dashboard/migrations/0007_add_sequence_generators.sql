@@ -6,8 +6,8 @@ CREATE TABLE sequence_generators (
     fiscal_year INTEGER NOT NULL,
     current_number INTEGER NOT NULL DEFAULT 1,
     number_length INTEGER NOT NULL DEFAULT 5,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO sequence_generators (id, usage_table, prefix, fiscal_year, current_number, number_length) VALUES

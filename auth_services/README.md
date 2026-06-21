@@ -66,7 +66,7 @@ Service starts on `http://localhost:8000`.
 ## Database
 
 - **Development**: SQLite (`auth.db`) — auto-created on first run, no setup needed.
-- **Production**: PostgreSQL — set `DB_TYPE=postgres` and provide `AUTH_DATABASE_URL`.
+- **Production**: PostgreSQL — set `DB_TYPE=postgres` and provide `AUTH_DATABASE_URL` (append `?sslmode=require` if using Supabase).
 
 Schema is automatically migrated via GORM `AutoMigrate` on startup.
 

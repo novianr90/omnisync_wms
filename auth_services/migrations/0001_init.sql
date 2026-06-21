@@ -2,8 +2,8 @@ CREATE TABLE IF NOT EXISTS roles (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
-    created_at DATETIME,
-    updated_at DATETIME
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     role_id VARCHAR(36) NOT NULL,
-    is_active BOOLEAN DEFAULT 1,
-    created_at DATETIME,
-    updated_at DATETIME,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT
 );

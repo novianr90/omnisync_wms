@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./fixtures');
 const { login } = require('./helpers/auth');
 
 test.describe('Inventory Movements & FIFO Outbound E2E Flows', () => {
@@ -45,7 +45,7 @@ test.describe('Inventory Movements & FIFO Outbound E2E Flows', () => {
     await expect(page.locator('h3:has-text("Inventory Movements")')).toBeVisible();
 
     // 4. Navigate to Detail View of the new crossdock movement
-    await page.goto('http://localhost:9901/wms/movements');
+    await page.goto('/wms/movements');
     const firstRow = page.locator('#movements-tbody tr').first();
     await expect(firstRow).toBeVisible();
     const docNo = await firstRow.locator('td:first-child').innerText();

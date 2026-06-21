@@ -503,7 +503,7 @@ func ServeMovementsPage(c *fiber.Ctx) error {
 
 	if search != "" {
 		// Search by document_no or by product SKU/name in lines
-		query = query.Where("document_no LIKE ? OR id IN (SELECT movement_id FROM inventory_movement_lines JOIN products ON inventory_movement_lines.product_id = products.id WHERE products.sku LIKE ? OR products.name LIKE ?)", "%"+search+"%", "%"+search+"%", "%"+search+"%")
+		query = query.Where("LOWER(document_no) LIKE LOWER(?) OR id IN (SELECT movement_id FROM inventory_movement_lines JOIN products ON inventory_movement_lines.product_id = products.id WHERE LOWER(products.sku) LIKE LOWER(?) OR LOWER(products.name) LIKE LOWER(?))", "%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
 	if mType != "" {
 		query = query.Where("movement_type = ?", mType)

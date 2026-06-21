@@ -6,8 +6,8 @@ CREATE TABLE inventory_adjustments (
     reason_code VARCHAR(50) NOT NULL,
     remarks TEXT,
     created_by VARCHAR(36) NOT NULL,
-    created_at DATETIME,
-    updated_at DATETIME
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 CREATE TABLE inventory_adjustment_lines (

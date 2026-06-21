@@ -63,13 +63,13 @@ func FetchInventoryCatalog(search string) ([]ProductInventory, error) {
 			"COALESCE(SUM(storages.qty_on_hand - storages.qty_reserved - storages.qty_on_hold), 0) as qty_available")
 
 	if search != "" {
-		query = query.Where("products.name LIKE ? OR products.sku LIKE ?", "%"+search+"%", "%"+search+"%")
+		query = query.Where("LOWER(products.name) LIKE LOWER(?) OR LOWER(products.sku) LIKE LOWER(?)", "%"+search+"%", "%"+search+"%")
 	}
 
 	err := query.
 		Joins("LEFT JOIN storages ON products.id = storages.product_id").
 		Joins("LEFT JOIN uoms ON products.uom_id = uoms.id").
-		Group("products.id").
+		Group("products.id, products.sku, products.name, products.category, products.price, uoms.code").
 		Scan(&results).Error
 
 	return results, err
@@ -275,8 +275,15 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 				}
 			}
 
-			// Save line item
-			if err := tx.Create(line).Error; err != nil {
+			// Save line item, omitting empty FK locator fields so Postgres stores NULL not ''
+			q := tx
+			if line.FromLocatorID == "" {
+				q = q.Omit("FromLocatorID")
+			}
+			if line.ToLocatorID == "" {
+				q = q.Omit("ToLocatorID")
+			}
+			if err := q.Create(line).Error; err != nil {
 				return err
 			}
 		}
@@ -584,7 +591,15 @@ func JournalizeInventoryMovement(movementID string) error {
 			}
 
 			// Update line's actual quantity and batch details
-			if err := tx.Save(line).Error; err != nil {
+			// Omit empty FK fields so Postgres stores NULL not ''
+			qSave := tx
+			if line.FromLocatorID == "" {
+				qSave = qSave.Omit("FromLocatorID")
+			}
+			if line.ToLocatorID == "" {
+				qSave = qSave.Omit("ToLocatorID")
+			}
+			if err := qSave.Save(line).Error; err != nil {
 				return err
 			}
 		}
@@ -735,7 +750,15 @@ func ProcessCrossDockInbound(movementID string) error {
 			}
 
 			// Update the line item with the generated batch number
-			if err := tx.Save(line).Error; err != nil {
+			// Omit empty FK fields so Postgres stores NULL not ''
+			qSave := tx
+			if line.FromLocatorID == "" {
+				qSave = qSave.Omit("FromLocatorID")
+			}
+			if line.ToLocatorID == "" {
+				qSave = qSave.Omit("ToLocatorID")
+			}
+			if err := qSave.Save(line).Error; err != nil {
 				return err
 			}
 

@@ -182,14 +182,31 @@ jobs:
     if: needs.changes.outputs.docs_only == 'false'
     env:
       JWT_SECRET_KEY: ci-test-signing-key-for-github-actions-12345
-      DB_TYPE: sqlite
-      PORT: 9901
+      DB_TYPE: postgres
+      AUTH_DATABASE_URL: postgres://omnisync:test1234@localhost:5432/omnisync_test?sslmode=disable
       AUTH_API_URL: http://localhost:8000
       SEED_ADMIN_EMAIL: admin@omnisync.com
       SEED_ADMIN_PASSWORD: admin123
       SEED_OPERATOR_EMAIL: operator@omnisync.com
       SEED_OPERATOR_PASSWORD: operator123
-      ALLOWED_ORIGIN: http://localhost:9901,http://127.0.0.1:9901
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: omnisync
+      PGPASSWORD: test1234
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: omnisync
+          POSTGRES_PASSWORD: test1234
+          POSTGRES_DB: omnisync_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -227,30 +244,6 @@ jobs:
       - name: Install Playwright OS Dependencies
         working-directory: wms_dashboard
         run: npx playwright install-deps chromium
-
-      - name: Create Auth Service .env
-        working-directory: auth_services
-        run: |
-          cat > .env <<EOF
-          JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
-          PORT=8000
-          ALLOWED_ORIGIN=${{ env.ALLOWED_ORIGIN }}
-          DB_TYPE=${{ env.DB_TYPE }}
-          SEED_ADMIN_EMAIL=${{ env.SEED_ADMIN_EMAIL }}
-          SEED_ADMIN_PASSWORD=${{ env.SEED_ADMIN_PASSWORD }}
-          SEED_OPERATOR_EMAIL=${{ env.SEED_OPERATOR_EMAIL }}
-          SEED_OPERATOR_PASSWORD=${{ env.SEED_OPERATOR_PASSWORD }}
-          EOF
-
-      - name: Create WMS Dashboard .env
-        working-directory: wms_dashboard
-        run: |
-          cat > .env <<EOF
-          JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
-          PORT=${{ env.PORT }}
-          AUTH_API_URL=${{ env.AUTH_API_URL }}
-          DB_TYPE=${{ env.DB_TYPE }}
-          EOF
 
       - name: Pre-build Auth Service
         working-directory: auth_services

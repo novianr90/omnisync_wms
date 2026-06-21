@@ -8,8 +8,8 @@ CREATE TABLE inventory_kittings (
     finished_qty INTEGER NOT NULL,
     remarks TEXT,
     created_by VARCHAR(36) NOT NULL,
-    created_at DATETIME,
-    updated_at DATETIME,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (finished_product_id) REFERENCES products(id),
     FOREIGN KEY (finished_locator_id) REFERENCES locators(id)
 );
