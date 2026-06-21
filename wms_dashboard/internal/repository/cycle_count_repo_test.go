@@ -54,8 +54,14 @@ func TestCycleCounting(t *testing.T) {
 		t.Fatalf("Failed to create cycle count: %v", err)
 	}
 	
-	if count.Status != "IN_PROGRESS" {
-		t.Errorf("Expected IN_PROGRESS status, got %v", count.Status)
+	if count.Status != "CREATED" {
+		t.Errorf("Expected CREATED status, got %v", count.Status)
+	}
+
+	// 2.5 Start Cycle Count (Transitions CREATED -> IN_PROGRESS and freezes locators)
+	err = StartCycleCount(count.ID)
+	if err != nil {
+		t.Fatalf("Failed to start cycle count: %v", err)
 	}
 
 	// Fetch to verify lines and locators
