@@ -2,12 +2,14 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"wms_dashboard/internal/database"
 	"wms_dashboard/internal/handlers"
+	"wms_dashboard/internal/logger"
 	"wms_dashboard/internal/middleware"
 )
 
@@ -18,6 +20,9 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on system environment variables")
 	}
+
+	// 0.1 Initialize Structured Logger
+	logger.InitLogger()
 
 	// 1. Initialize Database
 	database.InitDB()
@@ -31,6 +36,10 @@ func main() {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	})
+
+	// 3.2 Global Middlewares
+	app.Use(middleware.Recover())
+	app.Use(middleware.RequestLogger())
 
 	// 4. Mount Static Assets
 	app.Static("/static", "./web/static")
@@ -180,6 +189,6 @@ func main() {
 	if port == "" {
 		port = "9901"
 	}
-	log.Printf("WMS Dashboard Service starting on port %s...", port)
+	slog.Info("WMS Dashboard Service starting", slog.String("port", port))
 	log.Fatal(app.Listen(":" + port))
 }

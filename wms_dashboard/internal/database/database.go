@@ -2,11 +2,14 @@ package database
 
 import (
 	"log"
+	"log/slog"
 	"os"
-	"gorm.io/driver/postgres"
+
 	"github.com/glebarez/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	
+	customlogger "wms_dashboard/internal/logger"
 )
 
 var DB *gorm.DB
@@ -18,7 +21,9 @@ func InitDB() *gorm.DB {
 		dbType = "sqlite" // default in development
 	}
 
-	log.Printf("Connecting to db_wms using driver: %s", dbType)
+	slog.Info("Connecting to db_wms", slog.String("driver", dbType))
+
+	gormLogger := customlogger.NewGormLogger()
 
 	if dbType == "postgres" {
 		dsn := os.Getenv("WMS_DATABASE_URL")
@@ -26,12 +31,12 @@ func InitDB() *gorm.DB {
 			log.Fatal("WMS_DATABASE_URL environment variable is required when DB_TYPE=postgres")
 		}
 		DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
+			Logger: gormLogger,
 		})
 	} else {
 		dbPath := "wms.db"
 		DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
+			Logger: gormLogger,
 		})
 		if err == nil {
 			sqlDB, err := DB.DB()
@@ -44,10 +49,11 @@ func InitDB() *gorm.DB {
 	}
 
 	if err != nil {
+		slog.Error("Failed to connect to db_wms database", slog.Any("error", err))
 		log.Fatalf("Failed to connect to db_wms database: %v", err)
 	}
 
-	log.Println("Database db_wms connected successfully.")
+	slog.Info("Database db_wms connected successfully")
 
 	// Run Custom SQL Migrations
 	RunMigrations(DB, "migrations")
