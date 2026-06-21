@@ -275,8 +275,15 @@ func CreateInventoryMovement(movement *models.InventoryMovement, lines []models.
 				}
 			}
 
-			// Save line item
-			if err := tx.Create(line).Error; err != nil {
+			// Save line item, omitting empty FK locator fields so Postgres stores NULL not ''
+			q := tx
+			if line.FromLocatorID == "" {
+				q = q.Omit("FromLocatorID")
+			}
+			if line.ToLocatorID == "" {
+				q = q.Omit("ToLocatorID")
+			}
+			if err := q.Create(line).Error; err != nil {
 				return err
 			}
 		}
