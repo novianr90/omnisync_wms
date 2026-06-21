@@ -43,6 +43,12 @@ func RunMigrations(db *gorm.DB, migrationsDir string) {
 	sort.Strings(sqlFiles)
 
 	for _, fileName := range sqlFiles {
+		// ponytail: skip seed data in production to prevent dummy data in live environments
+		if os.Getenv("APP_ENV") == "production" && strings.Contains(fileName, "_seed_") {
+			log.Printf("Skipping seed migration in production: %s", fileName)
+			continue
+		}
+
 		var count int64
 		db.Model(&SchemaMigration{}).Where("version = ?", fileName).Count(&count)
 
