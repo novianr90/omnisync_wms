@@ -228,6 +228,18 @@ omnisync_wms/
 
 ---
 
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [Setup Guide](docs/setup.md) | Docker deployment, first admin, master data initialization |
+| [WMS Overview](docs/overview.md) | Core concepts, document lifecycle, navigation map |
+| [Receiving](docs/receiving.md) | Inbound movements and cross-docking |
+| [Kitting](docs/kitting.md) | Assembly / bill-of-materials operations |
+| [Cycle Counting](docs/cycle_count.md) | Physical count, locator freezing, reconciliation |
+
+---
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
