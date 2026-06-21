@@ -42,10 +42,10 @@ INSERT INTO uom_conversions (id, product_id, from_uom_id, to_uom_id, multiply_fa
 -- 4. Seed Storage Lots (with FIFO demo items!)
 INSERT INTO storages (id, product_id, locator_id, batch_number, received_at, qty_on_hand, qty_reserved, updated_at) VALUES 
 -- Batch 1 (Oldest - Received 5 days ago)
-('stor-001', 'prod-001', 'loc-001', 'BAT-INB-20260520-1', NOW() - INTERVAL '5 days', 40, 0, CURRENT_TIMESTAMP),
+('stor-001', 'prod-001', 'loc-001', 'BAT-INB-20260520-1', '2026-05-20 00:00:00', 40, 0, CURRENT_TIMESTAMP),
 -- Batch 2 (Newer - Received today)
 ('stor-002', 'prod-001', 'loc-001', 'BAT-INB-20260525-2', CURRENT_TIMESTAMP, 60, 0, CURRENT_TIMESTAMP),
 -- Mouse Storage (Received 2 days ago)
-('stor-003', 'prod-002', 'loc-002', 'BAT-INB-20260523-1', NOW() - INTERVAL '2 days', 80, 0, CURRENT_TIMESTAMP),
+('stor-003', 'prod-002', 'loc-002', 'BAT-INB-20260523-1', '2026-05-23 00:00:00', 80, 0, CURRENT_TIMESTAMP),
 -- Sugar Storage (Received 1 day ago)
-('stor-004', 'prod-004', 'loc-001', 'BAT-SUGR-20260524-1', NOW() - INTERVAL '1 days', 150, 0, CURRENT_TIMESTAMP);
+('stor-004', 'prod-004', 'loc-001', 'BAT-SUGR-20260524-1', '2026-05-24 00:00:00', 150, 0, CURRENT_TIMESTAMP);
