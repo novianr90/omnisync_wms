@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/postgres"
@@ -21,9 +22,16 @@ func InitDB() *gorm.DB {
 		if dsn == "" {
 			log.Fatal("AUTH_DATABASE_URL is required when DB_TYPE=postgres")
 		}
-		DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
-		})
+		for i := 0; i < 10; i++ {
+			DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+				Logger: logger.Default.LogMode(logger.Info),
+			})
+			if err == nil {
+				break
+			}
+			log.Printf("DB connection attempt %d/10 failed, retrying in 3s: %v", i+1, err)
+			time.Sleep(3 * time.Second)
+		}
 	} else {
 		dbPath := "auth.db"
 		dir := filepath.Dir(dbPath)
