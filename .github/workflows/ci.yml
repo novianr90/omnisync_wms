@@ -184,14 +184,15 @@ jobs:
       JWT_SECRET_KEY: ci-test-signing-key-for-github-actions-12345
       DB_TYPE: postgres
       AUTH_DATABASE_URL: postgres://omnisync:test1234@localhost:5432/omnisync_test?sslmode=disable
-      WMS_DATABASE_URL: postgres://omnisync:test1234@localhost:5432/wms_test?sslmode=disable
-      PORT: 9901
       AUTH_API_URL: http://localhost:8000
       SEED_ADMIN_EMAIL: admin@omnisync.com
       SEED_ADMIN_PASSWORD: admin123
       SEED_OPERATOR_EMAIL: operator@omnisync.com
       SEED_OPERATOR_PASSWORD: operator123
-      ALLOWED_ORIGIN: http://localhost:9901,http://127.0.0.1:9901
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: omnisync
+      PGPASSWORD: test1234
     services:
       postgres:
         image: postgres:16
@@ -244,32 +245,6 @@ jobs:
         working-directory: wms_dashboard
         run: npx playwright install-deps chromium
 
-      - name: Create Auth Service .env
-        working-directory: auth_services
-        run: |
-          cat > .env <<EOF
-          JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
-          PORT=8000
-          ALLOWED_ORIGIN=${{ env.ALLOWED_ORIGIN }}
-          DB_TYPE=${{ env.DB_TYPE }}
-          AUTH_DATABASE_URL=${{ env.AUTH_DATABASE_URL }}
-          SEED_ADMIN_EMAIL=${{ env.SEED_ADMIN_EMAIL }}
-          SEED_ADMIN_PASSWORD=${{ env.SEED_ADMIN_PASSWORD }}
-          SEED_OPERATOR_EMAIL=${{ env.SEED_OPERATOR_EMAIL }}
-          SEED_OPERATOR_PASSWORD=${{ env.SEED_OPERATOR_PASSWORD }}
-          EOF
-
-      - name: Create WMS Dashboard .env
-        working-directory: wms_dashboard
-        run: |
-          cat > .env <<EOF
-          JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
-          PORT=${{ env.PORT }}
-          AUTH_API_URL=${{ env.AUTH_API_URL }}
-          DB_TYPE=${{ env.DB_TYPE }}
-          WMS_DATABASE_URL=${{ env.WMS_DATABASE_URL }}
-          EOF
-
       - name: Pre-build Auth Service
         working-directory: auth_services
         run: go build -o auth_services ./cmd/main.go
@@ -277,9 +252,6 @@ jobs:
       - name: Pre-build WMS Dashboard
         working-directory: wms_dashboard
         run: go build -o wms_dashboard ./cmd/main.go
-
-      - name: Setup Databases
-        run: PGPASSWORD=test1234 psql -h localhost -U omnisync -d omnisync_test -c "CREATE DATABASE wms_test;"
 
       - name: Run Playwright E2E Tests
         working-directory: wms_dashboard
