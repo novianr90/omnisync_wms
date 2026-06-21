@@ -11,10 +11,10 @@ func FetchInProgressDocs(docType string, search string) ([]models.InProgressDoc,
 	query := database.DB.Model(&models.InProgressDoc{})
 
 	if docType != "" && docType != "All" {
-		query = query.Where("doc_type LIKE ?", docType+"%")
+		query = query.Where("LOWER(doc_type) LIKE LOWER(?)", docType+"%")
 	}
 	if search != "" {
-		query = query.Where("document_no LIKE ?", "%"+search+"%")
+		query = query.Where("LOWER(document_no) LIKE LOWER(?)", "%"+search+"%")
 	}
 
 	err := query.Order("created_at DESC").Find(&docs).Error

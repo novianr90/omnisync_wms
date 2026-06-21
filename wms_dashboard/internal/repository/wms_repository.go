@@ -63,7 +63,7 @@ func FetchInventoryCatalog(search string) ([]ProductInventory, error) {
 			"COALESCE(SUM(storages.qty_on_hand - storages.qty_reserved - storages.qty_on_hold), 0) as qty_available")
 
 	if search != "" {
-		query = query.Where("products.name LIKE ? OR products.sku LIKE ?", "%"+search+"%", "%"+search+"%")
+		query = query.Where("LOWER(products.name) LIKE LOWER(?) OR LOWER(products.sku) LIKE LOWER(?)", "%"+search+"%", "%"+search+"%")
 	}
 
 	err := query.

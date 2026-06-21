@@ -33,7 +33,7 @@ func FetchInventoryLedger(filter LedgerFilter) ([]models.InventoryLedger, int64,
 	}
 
 	if filter.Search != "" {
-		query = query.Where("inventory_ledgers.document_no LIKE ? OR inventory_ledgers.batch_number LIKE ? OR products.sku LIKE ?", "%"+filter.Search+"%", "%"+filter.Search+"%", "%"+filter.Search+"%")
+		query = query.Where("LOWER(inventory_ledgers.document_no) LIKE LOWER(?) OR LOWER(inventory_ledgers.batch_number) LIKE LOWER(?) OR LOWER(products.sku) LIKE LOWER(?)", "%"+filter.Search+"%", "%"+filter.Search+"%", "%"+filter.Search+"%")
 	}
 	if filter.ProductSKU != "" {
 		query = query.Where("products.sku = ?", filter.ProductSKU)
