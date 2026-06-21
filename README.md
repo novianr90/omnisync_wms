@@ -19,25 +19,27 @@ omnisync_wms/
 ```
 
 ```
-┌─────────────────────┐        ┌──────────────────────────┐
-│   Browser (HTMX)    │──9901──▶   WMS Dashboard Service   │
-└─────────────────────┘        │  Go Fiber + GORM + SQLite │
-                                │  Tailwind CSS v4 + HTMX   │
-                                └────────────┬─────────────┘
+┌─────────────────────┐        ┌──────────────────────────────┐
+│   Browser (HTMX)    │──9901──▶   WMS Dashboard Service       │
+└─────────────────────┘        │  Go Fiber + GORM              │
+                                │  SQLite (dev) / PG (prod/CI)  │
+                                │  Tailwind CSS v4 + HTMX       │
+                                └────────────┬─────────────────┘
                                              │ POST /auth/login
                                              ▼
-                                ┌──────────────────────────┐
-                                │   Auth Service  :8000     │
-                                │  Go Fiber + bcrypt + JWT  │
-                                └──────────────────────────┘
+                                ┌──────────────────────────────┐
+                                │   Auth Service  :8000         │
+                                │  Go Fiber + bcrypt + JWT      │
+                                │  SQLite (dev) / PG (prod/CI)  │
+                                └──────────────────────────────┘
 ```
 
 ### Services at a Glance
 
-| Service | Directory | Port | Database |
-|---|---|---|---|
-| Auth Service | `auth_services/` | `8000` | `auth.db` (SQLite) |
-| WMS Dashboard | `wms_dashboard/` | `9901` | `wms.db` (SQLite) |
+| Service | Directory | Port | Database (dev) | Database (prod/CI) |
+|---|---|---|---|---|
+| Auth Service | `auth_services/` | `8000` | `auth.db` (SQLite) | PostgreSQL (`DB_TYPE=postgres`) |
+| WMS Dashboard | `wms_dashboard/` | `9901` | `wms.db` (SQLite) | PostgreSQL (`DB_TYPE=postgres`) |
 
 ---
 
@@ -147,20 +149,32 @@ go test -v ./...
 ```
 
 ### 2. Playwright E2E Tests
-To run full end-to-end browser workflows (encompassing Authentication, Side-menu HTMX navigation, Inbound, FIFO Outbound, QC Hold quarantine, Stock Adjustments, and Kitting Light Assembly):
 
-1. **Clear DB locks & clean states**:
-   ```powershell
-   # Windows PowerShell
-   Stop-Process -Name "main" -Force -ErrorAction SilentlyContinue
-   Stop-Process -Name "wms_dashboard" -Force -ErrorAction SilentlyContinue
-   Remove-Item -Path "wms_dashboard\wms.db*", "auth_services\auth.db*" -Force -ErrorAction SilentlyContinue
-   ```
-2. **Execute Playwright runner**:
-   ```bash
-   cd wms_dashboard
-   npx playwright test
-   ```
+E2E tests run against live Go services. The test runner (`global-setup.js`) boots one Auth Service and one WMS instance automatically, then tears them down after the suite completes.
+
+**SQLite mode (default — no external deps):**
+```powershell
+# Windows PowerShell — stop any leftover processes first
+Stop-Process -Name "wms_dashboard" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "wms_dashboard\wms.db*", "auth_services\auth.db*" -Force -ErrorAction SilentlyContinue
+
+cd wms_dashboard
+npx playwright test
+```
+
+**PostgreSQL mode (mirrors CI):**
+
+Requires a local PostgreSQL instance with a user `omnisync` / password `test1234`:
+```bash
+# Set env vars, then run
+DB_TYPE=postgres \
+PGHOST=localhost PGPORT=5432 PGUSER=omnisync PGPASSWORD=test1234 \
+AUTH_DATABASE_URL=postgres://omnisync:test1234@localhost:5432/omnisync_test?sslmode=disable \
+npx playwright test
+```
+The setup script creates the required `wms_test_0` database automatically.
+
+**CI (GitHub Actions):** 4 parallel Playwright workers each backed by an isolated PostgreSQL database (`wms_test_0..3`), providing full test isolation and ~4× faster suite execution.
 
 ---
 
@@ -171,7 +185,7 @@ To run full end-to-end browser workflows (encompassing Authentication, Side-menu
 | Backend Framework | [Go Fiber v2](https://gofiber.io/) |
 | ORM | [GORM v2](https://gorm.io/) |
 | Database (dev) | SQLite via [`glebarez/sqlite`](https://github.com/glebarez/sqlite) (pure Go, no CGo) |
-| Database (prod) | PostgreSQL (set `DB_TYPE=postgres`, append `?sslmode=require` for Supabase) |
+| Database (prod/CI) | PostgreSQL 16 — set `DB_TYPE=postgres`; append `?sslmode=require` for Supabase |
 | Frontend | [HTMX v1.9](https://htmx.org/) |
 | Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
 | Icons | [Lucide Icons](https://lucide.dev/) |
