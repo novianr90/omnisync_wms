@@ -23,7 +23,7 @@ func ServeCycleCounts(c *fiber.Ctx) error {
 }
 
 func ServeNewCycleCountForm(c *fiber.Ctx) error {
-	locators, err := repository.FetchAllLocators()
+	locators, err := repository.FetchLocatorsWithStock()
 	if err != nil {
 		slog.Error("Failed to fetch locators", slog.Any("error", err))
 		return c.Status(500).SendString("Internal Server Error")

@@ -133,6 +133,15 @@ func FetchAllLocators() ([]models.Locator, error) {
 	return locators, err
 }
 
+func FetchLocatorsWithStock() ([]models.Locator, error) {
+	var locators []models.Locator
+	err := database.DB.Preload("Warehouse").
+		Where("id IN (SELECT locator_id FROM inventory_balances WHERE qty > 0)").
+		Order("code ASC").
+		Find(&locators).Error
+	return locators, err
+}
+
 func FetchLocatorByID(id string) (models.Locator, error) {
 	var locator models.Locator
 	err := database.DB.Preload("Warehouse").First(&locator, "id = ?", id).Error
