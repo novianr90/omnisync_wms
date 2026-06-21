@@ -41,6 +41,8 @@ func setupTestDB(t *testing.T) {
 		&models.InventoryAdjustmentLine{},
 		&models.Account{},
 		&models.InventoryLedger{},
+		&models.CycleCount{},
+		&models.CycleCountLine{},
 	)
 	if err != nil {
 		t.Fatalf("failed to migrate test db: %v", err)
@@ -54,6 +56,7 @@ func setupTestDB(t *testing.T) {
 		{ID: "seq-qch", UsageTable: "qc_holds", Prefix: "QCH", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
 		{ID: "seq-stor", UsageTable: "storages", Prefix: "BAT", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 6},
 		{ID: "seq-trf", UsageTable: "inventory_transfers", Prefix: "TRF", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
+		{ID: "seq-cnt", UsageTable: "cycle_counts", Prefix: "CNT", FiscalYear: 2026, CurrentNumber: 1, NumberLength: 5},
 	})
 
 	database.DB = db
