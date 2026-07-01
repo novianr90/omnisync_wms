@@ -156,7 +156,9 @@
         fetch(`/wms/adjustments/locators?product_id=${productId}`)
             .then(res => res.text())
             .then(html => {
+                const prev = locatorSelect.value;
                 locatorSelect.innerHTML = html;
+                if (prev) locatorSelect.value = prev;
             })
             .catch(err => {
                 console.error("Failed to fetch locators", err);

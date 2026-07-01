@@ -14,6 +14,29 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func createAdmin(email, password string) {
+	hashBytes, _ := bcrypt.GenerateFromPassword([]byte(password), 14)
+
+	var adminRole models.Role
+	if err := database.DB.Where("name = ?", "System Admin").First(&adminRole).Error; err != nil {
+		log.Fatal("Could not find System Admin role. Run migrations first.")
+	}
+
+	user := models.User{
+		ID:           uuid.New().String(),
+		Email:        email,
+		PasswordHash: string(hashBytes),
+		FirstName:    "Admin",
+		LastName:     "User",
+		RoleID:       adminRole.ID,
+		IsActive:     true,
+	}
+	if err := database.DB.Create(&user).Error; err != nil {
+		log.Fatalf("Failed to create admin: %v", err)
+	}
+	log.Printf("Admin created: %s", email)
+}
+
 func seedUsers() {
 	var count int64
 	database.DB.Model(&models.User{}).Count(&count)
@@ -92,8 +115,19 @@ func main() {
 	// 1. Initialize Database
 	database.InitDB()
 
-	// 2. Seed Default Users
-	seedUsers()
+	// CLI subcommand: create-admin <email> <password>
+	if len(os.Args) > 1 && os.Args[1] == "create-admin" {
+		if len(os.Args) != 4 {
+			log.Fatal("Usage: auth_services create-admin <email> <password>")
+		}
+		createAdmin(os.Args[2], os.Args[3])
+		return
+	}
+
+	// 2. Seed Default Users (skipped in production)
+	if os.Getenv("APP_ENV") != "production" {
+		seedUsers()
+	}
 
 	// 3. Initialize Go Fiber Application
 	app := fiber.New(fiber.Config{

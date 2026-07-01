@@ -266,6 +266,100 @@ jobs:
           retention-days: 7
 
   # ──────────────────────────────────────────────────
+  # Docker E2E: Build stack, run Playwright against nginx
+  # ──────────────────────────────────────────────────
+  docker-e2e:
+    name: E2E Tests (Docker Stack)
+    runs-on: ubuntu-latest
+    needs: [changes, lint]
+    if: needs.changes.outputs.docs_only == 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: wms_dashboard/package-lock.json
+
+      - name: Cache Playwright Browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('wms_dashboard/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install NPM dependencies
+        working-directory: wms_dashboard
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: wms_dashboard
+        run: npx playwright install chromium
+
+      - name: Install Playwright OS Dependencies
+        working-directory: wms_dashboard
+        run: npx playwright install-deps chromium
+
+      - name: Create .env for Docker Compose
+        run: |
+          cat > .env << 'EOF'
+          APP_ENV=development
+          DB_TYPE=postgres
+          POSTGRES_USER=omnisync
+          POSTGRES_PASSWORD=test1234
+          POSTGRES_DB=omnisync_wms
+          AUTH_DATABASE_URL=postgres://omnisync:test1234@postgres:5432/omnisync_wms?sslmode=disable
+          WMS_DATABASE_URL=postgres://omnisync:test1234@postgres:5432/omnisync_wms?sslmode=disable
+          JWT_SECRET_KEY=ci-test-signing-key-for-github-actions-12345
+          ALLOWED_ORIGIN=http://localhost:9991
+          SEED_ADMIN_EMAIL=admin@omnisync.com
+          SEED_ADMIN_PASSWORD=admin123
+          SEED_OPERATOR_EMAIL=operator@omnisync.com
+          SEED_OPERATOR_PASSWORD=operator123
+          EOF
+
+      - name: Build and start Docker stack
+        run: docker compose -f docker-compose.yml -f docker-compose.local-db.yml up -d --build
+
+      - name: Wait for stack to be healthy
+        run: |
+          timeout 120 bash -c 'until curl -sf http://localhost:9991/health; do sleep 5; done'
+
+      - name: Run Playwright E2E Tests against Docker stack
+        working-directory: wms_dashboard
+        env:
+          DOCKER_STACK: "true"
+          DB_TYPE: postgres
+          JWT_SECRET_KEY: ci-test-signing-key-for-github-actions-12345
+          SEED_ADMIN_EMAIL: admin@omnisync.com
+          SEED_ADMIN_PASSWORD: admin123
+          SEED_OPERATOR_EMAIL: operator@omnisync.com
+          SEED_OPERATOR_PASSWORD: operator123
+        run: CI=true npx playwright test --workers=1
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          echo "=== Auth Logs ===" && docker logs omnisync_wms-auth-1 2>&1 || echo "(auth container not found)"
+          echo "=== WMS Logs ===" && docker logs omnisync_wms-wms-1 2>&1 || echo "(wms container not found)"
+
+      - name: Tear down Docker stack
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.local-db.yml down -v
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-docker
+          path: wms_dashboard/test-results/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────
   # Required Gate: Single status check for branch protection
   # This job ALWAYS runs and is the only required check.
   # ──────────────────────────────────────────────────
@@ -273,16 +367,17 @@ jobs:
     name: CI Gate
     runs-on: ubuntu-latest
     if: always()
-    needs: [changes, file-blocker, lint, unit-tests, e2e-tests]
+    needs: [changes, file-blocker, lint, unit-tests, e2e-tests, docker-e2e]
     steps:
       - name: Evaluate pipeline result
         run: |
           echo "=== CI Gate Summary ==="
-          echo "docs_only:   ${{ needs.changes.outputs.docs_only }}"
+          echo "docs_only:    ${{ needs.changes.outputs.docs_only }}"
           echo "file-blocker: ${{ needs.file-blocker.result }}"
           echo "lint:         ${{ needs.lint.result }}"
           echo "unit-tests:   ${{ needs.unit-tests.result }}"
           echo "e2e-tests:    ${{ needs.e2e-tests.result }}"
+          echo "docker-e2e:   ${{ needs.docker-e2e.result }}"
           echo "======================="
 
           # File blocker must always pass
@@ -310,6 +405,11 @@ jobs:
 
           if [ "${{ needs.e2e-tests.result }}" != "success" ]; then
             echo "❌ E2E tests failed."
+            exit 1
+          fi
+
+          if [ "${{ needs.docker-e2e.result }}" != "success" ]; then
+            echo "❌ Docker E2E tests failed."
             exit 1
           fi
 

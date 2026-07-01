@@ -63,6 +63,16 @@ function spawnServer(cmd, args, opts) {
 }
 
 module.exports = async function globalSetup() {
+  // ponytail: skip spawning when services are already running in Docker
+  if (process.env.DOCKER_STACK === 'true') {
+    console.log('[global-setup] Docker stack detected — waiting for exposed services...');
+    await waitForHealth(`http://localhost:${AUTH_PORT}/health`);
+    await waitForHealth(`http://localhost:${WMS_BASE_PORT}/health`);
+    fs.writeFileSync(PIDS_FILE, JSON.stringify([]));
+    console.log('[global-setup] Docker services ready.');
+    return;
+  }
+
   const pids = [];
 
   if (usePostgres) {
