@@ -16,6 +16,10 @@ type SchemaMigration struct {
 	AppliedAt time.Time
 }
 
+func (SchemaMigration) TableName() string {
+	return "wms_schema_migrations"
+}
+
 func RunMigrations(db *gorm.DB, migrationsDir string) {
 	// Create schema_migrations table to track applied migrations
 	if err := db.AutoMigrate(&SchemaMigration{}); err != nil {
