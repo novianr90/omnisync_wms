@@ -6,17 +6,25 @@ Welcome to the Omnisync WMS developer and agent context registry. This file docu
 
 ## 🗺️ Project Architecture Overview
 
-The WMS suite is organized into two primary microservices, connecting to separate SQLite data backends:
+The WMS suite is organized into two primary microservices routed through **Kong API Gateway** running in DB-less mode (`KONG_DATABASE=off`), connecting to separate SQLite/PostgreSQL data backends:
 
 ```mermaid
 graph TD
-    Client[HTMX Browser Client] -->|Port 9901| Dashboard[WMS Dashboard Service]
-    Dashboard -->|Authenticate Claims| AuthService[Auth Service - Port 8000]
-    Dashboard -->|Read/Write Operations| WMSDB[(SQLite dev / PostgreSQL prod+CI)]
+    Client[HTMX Browser / Mobile Client] -->|Port 80| Kong[Kong API Gateway - DB-less]
+    Kong -->|/auth, /users, /roles| AuthService[Auth Service - Port 8000]
+    Kong -->|/api/v1| WMSDashboard[WMS Dashboard Service - Port 9901]
+    Kong -->|/*| WMSDashboard
+    WMSDashboard -->|Authenticate Claims| AuthService
+    WMSDashboard -->|Read/Write Operations| WMSDB[(SQLite dev / PostgreSQL prod+CI)]
     AuthService -->|Read/Write Operations| AuthDB[(SQLite dev / PostgreSQL prod+CI)]
 ```
 
 > **Database modes**: Set `DB_TYPE=postgres` with a `WMS_DATABASE_URL` / `AUTH_DATABASE_URL` connection string to switch to PostgreSQL. For Supabase, append `?sslmode=require`. Omit `DB_TYPE` (or set `sqlite`) for local development with zero infrastructure. All SQL migrations are compatible with both engines.
+
+### 0. API Gateway (`kong/`)
+- **Port**: `80` (proxy)
+- **Mode**: DB-less (`KONG_DATABASE=off`) with declarative config in `kong/kong.yml`
+- **Responsibility**: Central entry point, path routing (`/auth/*`, `/api/v1/*`, `/*`), rate limiting (auth & mobile endpoints), and HTMX SSE/long-polling timeout management.
 
 ### 1. Auth Service (`auth_services/`)
 - **Port**: `8000`
@@ -26,7 +34,7 @@ graph TD
 ### 2. WMS Dashboard Service (`wms_dashboard/`)
 - **Port**: `9901` (dynamically configurable)
 - **Database**: `wms.db` (uses pure-Go `github.com/glebarez/sqlite` to prevent CGo runtime requirements on Windows/Linux host environments)
-- **Responsibility**: Orchestrates the main WMS client dashboard, physical stock tracking with unit labels, inventory movements with dynamic packaging conversions, and the **Master Data Registry**.
+- **Responsibility**: Orchestrates the main WMS client dashboard, physical stock tracking with unit labels, inventory movements with dynamic packaging conversions, mobile REST APIs (`/api/v1/*`), and the **Master Data Registry**.
 
 ---
 

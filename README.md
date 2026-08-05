@@ -10,34 +10,35 @@
 
 ## Architecture
 
-Omnisync WMS is a two-service monorepo. Each service is independently deployable and communicates over HTTP.
+Omnisync WMS is a microservices architecture routed through **Kong API Gateway** (DB-less mode). Each service is independently deployable and communicates over HTTP.
 
 ```
 omnisync_wms/
+├── kong/                # Kong API Gateway Declarative Configuration
 ├── auth_services/       # JWT Authentication Service  (port 8000)
 └── wms_dashboard/       # WMS Dashboard & CRUD Service (port 9901)
 ```
 
 ```
-┌─────────────────────┐        ┌──────────────────────────────┐
-│   Browser (HTMX)    │──9901──▶   WMS Dashboard Service       │
-└─────────────────────┘        │  Go Fiber + GORM              │
-                                │  SQLite (dev) / PG (prod/CI)  │
-                                │  Tailwind CSS v4 + HTMX       │
-                                └────────────┬─────────────────┘
-                                             │ POST /auth/login
-                                             ▼
-                                ┌──────────────────────────────┐
-                                │   Auth Service  :8000         │
-                                │  Go Fiber + bcrypt + JWT      │
-                                │  SQLite (dev) / PG (prod/CI)  │
-                                └──────────────────────────────┘
+                                     ┌──────────────────────────────┐
+                                     │   Auth Service  :8000        │
+                                 ┌──▶│  Go Fiber + bcrypt + JWT     │
+┌─────────────────────┐          │   │  SQLite (dev) / PG (prod/CI) │
+│ Browser / Mobile    │───:80───▶│   └──────────────────────────────┘
+└─────────────────────┘          │
+                          Kong   │   ┌──────────────────────────────┐
+                       API Gateway   │   WMS Dashboard Service  :9901   │
+                       (DB-less) └──▶│  Go Fiber + GORM             │
+                                     │  SQLite (dev) / PG (prod/CI) │
+                                     │  Tailwind CSS v4 + HTMX      │
+                                     └──────────────────────────────┘
 ```
 
 ### Services at a Glance
 
 | Service | Directory | Port | Database (dev) | Database (prod/CI) |
 |---|---|---|---|---|
+| API Gateway | `kong/` | `80` | None (DB-less `kong.yml`) | None (Declarative Config) |
 | Auth Service | `auth_services/` | `8000` | `auth.db` (SQLite) | PostgreSQL (`DB_TYPE=postgres`) |
 | WMS Dashboard | `wms_dashboard/` | `9901` | `wms.db` (SQLite) | PostgreSQL (`DB_TYPE=postgres`) |
 
@@ -184,6 +185,7 @@ The setup script creates the required `wms_test_0` database automatically.
 
 | Layer | Technology |
 |---|---|
+| API Gateway | [Kong API Gateway](https://konghq.com/) (Alpine, DB-less mode) |
 | Backend Framework | [Go Fiber v2](https://gofiber.io/) |
 | ORM | [GORM v2](https://gorm.io/) |
 | Database (dev) | SQLite via [`glebarez/sqlite`](https://github.com/glebarez/sqlite) (pure Go, no CGo) |
@@ -200,6 +202,8 @@ The setup script creates the required `wms_test_0` database automatically.
 
 ```
 omnisync_wms/
+├── kong/
+│   └── kong.yml                 # Declarative routing & rate limiting config
 ├── auth_services/
 │   ├── cmd/main.go              # Entry point
 │   ├── internal/
