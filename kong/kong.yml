@@ -1,0 +1,50 @@
+_format_version: "3.0"
+
+services:
+  - name: auth-service
+    url: http://auth:8000
+    connect_timeout: 10000
+    read_timeout: 10000
+    write_timeout: 10000
+    routes:
+      - name: auth-routes
+        paths:
+          - /auth
+          - /users
+          - /roles
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 30
+          policy: local
+
+  - name: mobile-api-service
+    url: http://wms:9901
+    connect_timeout: 10000
+    read_timeout: 30000
+    write_timeout: 30000
+    routes:
+      - name: mobile-api-routes
+        paths:
+          - /api/v1
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
+
+  - name: wms-service
+    url: http://wms:9901
+    connect_timeout: 10000
+    read_timeout: 3600000 # 1 hour timeout for HTMX long-poll/SSE
+    write_timeout: 3600000
+    routes:
+      - name: wms-routes
+        paths:
+          - /
+        strip_path: false
+        preserve_host: true
