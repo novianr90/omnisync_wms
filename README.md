@@ -185,7 +185,7 @@ The setup script creates the required `wms_test_0` database automatically.
 
 | Layer | Technology |
 |---|---|
-| API Gateway | [Kong API Gateway 3.5](https://konghq.com/) (DB-less mode) |
+| API Gateway | [Kong API Gateway](https://konghq.com/) (Alpine, DB-less mode) |
 | Backend Framework | [Go Fiber v2](https://gofiber.io/) |
 | ORM | [GORM v2](https://gorm.io/) |
 | Database (dev) | SQLite via [`glebarez/sqlite`](https://github.com/glebarez/sqlite) (pure Go, no CGo) |

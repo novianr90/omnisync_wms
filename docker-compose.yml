@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
 
   kong:
-    image: kong:3.5-alpine
+    image: kong:alpine
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
